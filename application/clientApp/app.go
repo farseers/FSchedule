@@ -4,7 +4,6 @@ import (
 	"FSchedule/domain/client"
 	"github.com/farseer-go/fs/exception"
 	"github.com/farseer-go/mapper"
-	"time"
 )
 
 // Registry 客户端注册
@@ -14,7 +13,13 @@ func Registry(dto RegistryDTO, repository client.Repository) {
 		exception.ThrowWebException(403, "客户端ID、Name、IP、Port未完整传入")
 	}
 
-	do.ActivateAt = time.Now()
+	do.Registry()
+
 	// 保存客户端信息
 	repository.Save(do)
+}
+
+// Logout 客户端下线
+func Logout(clientId int64, repository client.Repository) {
+	repository.ToEntity(clientId).Logout()
 }

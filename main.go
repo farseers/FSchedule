@@ -8,7 +8,10 @@ import (
 
 func main() {
 	fs.Initialize[StartupModule]("FSchedule")
-	webapi.RegisterPOST("/registry", clientApp.Registry)
+	webapi.Area("/api/", func() {
+		webapi.RegisterPOST("/registry", clientApp.Registry)
+		webapi.RegisterPOST("/logout", clientApp.Logout)
+	})
 	webapi.UseApiResponse()
 	webapi.Run()
 }

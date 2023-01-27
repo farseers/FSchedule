@@ -2,9 +2,13 @@ Redis:
   default: "Server=127.0.0.1:6379,DB=14,Password=steden@123,ConnectTimeout=600000,SyncTimeout=10000,ResponseTimeout=10000"
 WebApi:
   Url: ":8886"
+FSchedule:
+  Server:
+    Token: ""
 Log:
   LogLevel: "Information"
   Component:
     httpInvoke: true
-    task: true
+    task: false
     cacheManage: true
+    httpRequest: false

@@ -34,6 +34,6 @@ func (receiver *clientRepository) GetCount() int64 {
 
 func (receiver *clientRepository) ToEntity(clientId int64) *client.DomainObject {
 	var do *client.DomainObject
-	_ = receiver.Hash.ToEntity(clientCacheKey, strconv.FormatInt(clientId, 10), do)
+	_, _ = receiver.Hash.ToEntity(clientCacheKey, strconv.FormatInt(clientId, 10), do)
 	return do
 }

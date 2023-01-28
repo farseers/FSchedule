@@ -1,3 +1,5 @@
+Database:
+  default: "DataType=mysql,PoolMaxSize=50,PoolMinSize=1,ConnectionString=root:steden@123@tcp(127.0.0.1:3306)/fss?charset=utf8&parseTime=True&loc=Local"
 Redis:
   default: "Server=127.0.0.1:6379,DB=14,Password=steden@123,ConnectTimeout=600000,SyncTimeout=10000,ResponseTimeout=10000"
 WebApi:
@@ -12,3 +14,4 @@ Log:
     task: false
     cacheManage: true
     httpRequest: false
+  

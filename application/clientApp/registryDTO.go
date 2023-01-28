@@ -9,9 +9,10 @@ type RegistryDTO struct {
 }
 
 type RegistryJobDTO struct {
-	Name    string // 任务名称
-	Caption string // 任务标题
-	Ver     int    // 任务版本
-	Cron    string // 任务执行表达式
-	StartAt int64  // 任务开始时间
+	Name     string // 任务名称
+	Caption  string // 任务标题
+	Ver      int    // 任务版本
+	Cron     string // 任务执行表达式
+	StartAt  int64  // 任务开始时间
+	IsEnable bool   // 任务开始时间
 }

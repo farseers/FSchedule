@@ -21,7 +21,7 @@ func Registry(dto RegistryDTO, clientRepository client.Repository, taskGroupRepo
 	// 更新任务组
 	for _, jobDTO := range dto.Jobs {
 		taskGroupDO := taskGroupRepository.ToEntity(jobDTO.Name)
-		taskGroupDO.UpdateVer(jobDTO.Caption, jobDTO.Ver, jobDTO.Cron, jobDTO.StartAt)
+		taskGroupDO.UpdateVer(jobDTO.Name, jobDTO.Caption, jobDTO.Ver, jobDTO.Cron, jobDTO.StartAt, jobDTO.IsEnable)
 		if taskGroupDO.NeedSave {
 			taskGroupRepository.Save(taskGroupDO)
 		}

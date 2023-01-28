@@ -23,13 +23,15 @@ type DomainObject struct {
 }
 
 // UpdateVer 更新新的版本
-func (receiver *DomainObject) UpdateVer(caption string, ver int, cron string, StartAt int64) {
+func (receiver *DomainObject) UpdateVer(name string, caption string, ver int, cron string, StartAt int64, enable bool) {
 	// 只更新高一个版本号的数据
 	if receiver.Ver+1 == ver {
+		receiver.Name = name
 		receiver.Caption = caption
 		receiver.Ver = ver
 		receiver.Cron = cron
 		receiver.StartAt = time.Unix(StartAt, 0)
 		receiver.NeedSave = true
+		receiver.IsEnable = enable
 	}
 }

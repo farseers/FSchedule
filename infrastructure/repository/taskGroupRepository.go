@@ -22,28 +22,31 @@ type taskGroupRepository struct {
 }
 
 func registerTaskGroupRepository() {
-	repository := data.NewContext[taskGroupRepository]("default")
-	repository.redis = redis.NewClient("default")
 	cacheManage := redis.SetProfiles[taskGroup.DomainObject]("FSS_TaskGroup", "Name", 0, "default")
-
+	cacheManage.EnableItemNullToLoadAll()
 	// 多级缓存
 	cacheManage.SetListSource(func() collections.List[taskGroup.DomainObject] {
 		var lst collections.List[taskGroup.DomainObject]
+		repository := data.NewContext[taskGroupRepository]("default")
 		repository.TaskGroup.ToList().MapToList(&lst)
 		return lst
 	})
 
 	cacheManage.SetItemSource(func(cacheId any) (taskGroup.DomainObject, bool) {
+		repository := data.NewContext[taskGroupRepository]("default")
 		po := repository.TaskGroup.Where("Name = ?", cacheId).ToEntity()
 		if po.Name != "" {
 			return mapper.Single[taskGroup.DomainObject](&po), true
 		}
-		var do taskGroup.DomainObject
-		return do, false
+		return taskGroup.DomainObject{}, false
 	})
 
 	// 注册仓储
-	container.RegisterInstance[taskGroup.Repository](repository)
+	container.Register(func() taskGroup.Repository {
+		repository := data.NewContext[taskGroupRepository]("default")
+		repository.redis = redis.NewClient("default")
+		return repository
+	})
 }
 
 func (repository taskGroupRepository) ToList() collections.List[taskGroup.DomainObject] {

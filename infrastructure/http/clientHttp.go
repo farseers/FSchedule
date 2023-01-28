@@ -29,3 +29,45 @@ func (receiver clientHttp) Check(do *client.DomainObject) bool {
 	}
 	return true
 }
+
+func (receiver clientHttp) Invoke(do *client.DomainObject) bool {
+	clientUrl := fmt.Sprintf("http://%s:%d/api/invoke", do.Ip, do.Port)
+	var apiResponse core.ApiResponse[any]
+	err := http.NewClient(clientUrl).HeadAdd(tokenName, token).PostUnmarshal(&apiResponse)
+	if err != nil {
+		return false
+	}
+	if apiResponse.StatusCode != 200 {
+		flog.Infof("客户端：http://%s:%d，状态码：%s", do.Ip, do.Port, apiResponse.StatusCode)
+		return false
+	}
+	return true
+}
+
+func (receiver clientHttp) Status(do *client.DomainObject) bool {
+	clientUrl := fmt.Sprintf("http://%s:%d/api/status", do.Ip, do.Port)
+	var apiResponse core.ApiResponse[any]
+	err := http.NewClient(clientUrl).HeadAdd(tokenName, token).PostUnmarshal(&apiResponse)
+	if err != nil {
+		return false
+	}
+	if apiResponse.StatusCode != 200 {
+		flog.Infof("客户端：http://%s:%d，状态码：%s", do.Ip, do.Port, apiResponse.StatusCode)
+		return false
+	}
+	return true
+}
+
+func (receiver clientHttp) Kill(do *client.DomainObject) bool {
+	clientUrl := fmt.Sprintf("http://%s:%d/api/kill", do.Ip, do.Port)
+	var apiResponse core.ApiResponse[any]
+	err := http.NewClient(clientUrl).HeadAdd(tokenName, token).PostUnmarshal(&apiResponse)
+	if err != nil {
+		return false
+	}
+	if apiResponse.StatusCode != 200 {
+		flog.Infof("客户端：http://%s:%d，状态码：%s", do.Ip, do.Port, apiResponse.StatusCode)
+		return false
+	}
+	return true
+}

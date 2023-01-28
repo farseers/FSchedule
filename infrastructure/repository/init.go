@@ -14,4 +14,6 @@ func InitRepository() {
 			Client: redis.NewClient("default"),
 		}
 	})
+
+	registerTaskGroupRepository()
 }

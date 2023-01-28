@@ -7,7 +7,6 @@ require (
 	github.com/farseer-go/data v0.1.1
 	github.com/farseer-go/eventBus v0.1.0
 	github.com/farseer-go/fs v0.6.0
-	github.com/farseer-go/fss v0.1.0
 	github.com/farseer-go/queue v0.1.0
 	github.com/farseer-go/redis v0.1.0
 	github.com/farseer-go/webapi v0.2.0

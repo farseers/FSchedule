@@ -14,6 +14,7 @@ type DomainObject struct {
 	Port       int               // 客户端端口
 	ActivateAt time.Time         // 活动时间
 	Status     enum.ClientStatus // 客户端状态
+	Jobs       []JobVO           // 客户端支持的任务
 }
 
 // IsNil 判断注册的客户端是否有效

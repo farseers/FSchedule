@@ -19,13 +19,13 @@ import (
 func SchedulerEvent(message any, _ eventBus.EventArgs) {
 	do := message.(*monitor.DomainObject)
 	// 只订阅调度状态的事件
-	if do.Status != enum.Scheduler {
+	if do.TaskStatus != enum.Scheduler {
 		return
 	}
 	clientRepository := container.Resolve[client.Repository]()
 	taskGroupRepository := container.Resolve[taskGroup.Repository]()
 	scheduleRepository := container.Resolve[schedule.Repository]()
-	lock := scheduleRepository.GetLock(do.Name, do.NextAt)
+	lock := scheduleRepository.GetLock(do.Name)
 	if !lock.TryLock() {
 		flog.Debugf("调度任务时加锁失败，Job=%s，serverIP=%s，serverId=%d", do.Name, fs.AppIp, fs.AppId)
 		return
@@ -35,6 +35,9 @@ func SchedulerEvent(message any, _ eventBus.EventArgs) {
 	// 找到可调度的客户端
 	clients := clientRepository.GetClients(do.Name, do.Ver)
 	taskGroupDO := taskGroupRepository.ToEntity(do.Name)
+	if !taskGroupDO.CanScheduler() {
+		return
+	}
 
 	for clients.Count() > 0 {
 		// 使用轮询方式，根据调度时间排序，取最晚没调度的客户端
@@ -54,6 +57,7 @@ func SchedulerEvent(message any, _ eventBus.EventArgs) {
 		if clientSchedule.Schedule(&clientTask) {
 			clientRepository.Save(clientSchedule)
 			taskGroupRepository.Save(taskGroupDO)
+			domain.MonitorPush(taskGroupDO)
 			return
 		}
 

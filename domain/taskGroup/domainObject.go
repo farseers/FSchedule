@@ -82,3 +82,8 @@ func (receiver *DomainObject) UpdateTask(taskEO TaskEO) {
 func (receiver *DomainObject) ScheduleFail() {
 	receiver.Task.Status = enum.ScheduleFail
 }
+
+// CanScheduler 是否可以调度
+func (receiver *DomainObject) CanScheduler() bool {
+	return (receiver.Task.Status == enum.None || receiver.Task.Status == enum.ScheduleFail) && receiver.IsEnable && time.Now().After(receiver.StartAt) && time.Now().After(receiver.NextAt)
+}

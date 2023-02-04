@@ -8,14 +8,14 @@ import (
 
 // DomainObject 等待任务执行
 type DomainObject struct {
-	Name     string          // 实现Job的特性名称（客户端识别哪个实现类）
-	Ver      int             // 版本
-	StartAt  time.Time       // 开始时间
-	NextAt   time.Time       // 下次执行时间
-	Cron     string          // 时间定时器表达式
-	IsEnable bool            // 是否开启
-	Status   enum.TaskStatus // 状态
-	EventBus core.IEvent     `inject:"TaskStatus"` // 任务调度事件
+	Name       string          // 实现Job的特性名称（客户端识别哪个实现类）
+	Ver        int             // 版本
+	StartAt    time.Time       // 开始时间
+	NextAt     time.Time       // 下次执行时间
+	Cron       string          // 时间定时器表达式
+	IsEnable   bool            // 是否开启
+	TaskStatus enum.TaskStatus // 状态
+	EventBus   core.IEvent     `inject:"TaskStatus"` // 任务调度事件
 }
 
 // Start 监听任务组
@@ -39,7 +39,7 @@ func (receiver *DomainObject) waitStart(c chan DomainObject) {
 		case <-time.After(receiver.StartAt.Sub(time.Now())): // 时间到了，可以开始计算任务执行赶时间
 			// 开启状态，且未调度
 			if receiver.IsEnable {
-				switch receiver.Status {
+				switch receiver.TaskStatus {
 				case enum.None, enum.ScheduleFail: // 调度失败状态，需要重新调度
 					return
 				case enum.Scheduler:
@@ -62,7 +62,7 @@ func (receiver *DomainObject) waitNextAt(c chan DomainObject) {
 	select {
 	case <-time.After(receiver.NextAt.Sub(time.Now())): // 时间到了，需要调度
 		// 标记为调度中，阻止当前监听逻辑重复执行，否则会不停的重复执行调度
-		receiver.Status = enum.Scheduler
+		receiver.TaskStatus = enum.Scheduler
 		receiver.EventBus.Publish(receiver)
 	case newData := <-c: // 有更新
 		receiver.update(newData)

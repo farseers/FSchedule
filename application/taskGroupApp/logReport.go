@@ -1,0 +1,5 @@
+package taskGroupApp
+
+func LogReport() {
+
+}

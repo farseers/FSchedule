@@ -44,10 +44,13 @@ func (receiver clientHttp) Invoke(do *client.DomainObject, task *client.TaskEO) 
 	return true
 }
 
-func (receiver clientHttp) Status(do *client.DomainObject) bool {
+func (receiver clientHttp) Status(do *client.DomainObject, taskId int64) bool {
 	clientUrl := fmt.Sprintf("http://%s:%d/api/status", do.Ip, do.Port)
 	var apiResponse core.ApiResponse[any]
-	err := http.NewClient(clientUrl).HeadAdd(tokenName, token).PostUnmarshal(&apiResponse)
+	body := map[string]any{
+		"taskId": taskId,
+	}
+	err := http.NewClient(clientUrl).HeadAdd(tokenName, token).Body(body).PostUnmarshal(&apiResponse)
 	if err != nil {
 		return false
 	}
@@ -58,10 +61,13 @@ func (receiver clientHttp) Status(do *client.DomainObject) bool {
 	return true
 }
 
-func (receiver clientHttp) Kill(do *client.DomainObject) bool {
+func (receiver clientHttp) Kill(do *client.DomainObject, taskId int64) bool {
 	clientUrl := fmt.Sprintf("http://%s:%d/api/kill", do.Ip, do.Port)
 	var apiResponse core.ApiResponse[any]
-	err := http.NewClient(clientUrl).HeadAdd(tokenName, token).PostUnmarshal(&apiResponse)
+	body := map[string]any{
+		"taskId": taskId,
+	}
+	err := http.NewClient(clientUrl).HeadAdd(tokenName, token).Body(body).PostUnmarshal(&apiResponse)
 	if err != nil {
 		return false
 	}

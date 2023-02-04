@@ -19,7 +19,7 @@ import (
 func SchedulerEvent(message any, _ eventBus.EventArgs) {
 	do := message.(*monitor.DomainObject)
 	// 只订阅调度状态的事件
-	if do.TaskStatus != enum.Scheduler {
+	if do.TaskStatus != enum.Scheduling {
 		return
 	}
 	clientRepository := container.Resolve[client.Repository]()

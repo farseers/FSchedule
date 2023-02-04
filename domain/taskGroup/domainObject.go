@@ -53,7 +53,7 @@ func (receiver *DomainObject) CreateTask(client ClientVO) {
 	receiver.Task.Ver = receiver.Ver
 	receiver.Task.StartAt = receiver.NextAt
 	receiver.Task.Client = client
-	receiver.Task.Status = enum.Scheduler
+	receiver.Task.Status = enum.Working
 	receiver.Task.SchedulerAt = time.Now()
 	receiver.Task.Data = receiver.Data
 }

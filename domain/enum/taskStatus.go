@@ -4,7 +4,7 @@ type TaskStatus int
 
 const (
 	None         TaskStatus = iota //  未开始
-	Scheduler                      //  已调度
+	Scheduling                     //  调度准备
 	ScheduleFail                   //  调度失败
 	Working                        //  执行中
 	Fail                           //  失败
@@ -15,8 +15,8 @@ func (e TaskStatus) String() string {
 	switch e {
 	case None:
 		return "None"
-	case Scheduler:
-		return "Scheduler"
+	case Scheduling:
+		return "Scheduling"
 	case ScheduleFail:
 		return "ScheduleFail"
 	case Working:

@@ -29,7 +29,7 @@ func NewTaskDO() *TaskEO {
 
 // SetClient 调度时设置客户端
 func (do *TaskEO) SetClient(client ClientVO) {
-	do.Status = enum.Scheduler
+	do.Status = enum.Working
 	do.SchedulerAt = time.Now()
 	do.Client = client
 }

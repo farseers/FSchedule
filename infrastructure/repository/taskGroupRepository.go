@@ -117,13 +117,13 @@ func (repository taskGroupRepository) Delete(name string) {
 
 func (repository taskGroupRepository) ToUnRunCount() int {
 	return repository.ToList().Where(func(item taskGroup.DomainObject) bool {
-		return item.Task.Status == enum.None || item.Task.Status == enum.Scheduler || item.Task.CreateAt.UnixMicro() < time.Now().UnixMicro()
+		return item.Task.Status == enum.None || item.Task.Status == enum.Scheduling || item.Task.CreateAt.UnixMicro() < time.Now().UnixMicro()
 	}).Count()
 }
 
 func (repository taskGroupRepository) ToSchedulerWorkingList() collections.List[taskGroup.DomainObject] {
 	return repository.ToList().Where(func(item taskGroup.DomainObject) bool {
-		return item.Task.Status == enum.Scheduler || item.Task.Status == enum.Working
+		return item.Task.Status == enum.Scheduling || item.Task.Status == enum.Working
 	}).ToList()
 }
 
@@ -177,7 +177,7 @@ func (repository taskGroupRepository) ToListByGroupId(name string, pageSize int,
 //	lst := collections.NewList[taskGroup.TaskEO]()
 //	for _, taskGroupDO := range lstSchedulerTaskGroup.ToArray() {
 //		// 设为调度状态
-//		taskGroupDO.Scheduler(client)
+//		taskGroupDO.Scheduling(client)
 //		repository.Save(taskGroupDO)
 //		// 如果不相等，说明被其它客户端拿了
 //		lst.Add(taskGroupDO.Task)

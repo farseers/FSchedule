@@ -40,11 +40,14 @@ func (receiver *DomainObject) waitStart(c chan DomainObject) {
 			// 开启状态，且未调度
 			if receiver.IsEnable {
 				switch receiver.TaskStatus {
-				case enum.None, enum.ScheduleFail: // 调度失败状态，需要重新调度
+				case enum.None, enum.ScheduleFail: // 如果调度失败状态，需要重新调度
 					return
-				case enum.Scheduler:
+				case enum.Scheduling:
+					// 等待更新即可
 					receiver.update(<-c)
 				case enum.Working:
+					// 已成功调度到客户端，需要等待客户端上报状态
+					receiver.update(<-c)
 				case enum.Fail:
 				case enum.Success:
 				}
@@ -62,7 +65,7 @@ func (receiver *DomainObject) waitNextAt(c chan DomainObject) {
 	select {
 	case <-time.After(receiver.NextAt.Sub(time.Now())): // 时间到了，需要调度
 		// 标记为调度中，阻止当前监听逻辑重复执行，否则会不停的重复执行调度
-		receiver.TaskStatus = enum.Scheduler
+		receiver.TaskStatus = enum.Scheduling
 		receiver.EventBus.Publish(receiver)
 	case newData := <-c: // 有更新
 		receiver.update(newData)
@@ -76,4 +79,5 @@ func (receiver *DomainObject) update(newData DomainObject) {
 	receiver.NextAt = newData.NextAt
 	receiver.Cron = newData.Cron
 	receiver.IsEnable = newData.IsEnable
+	receiver.TaskStatus = newData.TaskStatus
 }

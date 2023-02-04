@@ -36,7 +36,7 @@ func (receiver *DomainObject) CheckOnline() {
 		status := container.Resolve[IClientCheck]().Check(receiver)
 		if status {
 			receiver.ActivateAt = time.Now()
-			receiver.Status = enum.Scheduling
+			receiver.Status = enum.Scheduler
 		} else {
 			if time.Now().Sub(receiver.ActivateAt).Seconds() >= 30 {
 				receiver.Status = enum.Offline

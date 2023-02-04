@@ -24,7 +24,7 @@ type DomainObject struct {
 	RunSpeedAvg int64                                  // 运行平均耗时
 	RunCount    int                                    // 运行次数
 	NeedSave    bool                                   // 是否需要保存
-	EventBus    core.IEvent                            `inject:"TaskFinish"` // 任务调度事件
+	EventBus    core.IEvent                            `inject:"TaskStatus"` // 任务调度事件
 }
 
 // UpdateVer 更新新的版本
@@ -53,7 +53,7 @@ func (receiver *DomainObject) CreateTask(client ClientVO) {
 		RunSpeed:    0,
 		Progress:    0,
 		Client:      client,
-		Status:      enum.None,
+		Status:      enum.Scheduler,
 		CreateAt:    time.Now(),
 		SchedulerAt: time.Now(),
 		Data:        receiver.Data,
@@ -76,4 +76,9 @@ func (receiver *DomainObject) UpdateTask(taskEO TaskEO) {
 		receiver.Data = taskEO.Data
 		receiver.Task = taskEO
 	}
+}
+
+// ScheduleFail 调度失败
+func (receiver *DomainObject) ScheduleFail() {
+	receiver.Task.Status = enum.ScheduleFail
 }

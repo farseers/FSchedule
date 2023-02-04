@@ -3,11 +3,12 @@ package enum
 type TaskStatus int
 
 const (
-	None      TaskStatus = iota // None 未开始
-	Scheduler                   // Scheduler 已调度
-	Working                     // Working 执行中
-	Fail                        // Fail 失败
-	Success                     // Success 完成
+	None         TaskStatus = iota //  未开始
+	Scheduler                      //  已调度
+	ScheduleFail                   //  调度失败
+	Working                        //  执行中
+	Fail                           //  失败
+	Success                        //  完成
 )
 
 func (e TaskStatus) String() string {
@@ -16,6 +17,8 @@ func (e TaskStatus) String() string {
 		return "None"
 	case Scheduler:
 		return "Scheduler"
+	case ScheduleFail:
+		return "ScheduleFail"
 	case Working:
 		return "Working"
 	case Fail:

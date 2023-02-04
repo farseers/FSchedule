@@ -25,16 +25,15 @@ func (module Module) Initialize() {
 }
 
 func (module Module) PostInitialize() {
+	// 检查超时离线的客户端
 	tasks.Run("CheckClientOffline", 3*time.Second, job.CheckClientOfflineJob, fs.Context)
 	// 任务组监听
-	job.MonitorJob()
+	tasks.Run("MonitorTaskGroup", 3*time.Second, job.MonitorJob, fs.Context)
 
 	// 客户端离线通知
 	eventBus.RegisterEvent("ClientOffline", domainEvent.RemoveClientEvent)
-	// 任务调度
-	eventBus.RegisterEvent("TaskSchedule", domainEvent.ScheduleEvent)
-	// 任务完成
-	eventBus.RegisterEvent("TaskFinish")
+	// 任务状态有变更
+	eventBus.RegisterEvent("TaskStatus", domainEvent.SchedulerEvent)
 }
 
 func (module Module) Shutdown() {

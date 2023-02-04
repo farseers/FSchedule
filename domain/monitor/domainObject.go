@@ -15,7 +15,7 @@ type DomainObject struct {
 	Cron     string          // 时间定时器表达式
 	IsEnable bool            // 是否开启
 	Status   enum.TaskStatus // 状态
-	EventBus core.IEvent     `inject:"TaskSchedule"` // 任务调度事件
+	EventBus core.IEvent     `inject:"TaskStatus"` // 任务调度事件
 }
 
 // Start 监听任务组
@@ -38,8 +38,16 @@ func (receiver *DomainObject) waitStart(c chan DomainObject) {
 		select {
 		case <-time.After(receiver.StartAt.Sub(time.Now())): // 时间到了，可以开始计算任务执行赶时间
 			// 开启状态，且未调度
-			if receiver.IsEnable && receiver.Status == enum.None {
-				return
+			if receiver.IsEnable {
+				switch receiver.Status {
+				case enum.None, enum.ScheduleFail: // 调度失败状态，需要重新调度
+					return
+				case enum.Scheduler:
+					receiver.update(<-c)
+				case enum.Working:
+				case enum.Fail:
+				case enum.Success:
+				}
 			}
 			// 等待更新
 			receiver.update(<-c)

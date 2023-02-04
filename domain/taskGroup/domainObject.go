@@ -1,14 +1,18 @@
 package taskGroup
 
 import (
+	"FSchedule/domain/enum"
 	"github.com/farseer-go/collections"
+	"github.com/farseer-go/fs/core"
+	"github.com/farseer-go/fs/snowflake"
 	"time"
 )
 
 type DomainObject struct {
 	Name        string                                 // 实现Job的特性名称（客户端识别哪个实现类）
 	Ver         int                                    // 版本
-	Task        TaskEO                                 // 任务
+	Task        TaskEO                                 // 最新的任务
+	Tasks       collections.List[TaskEO]               `json:"-"` // 任务列表
 	Caption     string                                 // 任务组标题
 	Data        collections.Dictionary[string, string] // 本次执行任务时的Data数据
 	StartAt     time.Time                              // 开始时间
@@ -20,6 +24,7 @@ type DomainObject struct {
 	RunSpeedAvg int64                                  // 运行平均耗时
 	RunCount    int                                    // 运行次数
 	NeedSave    bool                                   // 是否需要保存
+	EventBus    core.IEvent                            `inject:"TaskFinish"` // 任务调度事件
 }
 
 // UpdateVer 更新新的版本
@@ -34,4 +39,28 @@ func (receiver *DomainObject) UpdateVer(name string, caption string, ver int, cr
 		receiver.NeedSave = true
 		receiver.IsEnable = enable
 	}
+}
+
+// CreateTask 创建新的Task
+func (receiver *DomainObject) CreateTask(client ClientVO) {
+	receiver.Task = TaskEO{
+		Id:          snowflake.GenerateId(),
+		Ver:         receiver.Ver,
+		Caption:     receiver.Caption,
+		Name:        receiver.Name,
+		StartAt:     receiver.NextAt,
+		RunAt:       time.Now(),
+		RunSpeed:    0,
+		Progress:    0,
+		Client:      client,
+		Status:      enum.None,
+		CreateAt:    time.Now(),
+		SchedulerAt: time.Now(),
+		Data:        receiver.Data,
+	}
+}
+
+// SetClient 分配客户端
+func (receiver *DomainObject) SetClient(client ClientVO) {
+	receiver.Task.Client = client
 }

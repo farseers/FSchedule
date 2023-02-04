@@ -33,6 +33,8 @@ func (module Module) PostInitialize() {
 	eventBus.RegisterEvent("ClientOffline", domainEvent.RemoveClientEvent)
 	// 任务调度
 	eventBus.RegisterEvent("TaskSchedule", domainEvent.ScheduleEvent)
+	// 任务完成
+	eventBus.RegisterEvent("TaskFinish")
 }
 
 func (module Module) Shutdown() {

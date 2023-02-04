@@ -13,6 +13,7 @@ type DomainObject struct {
 	Ip         string            // 客户端IP
 	Port       int               // 客户端端口
 	ActivateAt time.Time         // 活动时间
+	ScheduleAt time.Time         // 任务调度时间
 	Status     enum.ClientStatus // 客户端状态
 	Jobs       []JobVO           // 客户端支持的任务
 }
@@ -51,4 +52,13 @@ func (receiver *DomainObject) CheckOnline() {
 // Logout 客户端下线
 func (receiver *DomainObject) Logout() {
 	container.Resolve[core.IEvent]("ClientOffline").Publish(receiver)
+}
+
+// Schedule 调度
+func (receiver *DomainObject) Schedule(task *TaskEO) bool {
+	if container.Resolve[IClientCheck]().Invoke(receiver, task) {
+		receiver.ScheduleAt = time.Now()
+		return true
+	}
+	return false
 }

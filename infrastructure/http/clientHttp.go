@@ -30,10 +30,10 @@ func (receiver clientHttp) Check(do *client.DomainObject) bool {
 	return true
 }
 
-func (receiver clientHttp) Invoke(do *client.DomainObject) bool {
+func (receiver clientHttp) Invoke(do *client.DomainObject, task *client.TaskEO) bool {
 	clientUrl := fmt.Sprintf("http://%s:%d/api/invoke", do.Ip, do.Port)
 	var apiResponse core.ApiResponse[any]
-	err := http.NewClient(clientUrl).HeadAdd(tokenName, token).PostUnmarshal(&apiResponse)
+	err := http.NewClient(clientUrl).HeadAdd(tokenName, token).Body(task).PostUnmarshal(&apiResponse)
 	if err != nil {
 		return false
 	}

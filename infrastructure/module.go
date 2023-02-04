@@ -1,7 +1,6 @@
 package infrastructure
 
 import (
-	"FSchedule/infrastructure/domainEvent"
 	"FSchedule/infrastructure/http"
 	"FSchedule/infrastructure/repository"
 	"github.com/farseer-go/data"
@@ -27,9 +26,6 @@ func (module Module) Initialize() {
 func (module Module) PostInitialize() {
 	repository.InitRepository()
 	http.InitHttp()
-
-	// 客户端离线通知
-	eventBus.RegisterEvent("ClientOffline", domainEvent.RemoveClientConsumer)
 }
 
 func (module Module) Shutdown() {

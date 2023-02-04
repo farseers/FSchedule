@@ -8,11 +8,10 @@ import (
 
 // TaskEO 任务记录
 type TaskEO struct {
-	Id          int                                    // 主键
-	Ver         int64                                  // 版本
-	TaskGroupId int                                    // 任务组ID
+	Id          int64                                  // 主键
+	Ver         int                                    // 版本
 	Caption     string                                 // 任务组标题
-	JobName     string                                 // 实现Job的特性名称（客户端识别哪个实现类）
+	Name        string                                 // 实现Job的特性名称（客户端识别哪个实现类）
 	StartAt     time.Time                              // 开始时间
 	RunAt       time.Time                              // 实际执行时间
 	RunSpeed    int64                                  // 运行耗时
@@ -36,8 +35,8 @@ func (do *TaskEO) SetClient(client ClientVO) {
 }
 
 // SetJobName 更新了JobName，则要立即更新Task的JobName
-func (do *TaskEO) SetJobName(jobName string) {
-	do.JobName = jobName
+func (do *TaskEO) SetJobName(name string) {
+	do.Name = name
 }
 
 // SetFail 设备为失败
@@ -47,7 +46,7 @@ func (do *TaskEO) SetFail() {
 
 // IsNull 未分配
 func (do *TaskEO) IsNull() bool {
-	return do.Id == 0 && do.Status == enum.None && do.Caption == "" && do.TaskGroupId == 0
+	return do.Id == 0 && do.Status == enum.None && do.Caption == "" && do.Name == ""
 }
 
 // IsFinish 是否完成

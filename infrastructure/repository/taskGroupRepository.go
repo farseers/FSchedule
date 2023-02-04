@@ -58,6 +58,14 @@ func (repository taskGroupRepository) ToEntity(name string) taskGroup.DomainObje
 	return item
 }
 
+func (repository taskGroupRepository) GetTask(taskId int64) taskGroup.TaskEO {
+	return taskGroup.TaskEO{}
+}
+
+func (repository taskGroupRepository) SaveTask(taskEO taskGroup.TaskEO) {
+
+}
+
 func (repository taskGroupRepository) TodayFailCount() int64 {
 	return repository.Task.Where("status = ? and create_at >= ?", enum.Fail, dateTime.Now().Date().ToTime()).Count()
 }

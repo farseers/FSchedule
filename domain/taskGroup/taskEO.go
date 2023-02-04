@@ -53,3 +53,11 @@ func (do *TaskEO) IsNull() bool {
 func (do *TaskEO) IsFinish() bool {
 	return do.Status == enum.Success || do.Status == enum.Fail
 }
+
+// UpdateTask 更新任务
+func (do *TaskEO) UpdateTask(status enum.TaskStatus, data collections.Dictionary[string, string], progress int, speed int64) {
+	do.Status = status
+	do.Data = data
+	do.Progress = progress
+	do.RunSpeed = speed
+}

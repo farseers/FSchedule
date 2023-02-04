@@ -64,3 +64,16 @@ func (receiver *DomainObject) CreateTask(client ClientVO) {
 func (receiver *DomainObject) SetClient(client ClientVO) {
 	receiver.Task.Client = client
 }
+
+// IsNil 不存在
+func (receiver *DomainObject) IsNil() bool {
+	return receiver.Name == ""
+}
+
+// UpdateTask 更新任务信息
+func (receiver *DomainObject) UpdateTask(taskEO TaskEO) {
+	if receiver.Task.Id <= taskEO.Id {
+		receiver.Data = taskEO.Data
+		receiver.Task = taskEO
+	}
+}

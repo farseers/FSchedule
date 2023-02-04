@@ -43,21 +43,19 @@ func (receiver *DomainObject) UpdateVer(name string, caption string, ver int, cr
 
 // CreateTask 创建新的Task
 func (receiver *DomainObject) CreateTask(client ClientVO) {
-	receiver.Task = TaskEO{
-		Id:          snowflake.GenerateId(),
-		Ver:         receiver.Ver,
-		Caption:     receiver.Caption,
-		Name:        receiver.Name,
-		StartAt:     receiver.NextAt,
-		RunAt:       time.Now(),
-		RunSpeed:    0,
-		Progress:    0,
-		Client:      client,
-		Status:      enum.Scheduler,
-		CreateAt:    time.Now(),
-		SchedulerAt: time.Now(),
-		Data:        receiver.Data,
+	if receiver.Task.IsNull() {
+		receiver.Task.Id = snowflake.GenerateId()
+		receiver.Task.Caption = receiver.Caption
+		receiver.Task.Name = receiver.Name
+		receiver.Task.RunAt = time.Now()
+		receiver.Task.CreateAt = time.Now()
 	}
+	receiver.Task.Ver = receiver.Ver
+	receiver.Task.StartAt = receiver.NextAt
+	receiver.Task.Client = client
+	receiver.Task.Status = enum.Scheduler
+	receiver.Task.SchedulerAt = time.Now()
+	receiver.Task.Data = receiver.Data
 }
 
 // SetClient 分配客户端

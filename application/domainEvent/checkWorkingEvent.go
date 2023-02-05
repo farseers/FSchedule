@@ -11,7 +11,7 @@ import (
 
 // CheckWorkingEvent 检查进行中的任务
 func CheckWorkingEvent(message any, _ eventBus.EventArgs) {
-	do := message.(*taskGroup.Monitor)
+	do := message.(*domain.TaskGroupMonitor)
 	taskGroupRepository := container.Resolve[taskGroup.Repository]()
 	clientRepository := container.Resolve[client.Repository]()
 	clientCheck := container.Resolve[client.IClientCheck]()

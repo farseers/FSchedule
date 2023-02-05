@@ -26,7 +26,7 @@ func (module Module) Initialize() {
 
 func (module Module) PostInitialize() {
 	// 检查超时离线的客户端
-	tasks.Run("CheckClientOffline", 3*time.Second, job.CheckClientOfflineJob, fs.Context)
+	tasks.Run("CheckClientOffline", 3*time.Second, job.MonitorClientJob, fs.Context)
 	// 任务组监听
 	tasks.Run("MonitorTaskGroup", 3*time.Second, job.MonitorTaskGroupJob, fs.Context)
 

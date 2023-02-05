@@ -152,6 +152,14 @@ func (receiver *TaskGroupMonitor) updateTaskGroup(newData *taskGroup.DomainObjec
 
 // 有更新
 func (receiver *TaskGroupMonitor) updateClient(newData *client.DomainObject) {
+	// 如果客户端离线了，则要移除
+	if newData.Status == enum.Offline {
+		receiver.clients.RemoveAll(func(item *client.DomainObject) bool {
+			return item.Id == newData.Id
+		})
+		return
+	}
+
 	// 存在则直接更新，不存在则添加
 	if !receiver.clients.Where(func(item *client.DomainObject) bool {
 		if item.Id == newData.Id {

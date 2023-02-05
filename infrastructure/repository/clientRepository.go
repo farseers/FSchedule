@@ -3,6 +3,7 @@ package repository
 import (
 	"FSchedule/domain"
 	"FSchedule/domain/client"
+	"FSchedule/domain/enum"
 	"fmt"
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/redis"
@@ -17,6 +18,10 @@ type clientRepository struct {
 }
 
 func (receiver *clientRepository) Save(do *client.DomainObject) {
+	if do.Status == enum.Offline {
+		receiver.RemoveClient(do.Id)
+		return
+	}
 	_ = receiver.Hash.SetEntity(clientCacheKey, strconv.FormatInt(do.Id, 10), &do)
 
 	// 将客户端支持的任务列表保存到另外的KEY，方便通过任务名称来查找客户端列表
@@ -45,11 +50,13 @@ func (receiver *clientRepository) GetClients(taskGroupName string, version int) 
 func (receiver *clientRepository) RemoveClient(id int64) {
 	// 先移除客户端支持的任务
 	clientDO := receiver.ToEntity(id)
+	clientDO.Status = enum.Offline
 	for _, job := range clientDO.Jobs {
 		key := fmt.Sprintf("%s:%s:%d", jobClientCacheKey, job.Name, job.Ver)
 		_, _ = receiver.Hash.Del(key, strconv.FormatInt(id, 10))
 	}
 	_, _ = receiver.Hash.Del(clientCacheKey, strconv.FormatInt(id, 10))
+	domain.MonitorClientPush(clientDO)
 }
 
 func (receiver *clientRepository) GetCount() int64 {

@@ -60,5 +60,6 @@ func (receiver *DomainObject) Schedule(task *TaskEO) bool {
 		receiver.ScheduleAt = time.Now()
 		return true
 	}
+	receiver.Status = enum.UnSchedule
 	return false
 }

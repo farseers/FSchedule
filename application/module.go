@@ -28,12 +28,14 @@ func (module Module) PostInitialize() {
 	// 检查超时离线的客户端
 	tasks.Run("CheckClientOffline", 3*time.Second, job.CheckClientOfflineJob, fs.Context)
 	// 任务组监听
-	tasks.Run("MonitorTaskGroup", 3*time.Second, job.MonitorJob, fs.Context)
+	tasks.Run("MonitorTaskGroup", 3*time.Second, job.MonitorTaskGroupJob, fs.Context)
 
 	// 客户端离线通知
 	eventBus.RegisterEvent("ClientOffline", domainEvent.RemoveClientEvent)
 	// 任务状态有变更
 	eventBus.RegisterEvent("TaskStatus", domainEvent.SchedulerEvent)
+	// 检查进行中的任务
+	eventBus.RegisterEvent("CheckWorking", domainEvent.CheckWorkingEvent)
 }
 
 func (module Module) Shutdown() {

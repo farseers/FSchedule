@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"FSchedule/domain"
 	"FSchedule/domain/client"
 	"fmt"
 	"github.com/farseer-go/collections"
@@ -15,7 +16,7 @@ type clientRepository struct {
 	*redis.Client
 }
 
-func (receiver *clientRepository) Save(do client.DomainObject) {
+func (receiver *clientRepository) Save(do *client.DomainObject) {
 	_ = receiver.Hash.SetEntity(clientCacheKey, strconv.FormatInt(do.Id, 10), &do)
 
 	// 将客户端支持的任务列表保存到另外的KEY，方便通过任务名称来查找客户端列表
@@ -24,6 +25,7 @@ func (receiver *clientRepository) Save(do client.DomainObject) {
 		key := fmt.Sprintf("%s:%s:%d", jobClientCacheKey, job.Name, job.Ver)
 		_ = receiver.Hash.SetEntity(key, strconv.FormatInt(do.Id, 10), &do)
 	}
+	domain.MonitorClientPush(do)
 }
 
 func (receiver *clientRepository) ToList() collections.List[client.DomainObject] {

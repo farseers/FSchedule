@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"FSchedule/domain"
 	"FSchedule/domain/enum"
 	"FSchedule/domain/taskGroup"
 	"FSchedule/infrastructure/repository/model"
@@ -55,7 +56,16 @@ func (repository taskGroupRepository) ToList() collections.List[taskGroup.Domain
 
 func (repository taskGroupRepository) ToEntity(name string) taskGroup.DomainObject {
 	item, _ := repository.CacheManage.GetItem(name)
+	// 把拿到的最新任务组信息，推送给监控
+	domain.MonitorTaskGroupPush(&item)
 	return item
+}
+
+func (repository taskGroupRepository) Save(do taskGroup.DomainObject) {
+	do.NeedSave = false
+	repository.CacheManage.SaveItem(do)
+	// 把拿到的最新任务组信息，推送给监控
+	domain.MonitorTaskGroupPush(&do)
 }
 
 func (repository taskGroupRepository) GetTask(taskId int64) taskGroup.TaskEO {
@@ -102,11 +112,6 @@ func (repository taskGroupRepository) Add(do *taskGroup.DomainObject) {
 	po.NextAt = time.Now()
 	repository.TaskGroup.Insert(&po)
 	repository.CacheManage.SaveItem(*do)
-}
-
-func (repository taskGroupRepository) Save(do taskGroup.DomainObject) {
-	do.NeedSave = false
-	repository.CacheManage.SaveItem(do)
 }
 
 func (repository taskGroupRepository) Delete(name string) {

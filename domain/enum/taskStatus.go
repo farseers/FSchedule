@@ -4,7 +4,7 @@ type TaskStatus int
 
 const (
 	None         TaskStatus = iota //  未开始
-	Scheduling                     //  调度准备
+	Scheduling                     //  调度中
 	ScheduleFail                   //  调度失败
 	Working                        //  执行中
 	Fail                           //  失败

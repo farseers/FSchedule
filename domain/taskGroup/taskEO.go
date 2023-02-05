@@ -44,6 +44,11 @@ func (do *TaskEO) SetFail() {
 	do.Status = enum.Fail
 }
 
+// ScheduleFail 调度失败
+func (do *TaskEO) ScheduleFail() {
+	do.Status = enum.ScheduleFail
+}
+
 // IsNull 未分配
 func (do *TaskEO) IsNull() bool {
 	return do.Id == 0 && do.Status == enum.None && do.Caption == "" && do.Name == ""

@@ -30,9 +30,5 @@ func TaskReport(dto TaskReportDTO, taskGroupRepository taskGroup.Repository) {
 
 	// 更新任务
 	taskEO.UpdateTask(dto.Status, dto.Data, dto.Progress, dto.RunSpeed)
-	// 更新任务组
-	taskGroupDO.UpdateTask(taskEO)
-	taskGroupRepository.SaveTask(taskEO)
-	taskGroupRepository.Save(taskGroupDO)
-	domain.MonitorPush(taskGroupDO)
+	domain.TaskReportService(taskEO, taskGroupDO, taskGroupRepository)
 }

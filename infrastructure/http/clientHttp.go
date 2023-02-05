@@ -1,6 +1,7 @@
 package http
 
 import (
+	"FSchedule/application/taskGroupApp"
 	"FSchedule/domain/client"
 	"fmt"
 	"github.com/farseer-go/fs/configure"
@@ -44,21 +45,21 @@ func (receiver clientHttp) Invoke(do *client.DomainObject, task *client.TaskEO) 
 	return true
 }
 
-func (receiver clientHttp) Status(do *client.DomainObject, taskId int64) bool {
+func (receiver clientHttp) Status(do *client.DomainObject, taskId int64) taskGroupApp.TaskReportDTO {
 	clientUrl := fmt.Sprintf("http://%s:%d/api/status", do.Ip, do.Port)
-	var apiResponse core.ApiResponse[any]
+	var apiResponse core.ApiResponse[taskGroupApp.TaskReportDTO]
 	body := map[string]any{
 		"taskId": taskId,
 	}
 	err := http.NewClient(clientUrl).HeadAdd(tokenName, token).Body(body).PostUnmarshal(&apiResponse)
 	if err != nil {
-		return false
+		return taskGroupApp.TaskReportDTO{}
 	}
 	if apiResponse.StatusCode != 200 {
 		flog.Infof("客户端：http://%s:%d，状态码：%s", do.Ip, do.Port, apiResponse.StatusCode)
-		return false
+		return taskGroupApp.TaskReportDTO{}
 	}
-	return true
+	return apiResponse.Data
 }
 
 func (receiver clientHttp) Kill(do *client.DomainObject, taskId int64) bool {

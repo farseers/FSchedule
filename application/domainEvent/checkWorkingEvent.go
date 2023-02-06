@@ -22,7 +22,7 @@ func CheckWorkingEvent(message any, _ eventBus.EventArgs) {
 		return
 	}
 	// 获取任务信息
-	taskEO := taskGroupRepository.GetTask(taskGroupDO.Task.Id)
+	//taskEO := taskGroupRepository.GetTask(taskGroupDO.Task.Id)
 	// 得到当前处理的客户端
 	clientDO := clientRepository.ToEntity(taskGroupDO.Task.Client.Id)
 
@@ -33,8 +33,11 @@ func CheckWorkingEvent(message any, _ eventBus.EventArgs) {
 		// 主动向客户端查询任务状态
 		dto := clientCheck.Status(clientDO, taskGroupDO.Task.Id)
 		// 更新任务
-		taskEO.UpdateTask(dto.Status, dto.Data, dto.Progress, dto.RunSpeed)
+		//taskEO.UpdateTask(dto.Status, dto.Data, dto.Progress, dto.RunSpeed)
+		taskGroupDO.Task.UpdateTask(dto.Status, dto.Data, dto.Progress, dto.RunSpeed)
+		taskGroupRepository.SaveTask(taskGroupDO.Task)
 	}
 
-	domain.TaskReportService(taskEO, taskGroupDO, taskGroupRepository)
+	taskGroupRepository.Save(taskGroupDO)
+	//domain.TaskReportService(taskEO, taskGroupDO, taskGroupRepository)
 }

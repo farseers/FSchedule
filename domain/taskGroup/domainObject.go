@@ -42,7 +42,6 @@ func (receiver *DomainObject) UpdateVer(name string, caption string, ver int, cr
 
 // CreateTask 创建新的Task
 func (receiver *DomainObject) CreateTask() {
-	receiver.CalculateNextAtByCron()
 	receiver.Task = TaskEO{
 		Id:          snowflake.GenerateId(),
 		Ver:         receiver.Ver,

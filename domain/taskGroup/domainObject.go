@@ -3,7 +3,9 @@ package taskGroup
 import (
 	"FSchedule/domain/enum"
 	"github.com/farseer-go/collections"
+	"github.com/farseer-go/fs/flog"
 	"github.com/farseer-go/fs/snowflake"
+	"github.com/robfig/cron/v3"
 	"time"
 )
 
@@ -39,20 +41,20 @@ func (receiver *DomainObject) UpdateVer(name string, caption string, ver int, cr
 }
 
 // CreateTask 创建新的Task
-func (receiver *DomainObject) CreateTask(client ClientVO) {
+func (receiver *DomainObject) CreateTask() {
+	receiver.CalculateNextAtByCron()
 	receiver.Task = TaskEO{
 		Id:          snowflake.GenerateId(),
 		Ver:         receiver.Ver,
 		Caption:     receiver.Caption,
 		Name:        receiver.Name,
 		StartAt:     receiver.NextAt,
-		RunAt:       time.Now(),
+		RunAt:       time.Time{},
 		RunSpeed:    0,
-		Client:      client,
 		Progress:    0,
-		Status:      enum.Working,
+		Status:      enum.None,
 		CreateAt:    time.Now(),
-		SchedulerAt: time.Now(),
+		SchedulerAt: time.Time{},
 		Data:        receiver.Data,
 	}
 }
@@ -60,6 +62,9 @@ func (receiver *DomainObject) CreateTask(client ClientVO) {
 // SetClient 分配客户端
 func (receiver *DomainObject) SetClient(client ClientVO) {
 	receiver.Task.Client = client
+	receiver.Task.Status = enum.Working
+	receiver.Task.SchedulerAt = time.Now()
+	receiver.Task.RunAt = time.Now()
 }
 
 // IsNil 不存在
@@ -77,15 +82,33 @@ func (receiver *DomainObject) UpdateTask(taskEO TaskEO) {
 
 // ScheduleFail 调度失败
 func (receiver *DomainObject) ScheduleFail() {
-	receiver.Task.Status = enum.ScheduleFail
+	receiver.Task.ScheduleFail()
 }
 
 // ClientOffline 客户端下线了
 func (receiver *DomainObject) ClientOffline() {
-	receiver.Task.Status = enum.Fail
+	receiver.Task.SetFail()
 }
 
 // CanScheduler 是否可以调度
 func (receiver *DomainObject) CanScheduler() bool {
 	return (receiver.Task.Status == enum.None || receiver.Task.Status == enum.ScheduleFail) && receiver.IsEnable && time.Now().After(receiver.StartAt) && time.Now().After(receiver.NextAt)
+}
+
+// CalculateNextAtByUnix 重新计算下一个执行周期
+func (receiver *DomainObject) CalculateNextAtByUnix(timespan int64) {
+	if timespan > 0 {
+		receiver.NextAt = time.UnixMilli(timespan)
+	}
+}
+
+// CalculateNextAtByCron 重新计算下一个执行周期
+func (receiver *DomainObject) CalculateNextAtByCron() {
+	if time.Now().After(receiver.NextAt) {
+		cornSchedule, err := cron.ParseStandard(receiver.Cron)
+		if err != nil {
+			_ = flog.Errorf("Cron格式错误:%s", receiver.Cron)
+		}
+		receiver.NextAt = cornSchedule.Next(time.Now())
+	}
 }

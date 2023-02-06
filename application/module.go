@@ -33,9 +33,11 @@ func (module Module) PostInitialize() {
 	// 客户端离线通知
 	eventBus.RegisterEvent("ClientOffline", domainEvent.RemoveClientEvent)
 	// 任务状态有变更
-	eventBus.RegisterEvent("TaskStatus", domainEvent.SchedulerEvent)
+	eventBus.RegisterEvent("TaskScheduler", domainEvent.SchedulerEvent)
 	// 检查进行中的任务
 	eventBus.RegisterEvent("CheckWorking", domainEvent.CheckWorkingEvent)
+	// 任务完成事件
+	eventBus.RegisterEvent("TaskFinish", domainEvent.TaskFinishEvent)
 }
 
 func (module Module) Shutdown() {

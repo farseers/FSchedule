@@ -28,6 +28,8 @@ func TaskReport(dto TaskReportDTO, taskGroupRepository taskGroup.Repository) {
 		exception.ThrowWebExceptionf(403, "任务组[%s] 不存在", taskEO.Name)
 	}
 
+	// 重新计算下一个执行周期
+	taskGroupDO.CalculateNextAtByUnix(dto.NextTimespan)
 	// 更新任务
 	taskEO.UpdateTask(dto.Status, dto.Data, dto.Progress, dto.RunSpeed)
 	domain.TaskReportService(taskEO, taskGroupDO, taskGroupRepository)

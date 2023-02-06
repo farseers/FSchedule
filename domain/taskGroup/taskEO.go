@@ -44,6 +44,11 @@ func (do *TaskEO) SetFail() {
 	do.Status = enum.Fail
 }
 
+// Scheduling 调度
+func (do *TaskEO) Scheduling() {
+	do.Status = enum.Scheduling
+}
+
 // ScheduleFail 调度失败
 func (do *TaskEO) ScheduleFail() {
 	do.Status = enum.ScheduleFail

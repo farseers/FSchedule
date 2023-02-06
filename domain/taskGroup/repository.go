@@ -1,6 +1,8 @@
 package taskGroup
 
-import "github.com/farseer-go/collections"
+import (
+	"github.com/farseer-go/collections"
+)
 
 type Repository interface {
 	// ToEntity 获取任务组信息
@@ -9,6 +11,8 @@ type Repository interface {
 	ToList() collections.List[DomainObject]
 	// Save 保存任务组信息
 	Save(do DomainObject)
+	// SaveAndTask 保存任务组、任务信息
+	SaveAndTask(do DomainObject)
 	// SaveTask 保存任务信息
 	SaveTask(taskEO TaskEO)
 	// GetTask 获取任务信息

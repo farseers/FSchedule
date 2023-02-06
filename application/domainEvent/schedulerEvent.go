@@ -31,37 +31,36 @@ func SchedulerEvent(message any, _ eventBus.EventArgs) {
 	defer lock.ReleaseLock()
 
 	for {
-		// 轮询的方式取到客户端
-		clientSchedule := do.GetClient()
-		if clientSchedule.IsNil() {
-			break
-		}
-
 		// 取出最新的任务组
 		taskGroupDO := taskGroupRepository.ToEntity(do.Name)
 		if !taskGroupDO.CanScheduler() {
-			break
+			return
 		}
 
-		// 生成任务
-		taskGroupDO.CreateTask(taskGroup.ClientVO{
-			Id:   clientSchedule.Id,
-			Name: clientSchedule.Name,
-			Ip:   clientSchedule.Ip,
-			Port: clientSchedule.Port})
+		// 轮询的方式取到客户端
+		clientSchedule := do.GetClient()
+		// 没有可调度的客户端
+		if clientSchedule.IsNil() {
+			taskGroupDO.Task.ScheduleFail()
+			taskGroupRepository.Save(taskGroupDO)
+			return
+		}
+
+		// 分配客户端
+		taskGroupDO.SetClient(mapper.Single[taskGroup.ClientVO](clientSchedule))
 
 		// 请求客户端
 		clientTask := mapper.Single[client.TaskEO](taskGroupDO.Task)
 		if clientSchedule.Schedule(&clientTask) {
 			// 调度成功
 			clientRepository.Save(clientSchedule)
-			taskGroupRepository.Save(taskGroupDO)
-			taskGroupRepository.SaveTask(taskGroupDO.Task)
+			taskGroupRepository.SaveAndTask(taskGroupDO)
 			return
+		} else {
+			// 调度失败
+			taskGroupDO.Task.ScheduleFail()
+			clientRepository.Save(clientSchedule)
+			taskGroupRepository.Save(taskGroupDO)
 		}
-		// 调度失败
-		taskGroupDO.Task.ScheduleFail()
-		clientRepository.Save(clientSchedule)
-		taskGroupRepository.Save(taskGroupDO)
 	}
 }

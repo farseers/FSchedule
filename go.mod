@@ -3,13 +3,18 @@ module FSchedule
 go 1.19
 
 require (
+	github.com/farseer-go/cache v0.1.1
 	github.com/farseer-go/collections v0.3.0
 	github.com/farseer-go/data v0.1.1
 	github.com/farseer-go/eventBus v0.1.0
 	github.com/farseer-go/fs v0.6.0
+	github.com/farseer-go/mapper v0.2.0
 	github.com/farseer-go/queue v0.1.0
 	github.com/farseer-go/redis v0.1.0
+	github.com/farseer-go/tasks v0.0.0-20220831082810-7af977206ad0
+	github.com/farseer-go/utils v0.2.1-0.20221212104253-44d162058c4d
 	github.com/farseer-go/webapi v0.2.0
+	github.com/robfig/cron/v3 v3.0.1
 )
 
 require (
@@ -17,10 +22,6 @@ require (
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/devfeel/mapper v0.7.10 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
-	github.com/farseer-go/cache v0.1.1 // indirect
-	github.com/farseer-go/mapper v0.2.0 // indirect
-	github.com/farseer-go/tasks v0.0.0-20220831082810-7af977206ad0 // indirect
-	github.com/farseer-go/utils v0.2.1-0.20221212104253-44d162058c4d // indirect
 	github.com/go-redis/redis/v8 v8.11.5 // indirect
 	github.com/go-sql-driver/mysql v1.7.0 // indirect
 	github.com/golang-sql/civil v0.0.0-20220223132316-b832511892a9 // indirect

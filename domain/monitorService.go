@@ -101,6 +101,8 @@ func (receiver *TaskGroupMonitor) Start() {
 
 		select {
 		case <-time.After(receiver.StartAt.Sub(time.Now())): // 时间到了，可以开始计算任务执行赶时间
+			// 先尝试获取最新的数据
+			receiver.tryUpdate()
 			switch receiver.Task.Status {
 			case enum.None, enum.ScheduleFail: // 如果调度失败状态，需要重新调度
 				// 等待时间达了之后，开始调度
@@ -159,6 +161,17 @@ func (receiver *TaskGroupMonitor) taskFinish() {
 		// 等待更新
 		receiver.updateTaskGroup(<-receiver.taskGroupChan)
 	})
+}
+
+// 尝试获取最新的数据
+func (receiver *TaskGroupMonitor) tryUpdate() {
+	for len(receiver.taskGroupChan) > 0 {
+		receiver.updateTaskGroup(<-receiver.taskGroupChan)
+	}
+
+	for len(receiver.clientChan) > 0 {
+		receiver.updateClient(<-receiver.clientChan)
+	}
 }
 
 // 有更新

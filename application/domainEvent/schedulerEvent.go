@@ -4,12 +4,9 @@ import (
 	"FSchedule/domain"
 	"FSchedule/domain/client"
 	"FSchedule/domain/enum"
-	"FSchedule/domain/schedule"
 	"FSchedule/domain/taskGroup"
 	"github.com/farseer-go/eventBus"
-	"github.com/farseer-go/fs"
 	"github.com/farseer-go/fs/container"
-	"github.com/farseer-go/fs/flog"
 	"github.com/farseer-go/mapper"
 )
 
@@ -21,14 +18,7 @@ func SchedulerEvent(message any, _ eventBus.EventArgs) {
 		return
 	}
 	taskGroupRepository := container.Resolve[taskGroup.Repository]()
-	scheduleRepository := container.Resolve[schedule.Repository]()
 	clientRepository := container.Resolve[client.Repository]()
-	lock := scheduleRepository.GetLock(do.Name)
-	if !lock.TryLock() {
-		flog.Debugf("调度任务时加锁失败，Job=%s，serverIP=%s，serverId=%d", do.Name, fs.AppIp, fs.AppId)
-		return
-	}
-	defer lock.ReleaseLock()
 
 	for {
 		// 取出最新的任务组

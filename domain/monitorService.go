@@ -3,6 +3,7 @@ package domain
 import (
 	"FSchedule/domain/client"
 	"FSchedule/domain/enum"
+	"FSchedule/domain/schedule"
 	"FSchedule/domain/taskGroup"
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs/container"
@@ -44,6 +45,7 @@ type TaskGroupMonitor struct {
 	SchedulerEventBus    core.IEvent                            `inject:"TaskScheduler"` // 任务调度事件
 	FinishEventBus       core.IEvent                            `inject:"TaskFinish"`    // 任务完成
 	CheckWorkingEventBus core.IEvent                            `inject:"CheckWorking"`  // 检查进行中的任务
+	lock                 core.ILock                             // 锁
 	clients              collections.List[*client.DomainObject] // 客户端列表
 	*taskGroup.DomainObject
 	taskGroupChan chan *taskGroup.DomainObject
@@ -57,6 +59,7 @@ func newMonitor(do *taskGroup.DomainObject) *TaskGroupMonitor {
 		taskGroupChan: make(chan *taskGroup.DomainObject, 1000),
 		clientChan:    make(chan *client.DomainObject, 1000),
 		clients:       collections.NewList[*client.DomainObject](),
+		lock:          container.Resolve[schedule.Repository]().NewLock(do.Name),
 	})
 }
 
@@ -109,9 +112,7 @@ func (receiver *TaskGroupMonitor) Start() {
 				// 已成功调度到客户端，需要等待客户端上报状态
 				receiver.waitWorking()
 			case enum.Fail, enum.Success:
-				receiver.SchedulerEventBus.Publish(receiver)
-				// 等待更新
-				receiver.updateTaskGroup(<-receiver.taskGroupChan)
+				receiver.taskFinish()
 			}
 		case newData := <-receiver.taskGroupChan: // 任务组有更新
 			receiver.updateTaskGroup(newData)
@@ -126,8 +127,10 @@ func (receiver *TaskGroupMonitor) waitScheduler() {
 	select {
 	case <-time.After(receiver.NextAt.Sub(time.Now())): // 时间到了，需要调度
 		// 标记为调度中，阻止当前监听逻辑重复执行，否则会不停的重复执行调度
-		receiver.Task.Scheduling()
-		receiver.SchedulerEventBus.Publish(receiver)
+		receiver.lock.TryLockRun(func() {
+			receiver.Task.Scheduling()
+			receiver.SchedulerEventBus.Publish(receiver)
+		})
 	case newData := <-receiver.taskGroupChan: // 任务组有更新
 		receiver.updateTaskGroup(newData)
 	case newData := <-receiver.clientChan: // 客户端有更新
@@ -139,12 +142,23 @@ func (receiver *TaskGroupMonitor) waitScheduler() {
 func (receiver *TaskGroupMonitor) waitWorking() {
 	select {
 	case <-time.After(10 * time.Second): // 每隔10秒，主动向客户端询问任务状态
-		receiver.CheckWorkingEventBus.Publish(receiver)
+		receiver.lock.TryLockRun(func() {
+			receiver.CheckWorkingEventBus.Publish(receiver)
+		})
 	case newData := <-receiver.taskGroupChan: // 任务组有更新
 		receiver.updateTaskGroup(newData)
 	case newData := <-receiver.clientChan: // 客户端有更新
 		receiver.updateClient(newData)
 	}
+}
+
+// 任务完成
+func (receiver *TaskGroupMonitor) taskFinish() {
+	receiver.lock.TryLockRun(func() {
+		receiver.SchedulerEventBus.Publish(receiver)
+		// 等待更新
+		receiver.updateTaskGroup(<-receiver.taskGroupChan)
+	})
 }
 
 // 有更新

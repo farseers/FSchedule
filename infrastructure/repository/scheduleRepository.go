@@ -10,6 +10,6 @@ type scheduleRepository struct {
 	*redis.Client
 }
 
-func (receiver *scheduleRepository) GetLock(name string) core.ILock {
+func (receiver *scheduleRepository) NewLock(name string) core.ILock {
 	return receiver.Lock.GetLocker("FSS_Scheduler:"+name, 5*time.Second)
 }

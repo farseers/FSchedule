@@ -5,5 +5,5 @@ import (
 )
 
 type Repository interface {
-	GetLock(name string) core.ILock
+	NewLock(name string) core.ILock
 }

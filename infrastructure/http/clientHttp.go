@@ -32,18 +32,19 @@ func (receiver clientHttp) Check(do *client.DomainObject) (client.ResourceVO, er
 	return apiResponse.Data, nil
 }
 
-func (receiver clientHttp) Invoke(do *client.DomainObject, task *client.TaskEO) bool {
+func (receiver clientHttp) Invoke(do *client.DomainObject, task *client.TaskEO) (client.ResourceVO, error) {
 	clientUrl := fmt.Sprintf("http://%s:%d/api/invoke", do.Ip, do.Port)
-	var apiResponse core.ApiResponse[any]
+	var apiResponse core.ApiResponse[client.ResourceVO]
 	err := http.NewClient(clientUrl).HeadAdd(tokenName, token).Body(task).PostUnmarshal(&apiResponse)
 	if err != nil {
-		return false
+		return client.ResourceVO{}, err
 	}
 	if apiResponse.StatusCode != 200 {
-		flog.Infof("客户端：http://%s:%d，状态码：%s", do.Ip, do.Port, apiResponse.StatusCode)
-		return false
+		log := fmt.Sprintf("客户端：http://%s:%d，状态码：%d，错误内容：%s", do.Ip, do.Port, apiResponse.StatusCode, apiResponse.StatusMessage)
+		flog.Info(log)
+		return client.ResourceVO{}, flog.Error(log)
 	}
-	return true
+	return apiResponse.Data, nil
 }
 
 func (receiver clientHttp) Status(do *client.DomainObject, taskId int64) taskGroupApp.TaskReportDTO {

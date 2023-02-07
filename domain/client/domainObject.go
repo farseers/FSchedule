@@ -38,26 +38,7 @@ func (receiver *DomainObject) CheckOnline() {
 	// 只检查非离线状态
 	if receiver.Status != enum.Offline {
 		status, err := container.Resolve[IClientCheck]().Check(receiver)
-		if err != nil {
-			// 先设置为无法调度
-			receiver.Status = enum.UnSchedule
-			// 如果活动时间超过30秒，则判定为离线状态
-			if time.Now().Sub(receiver.ActivateAt).Seconds() >= 30 {
-				receiver.Status = enum.Offline
-			}
-		} else {
-			receiver.CpuUsage = status.CpuUsage
-			receiver.MemoryUsage = status.MemoryUsage
-			receiver.QueueCount = status.QueueCount
-			receiver.WorkCount = status.WorkCount
-
-			if status.AllowSchedule {
-				receiver.ActivateAt = time.Now()
-				receiver.Status = enum.Scheduler
-			} else {
-				receiver.Status = enum.StopSchedule
-			}
-		}
+		receiver.updateStatus(status, err)
 	}
 
 	if receiver.Status == enum.Offline {
@@ -72,10 +53,36 @@ func (receiver *DomainObject) Logout() {
 
 // Schedule 调度
 func (receiver *DomainObject) Schedule(task *TaskEO) bool {
-	if container.Resolve[IClientCheck]().Invoke(receiver, task) {
+	status, err := container.Resolve[IClientCheck]().Invoke(receiver, task)
+	receiver.updateStatus(status, err)
+
+	if receiver.Status == enum.Scheduler {
 		receiver.ScheduleAt = time.Now()
-		return true
 	}
-	receiver.Status = enum.UnSchedule
-	return false
+
+	return receiver.Status == enum.Scheduler
+}
+
+// 更新状态
+func (receiver *DomainObject) updateStatus(status ResourceVO, err error) {
+	if err != nil {
+		// 先设置为无法调度
+		receiver.Status = enum.UnSchedule
+		// 如果活动时间超过30秒，则判定为离线状态
+		if time.Now().Sub(receiver.ActivateAt).Seconds() >= 30 {
+			receiver.Status = enum.Offline
+		}
+	} else {
+		receiver.ActivateAt = time.Now()
+		receiver.CpuUsage = status.CpuUsage
+		receiver.MemoryUsage = status.MemoryUsage
+		receiver.QueueCount = status.QueueCount
+		receiver.WorkCount = status.WorkCount
+
+		if status.AllowSchedule {
+			receiver.Status = enum.Scheduler
+		} else {
+			receiver.Status = enum.StopSchedule
+		}
+	}
 }

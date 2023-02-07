@@ -5,12 +5,12 @@ import (
 	"FSchedule/domain/client"
 	"FSchedule/domain/enum"
 	"FSchedule/domain/taskGroup"
-	"github.com/farseer-go/eventBus"
 	"github.com/farseer-go/fs/container"
+	"github.com/farseer-go/fs/core"
 )
 
 // CheckWorkingEvent 检查进行中的任务
-func CheckWorkingEvent(message any, _ eventBus.EventArgs) {
+func CheckWorkingEvent(message any, _ core.EventArgs) {
 	do := message.(*domain.TaskGroupMonitor)
 	taskGroupRepository := container.Resolve[taskGroup.Repository]()
 	clientRepository := container.Resolve[client.Repository]()

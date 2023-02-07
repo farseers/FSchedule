@@ -5,13 +5,13 @@ import (
 	"FSchedule/domain/client"
 	"FSchedule/domain/enum"
 	"FSchedule/domain/taskGroup"
-	"github.com/farseer-go/eventBus"
 	"github.com/farseer-go/fs/container"
+	"github.com/farseer-go/fs/core"
 	"github.com/farseer-go/mapper"
 )
 
 // SchedulerEvent 任务调度
-func SchedulerEvent(message any, _ eventBus.EventArgs) {
+func SchedulerEvent(message any, _ core.EventArgs) {
 	do := message.(*domain.TaskGroupMonitor)
 	// 只订阅调度状态的事件
 	if do.Task.Status != enum.Scheduling {

@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"FSchedule/domain"
 	"FSchedule/domain/enum"
 	"FSchedule/domain/taskGroup"
 	"FSchedule/infrastructure/repository/model"
@@ -9,6 +8,7 @@ import (
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/data"
 	"github.com/farseer-go/fs/container"
+	"github.com/farseer-go/fs/core"
 	"github.com/farseer-go/fs/dateTime"
 	"github.com/farseer-go/mapper"
 	"github.com/farseer-go/redis"
@@ -16,10 +16,11 @@ import (
 )
 
 type taskGroupRepository struct {
-	TaskGroup   data.TableSet[model.TaskGroupPO] `data:"name=task_group"`
-	Task        data.TableSet[model.TaskPO]      `data:"name=task"`
-	redis       *redis.Client
-	CacheManage cache.ICacheManage[taskGroup.DomainObject] `inject:"FSS_TaskGroup"`
+	TaskGroup               data.TableSet[model.TaskGroupPO]           `data:"name=task_group"`
+	Task                    data.TableSet[model.TaskPO]                `data:"name=task"`
+	Redis                   *redis.Client                              `inject:"default"`
+	CacheManage             cache.ICacheManage[taskGroup.DomainObject] `inject:"FSS_TaskGroup"`
+	TaskGroupUpdateEventBus core.IEvent                                `inject:"ClientUpdate"`
 }
 
 func registerTaskGroupRepository() {
@@ -44,9 +45,7 @@ func registerTaskGroupRepository() {
 
 	// 注册仓储
 	container.Register(func() taskGroup.Repository {
-		repository := data.NewContext[taskGroupRepository]("default")
-		repository.redis = redis.NewClient("default")
-		return repository
+		return data.NewContext[taskGroupRepository]("default")
 	})
 }
 
@@ -56,23 +55,23 @@ func (repository *taskGroupRepository) ToList() collections.List[taskGroup.Domai
 
 func (repository *taskGroupRepository) ToEntity(name string) taskGroup.DomainObject {
 	item, _ := repository.CacheManage.GetItem(name)
-	// 把拿到的最新任务组信息，推送给监控
-	domain.MonitorTaskGroupPush(&item)
 	return item
 }
 
 func (repository *taskGroupRepository) Save(do taskGroup.DomainObject) {
 	do.NeedSave = false
 	repository.CacheManage.SaveItem(do)
-	// 把拿到的最新任务组信息，推送给监控
-	domain.MonitorTaskGroupPush(&do)
+
+	// 发到所有节点上
+	_ = repository.TaskGroupUpdateEventBus.Publish(do)
 }
 
 func (repository *taskGroupRepository) SaveAndTask(do taskGroup.DomainObject) {
 	do.NeedSave = false
-	repository.CacheManage.SaveItem(do)
-	// 把拿到的最新任务组信息，推送给监控
-	domain.MonitorTaskGroupPush(&do)
+	repository.Save(do)
+
+	// 发到所有节点上
+	_ = repository.TaskGroupUpdateEventBus.Publish(do)
 }
 
 func (repository *taskGroupRepository) GetTask(taskId int64) taskGroup.TaskEO {

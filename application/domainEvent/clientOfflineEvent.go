@@ -2,13 +2,13 @@ package domainEvent
 
 import (
 	"FSchedule/domain/client"
-	"github.com/farseer-go/eventBus"
 	"github.com/farseer-go/fs/container"
+	"github.com/farseer-go/fs/core"
 	"github.com/farseer-go/fs/flog"
 )
 
 // RemoveClientEvent 客户端离线
-func RemoveClientEvent(message any, _ eventBus.EventArgs) {
+func RemoveClientEvent(message any, _ core.EventArgs) {
 	do := message.(*client.DomainObject)
 	// 仓储移除客户端
 	repository := container.Resolve[client.Repository]()

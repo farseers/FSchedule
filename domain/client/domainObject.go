@@ -3,7 +3,6 @@ package client
 import (
 	"FSchedule/domain/enum"
 	"github.com/farseer-go/fs/container"
-	"github.com/farseer-go/fs/core"
 	"time"
 )
 
@@ -19,12 +18,18 @@ type DomainObject struct {
 	WorkCount   int               // 正在处理的任务数量
 	CpuUsage    float32           // CPU百分比
 	MemoryUsage float32           // 内存百分比
+	ErrorCount  int               // 错误次数
 	Jobs        []JobVO           // 客户端支持的任务
 }
 
 // IsNil 判断注册的客户端是否有效
 func (receiver *DomainObject) IsNil() bool {
 	return receiver.Id == 0 || receiver.Name == "" || receiver.Ip == "" || receiver.Port == 0
+}
+
+// IsOffline 判断客户端是否下线
+func (receiver *DomainObject) IsOffline() bool {
+	return receiver.Status == enum.Offline
 }
 
 // Registry 注册客户端
@@ -35,20 +40,15 @@ func (receiver *DomainObject) Registry() {
 
 // CheckOnline 检查客户端是否存活
 func (receiver *DomainObject) CheckOnline() {
-	// 只检查非离线状态
-	if receiver.Status != enum.Offline {
+	if !receiver.IsOffline() && time.Now().Sub(receiver.ActivateAt).Seconds() > 10 {
 		status, err := container.Resolve[IClientCheck]().Check(receiver)
 		receiver.updateStatus(status, err)
-	}
-
-	if receiver.Status == enum.Offline {
-		receiver.Logout()
 	}
 }
 
 // Logout 客户端下线
 func (receiver *DomainObject) Logout() {
-	container.Resolve[core.IEvent]("ClientOffline").Publish(receiver)
+	receiver.Status = enum.Offline
 }
 
 // Schedule 调度
@@ -67,7 +67,7 @@ func (receiver *DomainObject) Schedule(task *TaskEO) bool {
 func (receiver *DomainObject) updateStatus(status ResourceVO, err error) {
 	if err != nil {
 		// 先设置为无法调度
-		receiver.Status = enum.UnSchedule
+		receiver.UnSchedule()
 		// 如果活动时间超过30秒，则判定为离线状态
 		if time.Now().Sub(receiver.ActivateAt).Seconds() >= 30 {
 			receiver.Status = enum.Offline
@@ -84,5 +84,16 @@ func (receiver *DomainObject) updateStatus(status ResourceVO, err error) {
 		} else {
 			receiver.Status = enum.StopSchedule
 		}
+	}
+}
+
+// UnSchedule 客户端无法调度
+func (receiver *DomainObject) UnSchedule() {
+	receiver.ErrorCount++
+	receiver.Status = enum.UnSchedule
+
+	// 大于3次，则判定为离线
+	if receiver.ErrorCount > 3 {
+		receiver.Status = enum.Offline
 	}
 }

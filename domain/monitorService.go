@@ -143,7 +143,7 @@ func (receiver *TaskGroupMonitor) waitScheduler() {
 // 等待完成
 func (receiver *TaskGroupMonitor) waitWorking() {
 	select {
-	case <-time.After(10 * time.Second): // 每隔10秒，主动向客户端询问任务状态
+	case <-time.After(5 * time.Second): // 每隔5秒，主动向客户端询问任务状态
 		receiver.lock.TryLockRun(func() {
 			receiver.CheckWorkingEventBus.Publish(receiver)
 		})

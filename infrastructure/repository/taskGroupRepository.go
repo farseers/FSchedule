@@ -177,33 +177,6 @@ func (repository *taskGroupRepository) ToListByGroupId(name string, pageSize int
 	return repository.toPageListTaskEO(page)
 }
 
-//func (repository *taskGroupRepository) GetCanSchedulerTaskGroup(jobsName []string, ts time.Duration, count int, client taskGroup.ClientVO) collections.List[taskGroup.TaskEO] {
-//	getLocker := repository.redis.Lock.GetLocker("FSS_Scheduler", 5*time.Second)
-//	if !getLocker.TryLock() {
-//		flog.Warningf("调度任务时加锁失败，Job=%s，ClientIp=%s", collections.NewList(jobsName...).ToString(","), client.Ip)
-//		return collections.NewList[taskGroup.TaskEO]()
-//	}
-//	defer getLocker.ReleaseLock()
-//	lstSchedulerTaskGroup := repository.ToList().Where(func(item taskGroup.DomainObject) bool {
-//		return item.CanScheduler(jobsName, ts)
-//	}).OrderBy(func(item taskGroup.DomainObject) any {
-//		return item.StartAt.UnixMicro()
-//	}).Take(count)
-//
-//	lst := collections.NewList[taskGroup.TaskEO]()
-//	for _, taskGroupDO := range lstSchedulerTaskGroup.ToArray() {
-//		// 设为调度状态
-//		taskGroupDO.Scheduling(client)
-//		repository.Save(taskGroupDO)
-//		// 如果不相等，说明被其它客户端拿了
-//		lst.Add(taskGroupDO.Task)
-//		if taskGroupDO.Task.TaskGroupId == 0 {
-//			flog.Errorf("发现taskGroupDO.Task.TaskGroupId=0的数据，val=%v", taskGroupDO.Task)
-//		}
-//	}
-//	return lst
-//}
-
 func (repository *taskGroupRepository) GetEnableTaskList(status enum.TaskStatus, pageSize int, pageIndex int) collections.PageList[taskGroup.TaskEO] {
 	lstTaskGroup := repository.ToList().Where(func(item taskGroup.DomainObject) bool {
 		return item.IsEnable

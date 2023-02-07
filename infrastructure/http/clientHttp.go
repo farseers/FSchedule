@@ -17,18 +17,19 @@ var token = configure.GetString("FSchedule.Server.Token")
 type clientHttp struct {
 }
 
-func (receiver clientHttp) Check(do *client.DomainObject) bool {
+func (receiver clientHttp) Check(do *client.DomainObject) (client.ResourceVO, error) {
 	clientUrl := fmt.Sprintf("http://%s:%d/api/check", do.Ip, do.Port)
-	var apiResponse core.ApiResponse[any]
+	var apiResponse core.ApiResponse[client.ResourceVO]
 	err := http.NewClient(clientUrl).HeadAdd(tokenName, token).PostUnmarshal(&apiResponse)
 	if err != nil {
-		return false
+		return client.ResourceVO{}, err
 	}
 	if apiResponse.StatusCode != 200 {
-		flog.Infof("客户端：http://%s:%d，状态码：%s", do.Ip, do.Port, apiResponse.StatusCode)
-		return false
+		log := fmt.Sprintf("客户端：http://%s:%d，状态码：%d，错误内容：%s", do.Ip, do.Port, apiResponse.StatusCode, apiResponse.StatusMessage)
+		flog.Info(log)
+		return client.ResourceVO{}, flog.Error(log)
 	}
-	return true
+	return apiResponse.Data, nil
 }
 
 func (receiver clientHttp) Invoke(do *client.DomainObject, task *client.TaskEO) bool {

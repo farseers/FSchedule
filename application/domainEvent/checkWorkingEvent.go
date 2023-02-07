@@ -35,7 +35,6 @@ func CheckWorkingEvent(message any, _ eventBus.EventArgs) {
 		// 更新任务
 		//taskEO.UpdateTask(dto.Status, dto.Data, dto.Progress, dto.RunSpeed)
 		taskGroupDO.Task.UpdateTask(dto.Status, dto.Data, dto.Progress, dto.RunSpeed)
-		taskGroupRepository.SaveTask(taskGroupDO.Task)
 	}
 
 	taskGroupRepository.Save(taskGroupDO)

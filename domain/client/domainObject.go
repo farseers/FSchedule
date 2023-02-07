@@ -8,14 +8,18 @@ import (
 )
 
 type DomainObject struct {
-	Id         int64             // 客户端ID
-	Name       string            // 客户端名称
-	Ip         string            // 客户端IP
-	Port       int               // 客户端端口
-	ActivateAt time.Time         // 活动时间
-	ScheduleAt time.Time         // 任务调度时间
-	Status     enum.ClientStatus // 客户端状态
-	Jobs       []JobVO           // 客户端支持的任务
+	Id          int64             // 客户端ID
+	Name        string            // 客户端名称
+	Ip          string            // 客户端IP
+	Port        int               // 客户端端口
+	ActivateAt  time.Time         // 活动时间
+	ScheduleAt  time.Time         // 任务调度时间
+	Status      enum.ClientStatus // 客户端状态
+	QueueCount  int               // 排队中的任务数量
+	WorkCount   int               // 正在处理的任务数量
+	CpuUsage    float32           // CPU百分比
+	MemoryUsage float32           // 内存百分比
+	Jobs        []JobVO           // 客户端支持的任务
 }
 
 // IsNil 判断注册的客户端是否有效
@@ -33,13 +37,25 @@ func (receiver *DomainObject) Registry() {
 func (receiver *DomainObject) CheckOnline() {
 	// 只检查非离线状态
 	if receiver.Status != enum.Offline {
-		status := container.Resolve[IClientCheck]().Check(receiver)
-		if status {
-			receiver.ActivateAt = time.Now()
-			receiver.Status = enum.Scheduler
-		} else {
+		status, err := container.Resolve[IClientCheck]().Check(receiver)
+		if err != nil {
+			// 先设置为无法调度
+			receiver.Status = enum.UnSchedule
+			// 如果活动时间超过30秒，则判定为离线状态
 			if time.Now().Sub(receiver.ActivateAt).Seconds() >= 30 {
 				receiver.Status = enum.Offline
+			}
+		} else {
+			receiver.CpuUsage = status.CpuUsage
+			receiver.MemoryUsage = status.MemoryUsage
+			receiver.QueueCount = status.QueueCount
+			receiver.WorkCount = status.WorkCount
+
+			if status.AllowSchedule {
+				receiver.ActivateAt = time.Now()
+				receiver.Status = enum.Scheduler
+			} else {
+				receiver.Status = enum.StopSchedule
 			}
 		}
 	}

@@ -30,16 +30,6 @@ func MonitorTaskGroupPush(taskGroupDO *taskGroup.DomainObject) {
 	}
 }
 
-// MonitorClientPush 将最新的客户端信息，推送到监控线程
-func MonitorClientPush(clientDO *client.DomainObject) {
-	for i := 0; i < len(clientDO.Jobs); i++ {
-		if taskGroupList.ContainsKey(clientDO.Jobs[i].Name) {
-			// 将最新的任务组数据发送到通道
-			taskGroupList.GetValue(clientDO.Jobs[i].Name).pushClient(clientDO)
-		}
-	}
-}
-
 // TaskGroupMonitor 等待任务执行
 type TaskGroupMonitor struct {
 	SchedulerEventBus    core.IEvent                            `inject:"TaskScheduler"` // 任务调度事件
@@ -131,7 +121,7 @@ func (receiver *TaskGroupMonitor) waitScheduler() {
 		// 标记为调度中，阻止当前监听逻辑重复执行，否则会不停的重复执行调度
 		receiver.lock.TryLockRun(func() {
 			receiver.Task.Scheduling()
-			receiver.SchedulerEventBus.Publish(receiver)
+			_ = receiver.SchedulerEventBus.Publish(receiver)
 		})
 	case newData := <-receiver.taskGroupChan: // 任务组有更新
 		receiver.updateTaskGroup(newData)
@@ -145,7 +135,7 @@ func (receiver *TaskGroupMonitor) waitWorking() {
 	select {
 	case <-time.After(5 * time.Second): // 每隔5秒，主动向客户端询问任务状态
 		receiver.lock.TryLockRun(func() {
-			receiver.CheckWorkingEventBus.Publish(receiver)
+			_ = receiver.CheckWorkingEventBus.Publish(receiver)
 		})
 	case newData := <-receiver.taskGroupChan: // 任务组有更新
 		receiver.updateTaskGroup(newData)
@@ -157,7 +147,7 @@ func (receiver *TaskGroupMonitor) waitWorking() {
 // 任务完成
 func (receiver *TaskGroupMonitor) taskFinish() {
 	receiver.lock.TryLockRun(func() {
-		receiver.SchedulerEventBus.Publish(receiver)
+		_ = receiver.SchedulerEventBus.Publish(receiver)
 		// 等待更新
 		receiver.updateTaskGroup(<-receiver.taskGroupChan)
 	})
@@ -189,11 +179,8 @@ func (receiver *TaskGroupMonitor) updateClient(newData *client.DomainObject) {
 		return
 	}
 
-	// 存在则直接更新，不存在则添加
+	// 不存在则添加（使用了指针，不需要手动更新）
 	if !receiver.clients.Where(func(item *client.DomainObject) bool {
-		if item.Id == newData.Id {
-			item = newData
-		}
 		return item.Id == newData.Id
 	}).Any() {
 		receiver.clients.Add(newData)

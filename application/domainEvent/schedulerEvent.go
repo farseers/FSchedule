@@ -21,9 +21,7 @@ func SchedulerEvent(message any, _ core.EventArgs) {
 	clientRepository := container.Resolve[client.Repository]()
 
 	for {
-		// 取出最新的任务组
-		taskGroupDO := taskGroupRepository.ToEntity(do.Name)
-		if !taskGroupDO.CanScheduler() {
+		if !do.CanScheduler() {
 			return
 		}
 
@@ -31,26 +29,26 @@ func SchedulerEvent(message any, _ core.EventArgs) {
 		clientSchedule := do.GetClient()
 		// 没有可调度的客户端
 		if clientSchedule.IsNil() {
-			taskGroupDO.Task.ScheduleFail()
-			taskGroupRepository.Save(taskGroupDO)
+			do.Task.ScheduleFail()
+			taskGroupRepository.Save(*do.DomainObject)
 			return
 		}
 
 		// 分配客户端
-		taskGroupDO.SetClient(mapper.Single[taskGroup.ClientVO](clientSchedule))
+		do.SetClient(mapper.Single[taskGroup.ClientVO](clientSchedule))
 
 		// 请求客户端
-		clientTask := mapper.Single[client.TaskEO](taskGroupDO.Task)
+		clientTask := mapper.Single[client.TaskEO](do.Task)
 		if clientSchedule.Schedule(&clientTask) {
 			// 调度成功
 			clientRepository.Save(clientSchedule)
-			taskGroupRepository.SaveAndTask(taskGroupDO)
+			taskGroupRepository.SaveAndTask(*do.DomainObject)
 			return
 		} else {
 			// 调度失败
-			taskGroupDO.Task.ScheduleFail()
+			do.Task.ScheduleFail()
 			clientRepository.Save(clientSchedule)
-			taskGroupRepository.Save(taskGroupDO)
+			taskGroupRepository.Save(*do.DomainObject)
 		}
 	}
 }

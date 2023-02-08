@@ -53,15 +53,11 @@ func (receiver *clientRepository) GetClients(taskGroupName string, version int) 
 func (receiver *clientRepository) RemoveClient(id int64) {
 	// 先移除客户端支持的任务
 	clientDO := receiver.ToEntity(id)
-	clientDO.Status = enum.Offline
 	for _, job := range clientDO.Jobs {
 		key := fmt.Sprintf("%s:%s:%d", jobClientCacheKey, job.Name, job.Ver)
 		_, _ = receiver.HashDel(key, strconv.FormatInt(id, 10))
 	}
 	_, _ = receiver.HashDel(clientCacheKey, strconv.FormatInt(id, 10))
-
-	// 发到所有节点上
-	_ = receiver.ClientUpdateEventBus.Publish(clientDO)
 }
 
 func (receiver *clientRepository) GetCount() int64 {

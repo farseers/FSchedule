@@ -40,7 +40,7 @@ func (receiver *DomainObject) Registry() {
 
 // CheckOnline 检查客户端是否存活
 func (receiver *DomainObject) CheckOnline() {
-	if !receiver.IsOffline() && time.Now().Sub(receiver.ActivateAt).Seconds() > 10 {
+	if !receiver.IsOffline() {
 		status, err := container.Resolve[IClientCheck]().Check(receiver)
 		receiver.updateStatus(status, err)
 	}
@@ -68,12 +68,9 @@ func (receiver *DomainObject) updateStatus(status ResourceVO, err error) {
 	if err != nil {
 		// 先设置为无法调度
 		receiver.UnSchedule()
-		// 如果活动时间超过30秒，则判定为离线状态
-		if time.Now().Sub(receiver.ActivateAt).Seconds() >= 30 {
-			receiver.Status = enum.Offline
-		}
 	} else {
 		receiver.ActivateAt = time.Now()
+		receiver.ErrorCount = 0
 		receiver.CpuUsage = status.CpuUsage
 		receiver.MemoryUsage = status.MemoryUsage
 		receiver.QueueCount = status.QueueCount
@@ -92,8 +89,8 @@ func (receiver *DomainObject) UnSchedule() {
 	receiver.ErrorCount++
 	receiver.Status = enum.UnSchedule
 
-	// 大于3次，则判定为离线
-	if receiver.ErrorCount > 3 {
-		receiver.Status = enum.Offline
+	// 大于3次、活动时间超过30秒，则判定为离线
+	if receiver.ErrorCount > 3 && time.Now().Sub(receiver.ActivateAt).Seconds() >= 30 {
+		receiver.Logout()
 	}
 }

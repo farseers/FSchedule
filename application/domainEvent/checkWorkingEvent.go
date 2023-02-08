@@ -16,35 +16,27 @@ func CheckWorkingEvent(message any, _ core.EventArgs) {
 	clientRepository := container.Resolve[client.Repository]()
 	clientCheck := container.Resolve[client.IClientCheck]()
 
-	// 取出任务组信息
-	taskGroupDO := taskGroupRepository.ToEntity(do.Name)
-	if taskGroupDO.Task.Status != enum.Working {
+	if do.Task.Status != enum.Working {
 		return
 	}
+
 	// 得到当前处理的客户端
-	clientDO := clientRepository.ToEntity(taskGroupDO.Task.Client.Id)
+	clientDO := clientRepository.ToEntity(do.Task.Client.Id)
 
 	// 客户端下线了
-	if clientDO.IsNil() {
-		taskGroupDO.ClientOffline()
-		taskGroupRepository.Save(taskGroupDO)
-		return
-	}
-
-	// 客户端下线了
-	if clientDO.IsOffline() {
-		taskGroupDO.ClientOffline()
-		taskGroupRepository.Save(taskGroupDO)
+	if clientDO.IsNil() || clientDO.IsOffline() {
+		do.ClientOffline()
+		taskGroupRepository.Save(*do.DomainObject)
 		return
 	}
 
 	// 主动向客户端查询任务状态
-	dto, err := clientCheck.Status(clientDO, taskGroupDO.Task.Id)
+	dto, err := clientCheck.Status(clientDO, do.Task.Id)
 	if err != nil {
 		clientDO.UnSchedule()
 		clientRepository.Save(clientDO)
 	} else {
-		taskGroupDO.Task.UpdateTask(dto.Status, dto.Data, dto.Progress, dto.RunSpeed)
-		taskGroupRepository.Save(taskGroupDO)
+		do.Task.UpdateTask(dto.Status, dto.Data, dto.Progress, dto.RunSpeed)
+		taskGroupRepository.Save(*do.DomainObject)
 	}
 }

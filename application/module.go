@@ -1,6 +1,7 @@
 package application
 
 import (
+	"FSchedule/application/job"
 	"FSchedule/domain"
 	"github.com/farseer-go/fs/modules"
 )
@@ -19,6 +20,8 @@ func (module Module) Initialize() {
 }
 
 func (module Module) PostInitialize() {
+	job.InitTaskGroupMonitor()
+	job.InitClientMonitor()
 }
 
 func (module Module) Shutdown() {

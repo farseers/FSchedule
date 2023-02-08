@@ -23,6 +23,7 @@ func TaskReport(dto TaskReportDTO, taskGroupRepository taskGroup.Repository, sch
 	if taskEO.IsNull() {
 		exception.ThrowWebExceptionf(403, "任务id={%d} 不存在", dto.Id)
 	}
+
 	// 加锁
 	scheduleRepository.NewLock(taskEO.Name).GetLockRun(func() {
 		taskGroupDO := taskGroupRepository.ToEntity(taskEO.Name)

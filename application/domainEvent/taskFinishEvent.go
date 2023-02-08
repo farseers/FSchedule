@@ -12,13 +12,12 @@ func TaskFinishEvent(message any, _ core.EventArgs) {
 	do := message.(*domain.TaskGroupMonitor)
 	taskGroupRepository := container.Resolve[taskGroup.Repository]()
 	// 先保存任务内容
-	taskGroupDO := taskGroupRepository.ToEntity(do.Name)
-	taskGroupRepository.SaveTask(taskGroupDO.Task)
+	taskGroupRepository.SaveTask(do.Task)
 	// 成功才要计算下一个周期
-	if taskGroupDO.Task.Status == enum.Success {
-		taskGroupDO.CalculateNextAtByCron()
+	if do.Task.Status == enum.Success {
+		do.CalculateNextAtByCron()
 	}
 	// 任务初始化
-	taskGroupDO.CreateTask()
-	taskGroupRepository.SaveAndTask(taskGroupDO)
+	do.CreateTask()
+	taskGroupRepository.SaveAndTask(*do.DomainObject)
 }

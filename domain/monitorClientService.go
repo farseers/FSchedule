@@ -43,12 +43,7 @@ func MonitorClientPush(clientDO *client.DomainObject) {
 	existsClientDO := clientList.GetValue(clientDO.Id)
 	existsClientDO.client = clientDO
 
-	for i := 0; i < len(existsClientDO.client.Jobs); i++ {
-		if taskGroupList.ContainsKey(existsClientDO.client.Jobs[i].Name) {
-			// 将最新的任务组数据发送到通道
-			taskGroupList.GetValue(existsClientDO.client.Jobs[i].Name).pushClient(existsClientDO.client)
-		}
-	}
+	pushClient(existsClientDO.client)
 }
 
 // checkOnline 异步检查客户端在线状态

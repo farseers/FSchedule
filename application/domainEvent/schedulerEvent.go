@@ -26,7 +26,7 @@ func SchedulerEvent(message any, _ core.EventArgs) {
 		}
 
 		// 轮询的方式取到客户端
-		clientSchedule := do.GetClient()
+		clientSchedule := do.PollingClient()
 		// 没有可调度的客户端
 		if clientSchedule.IsNil() {
 			do.Task.ScheduleFail()

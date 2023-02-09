@@ -3,6 +3,7 @@ package repository
 import (
 	"FSchedule/domain/client"
 	"FSchedule/domain/schedule"
+	"github.com/farseer-go/data"
 	"github.com/farseer-go/fs/container"
 )
 
@@ -18,4 +19,9 @@ func InitRepository() {
 	})
 
 	registerTaskGroupRepository()
+
+	// 注册仓储
+	container.Register(func() *taskRepository {
+		return data.NewContext[taskRepository]("default")
+	})
 }

@@ -2,24 +2,25 @@ package client
 
 import (
 	"FSchedule/domain/enum"
+	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs/container"
 	"time"
 )
 
 type DomainObject struct {
-	Id          int64             // 客户端ID
-	Name        string            // 客户端名称
-	Ip          string            // 客户端IP
-	Port        int               // 客户端端口
-	ActivateAt  time.Time         // 活动时间
-	ScheduleAt  time.Time         // 任务调度时间
-	Status      enum.ClientStatus // 客户端状态
-	QueueCount  int               // 排队中的任务数量
-	WorkCount   int               // 正在处理的任务数量
-	CpuUsage    float32           // CPU百分比
-	MemoryUsage float32           // 内存百分比
-	ErrorCount  int               // 错误次数
-	Jobs        []JobVO           // 客户端支持的任务
+	Id          int64                   // 客户端ID
+	Name        string                  // 客户端名称
+	Ip          string                  // 客户端IP
+	Port        int                     // 客户端端口
+	ActivateAt  time.Time               // 活动时间
+	ScheduleAt  time.Time               // 任务调度时间
+	Status      enum.ClientStatus       // 客户端状态
+	QueueCount  int                     // 排队中的任务数量
+	WorkCount   int                     // 正在处理的任务数量
+	CpuUsage    float32                 // CPU百分比
+	MemoryUsage float32                 // 内存百分比
+	ErrorCount  int                     // 错误次数
+	Jobs        collections.List[JobVO] // 客户端支持的任务
 }
 
 // IsNil 判断注册的客户端是否有效

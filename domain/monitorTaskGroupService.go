@@ -21,7 +21,7 @@ func MonitorTaskGroupPush(taskGroupDO *taskGroup.DomainObject) {
 	if !taskGroupList.ContainsKey(taskGroupDO.Name) {
 		monitor := newMonitor(taskGroupDO)
 		taskGroupList.Add(taskGroupDO.Name, monitor)
-		flog.Infof("任务组：%s %s 加入调度线程", taskGroupDO.Name)
+		flog.Infof("任务组：%s ver%d 加入调度线程", taskGroupDO.Name, taskGroupDO.Ver)
 
 		go monitor.Start()
 	} else {
@@ -73,8 +73,13 @@ func (receiver *TaskGroupMonitor) pushTaskGroup(do *taskGroup.DomainObject) {
 }
 
 // pushTaskGroup 推送新最新信息
-func (receiver *TaskGroupMonitor) pushClient(do *client.DomainObject) {
-	receiver.clientChan <- do
+func pushClient(clientDO *client.DomainObject) {
+	for i := 0; i < clientDO.Jobs.Count(); i++ {
+		if taskGroupList.ContainsKey(clientDO.Jobs.Index(i).Name) {
+			// 将最新的任务组数据发送到通道
+			taskGroupList.GetValue(clientDO.Jobs.Index(i).Name).clientChan <- clientDO
+		}
+	}
 }
 
 // Start 监听任务组
@@ -187,19 +192,31 @@ func (receiver *TaskGroupMonitor) updateClient(newData *client.DomainObject) {
 	}
 }
 
-// GetClient 轮询的方式取到客户端
+// PollingClient 轮询的方式取到客户端
+func (receiver *TaskGroupMonitor) PollingClient() *client.DomainObject {
+	// 使用轮询方式，根据调度时间排序，取最晚没调度的客户端
+	return receiver.clients.Where(func(item *client.DomainObject) bool {
+		return item.Status == enum.Scheduler && item.Jobs.Where(func(jobVO client.JobVO) bool {
+			return jobVO.Name == receiver.Name && jobVO.Ver == receiver.Ver
+		}).Any()
+	}).OrderBy(func(item *client.DomainObject) any {
+		return item.ScheduleAt
+	}).First()
+}
+
+// GetClient 获取客户端
 func (receiver *TaskGroupMonitor) GetClient() *client.DomainObject {
 	// 使用轮询方式，根据调度时间排序，取最晚没调度的客户端
 	return receiver.clients.Where(func(item *client.DomainObject) bool {
-		return item.Status == enum.Scheduler
-	}).OrderBy(func(item *client.DomainObject) any {
-		return item.ScheduleAt
+		return item.Id == receiver.Task.Client.Id
 	}).First()
 }
 
 // CanScheduleClient 能调度的客户端
 func (receiver *TaskGroupMonitor) CanScheduleClient() int {
 	return receiver.clients.Where(func(item *client.DomainObject) bool {
-		return item.Status == enum.Scheduler
+		return item.Status == enum.Scheduler && item.Jobs.Where(func(jobVO client.JobVO) bool {
+			return jobVO.Name == receiver.Name && jobVO.Ver == receiver.Ver
+		}).Any()
 	}).Count()
 }

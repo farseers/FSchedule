@@ -16,5 +16,5 @@ type Repository interface {
 	// SaveTask 保存任务信息
 	SaveTask(taskEO TaskEO)
 	// GetTask 获取任务信息
-	GetTask(taskId int64) TaskEO
+	GetTask(name string, taskId int64) TaskEO
 }

@@ -7,7 +7,7 @@ import (
 )
 
 type scheduleRepository struct {
-	*redis.Client `inject:"default"`
+	redis.IClient `inject:"default"`
 }
 
 func (receiver *scheduleRepository) NewLock(name string) core.ILock {

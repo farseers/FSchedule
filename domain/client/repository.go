@@ -7,12 +7,13 @@ type Repository interface {
 	Save(do *DomainObject)
 	// ToList 获取客户端列表
 	ToList() collections.List[DomainObject]
-	// GetClients 获取支持taskGroupName的客户端列表
-	GetClients(taskGroupName string, version int) collections.List[DomainObject]
 	// RemoveClient 移除客户端
 	RemoveClient(id int64)
 	// GetCount 客户端数量
 	GetCount() int64
 	// ToEntity 获取客户端
 	ToEntity(clientId int64) *DomainObject
+
+	//// GetClients 获取支持taskGroupName的客户端列表
+	//GetClients(taskGroupName string, version int) collections.List[DomainObject]
 }

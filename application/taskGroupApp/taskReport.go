@@ -11,6 +11,7 @@ import (
 
 type TaskReportDTO struct {
 	Id           int64                                  // 主键
+	Name         string                                 // 实现Job的特性名称（客户端识别哪个实现类）
 	Data         collections.Dictionary[string, string] // 数据
 	NextTimespan int64                                  // 下次执行时间
 	Progress     int                                    // 当前进度
@@ -19,7 +20,7 @@ type TaskReportDTO struct {
 }
 
 func TaskReport(dto TaskReportDTO, taskGroupRepository taskGroup.Repository, scheduleRepository schedule.Repository) {
-	taskEO := taskGroupRepository.GetTask(dto.Id)
+	taskEO := taskGroupRepository.GetTask(dto.Name, dto.Id)
 	if taskEO.IsNull() {
 		exception.ThrowWebExceptionf(403, "任务id={%d} 不存在", dto.Id)
 	}

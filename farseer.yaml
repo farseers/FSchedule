@@ -14,6 +14,6 @@ Log:
   Component:
     httpInvoke: true
     task: false
-    cacheManage: true
+    cacheManage: false
     httpRequest: false
   

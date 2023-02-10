@@ -4,6 +4,7 @@ import (
 	"FSchedule/domain/client"
 	"FSchedule/domain/schedule"
 	"FSchedule/domain/taskGroup"
+	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs/exception"
 	"github.com/farseer-go/mapper"
 )
@@ -18,8 +19,8 @@ type RegistryDTO struct {
 
 type RegistryJobDTO struct {
 	Name     string // 任务名称
-	Caption  string // 任务标题
 	Ver      int    // 任务版本
+	Caption  string // 任务标题
 	Cron     string // 任务执行表达式
 	StartAt  int64  // 任务开始时间
 	IsEnable bool   // 任务开始时间
@@ -28,6 +29,7 @@ type RegistryJobDTO struct {
 // Registry 客户端注册
 func Registry(dto RegistryDTO, clientRepository client.Repository, taskGroupRepository taskGroup.Repository, scheduleRepository schedule.Repository) {
 	do := mapper.Single[client.DomainObject](dto)
+	do.Jobs = collections.NewList[client.JobVO]()
 	if do.IsNil() {
 		exception.ThrowWebException(403, "客户端ID、Name、IP、Port未完整传入")
 	}
@@ -36,12 +38,13 @@ func Registry(dto RegistryDTO, clientRepository client.Repository, taskGroupRepo
 	// 更新任务组
 	for _, jobDTO := range dto.Jobs {
 		// 加锁
-		scheduleRepository.NewLock(do.Name).GetLockRun(func() {
+		scheduleRepository.NewLock(jobDTO.Name).GetLockRun(func() {
 			taskGroupDO := taskGroupRepository.ToEntity(jobDTO.Name)
 			taskGroupDO.UpdateVer(jobDTO.Name, jobDTO.Caption, jobDTO.Ver, jobDTO.Cron, jobDTO.StartAt, jobDTO.IsEnable)
 			if taskGroupDO.NeedSave {
 				taskGroupRepository.Save(taskGroupDO)
 			}
+			do.Jobs.Add(mapper.Single[client.JobVO](jobDTO))
 		})
 	}
 

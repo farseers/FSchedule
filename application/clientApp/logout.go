@@ -6,5 +6,5 @@ import "FSchedule/domain/client"
 func Logout(clientId int64, repository client.Repository) {
 	clientDO := repository.ToEntity(clientId)
 	clientDO.Logout()
-	repository.Save(clientDO)
+	repository.Save(&clientDO)
 }

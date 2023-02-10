@@ -53,7 +53,7 @@ func (receiver *ClientMonitor) checkOnline() {
 		if receiver.client.IsOffline() {
 			repository := container.Resolve[client.Repository]()
 			repository.RemoveClient(receiver.client.Id)
-			flog.Infof("客户端：%s:%d %d 下线", receiver.client.Ip, receiver.client.Port, receiver.client.Id)
+			flog.Infof("客户端（%d）：%s:%d 下线", receiver.client.Id, receiver.client.Ip, receiver.client.Port)
 			break
 		}
 

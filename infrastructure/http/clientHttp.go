@@ -21,10 +21,11 @@ func (receiver clientHttp) Check(do *client.DomainObject) (client.ResourceVO, er
 	var apiResponse core.ApiResponse[client.ResourceVO]
 	err := http.NewClient(clientUrl).HeadAdd(tokenName, token).PostUnmarshal(&apiResponse)
 	if err != nil {
+		flog.Warningf("客户端（%d）：%s:%d  检查失败", do.Id, do.Ip, do.Port)
 		return client.ResourceVO{}, err
 	}
 	if apiResponse.StatusCode != 200 {
-		log := fmt.Sprintf("客户端：http://%s:%d，状态码：%d，错误内容：%s", do.Ip, do.Port, apiResponse.StatusCode, apiResponse.StatusMessage)
+		log := fmt.Sprintf("客户端（%d）：%s，状态码：%d，错误内容：%s", do.Id, clientUrl, apiResponse.StatusCode, apiResponse.StatusMessage)
 		flog.Info(log)
 		return client.ResourceVO{}, flog.Error(log)
 	}
@@ -39,7 +40,7 @@ func (receiver clientHttp) Invoke(do *client.DomainObject, task *client.TaskEO) 
 		return client.ResourceVO{}, err
 	}
 	if apiResponse.StatusCode != 200 {
-		log := fmt.Sprintf("客户端：http://%s:%d，状态码：%d，错误内容：%s", do.Ip, do.Port, apiResponse.StatusCode, apiResponse.StatusMessage)
+		log := fmt.Sprintf("客户端（%d）：%s，状态码：%d，错误内容：%s", do.Id, clientUrl, apiResponse.StatusCode, apiResponse.StatusMessage)
 		flog.Info(log)
 		return client.ResourceVO{}, flog.Error(log)
 	}
@@ -57,7 +58,7 @@ func (receiver clientHttp) Status(do *client.DomainObject, taskId int64) (client
 		return client.TaskReportVO{}, err
 	}
 	if apiResponse.StatusCode != 200 {
-		log := fmt.Sprintf("客户端：http://%s:%d，状态码：%d，错误内容：%s", do.Ip, do.Port, apiResponse.StatusCode, apiResponse.StatusMessage)
+		log := fmt.Sprintf("客户端（%d）：%s，状态码：%d，错误内容：%s", do.Id, clientUrl, apiResponse.StatusCode, apiResponse.StatusMessage)
 		flog.Info(log)
 		return client.TaskReportVO{}, flog.Error(log)
 	}
@@ -75,7 +76,8 @@ func (receiver clientHttp) Kill(do *client.DomainObject, taskId int64) bool {
 		return false
 	}
 	if apiResponse.StatusCode != 200 {
-		flog.Infof("客户端：http://%s:%d，状态码：%s", do.Ip, do.Port, apiResponse.StatusCode)
+		log := fmt.Sprintf("客户端（%d）：%s，状态码：%d，错误内容：%s", do.Id, clientUrl, apiResponse.StatusCode, apiResponse.StatusMessage)
+		flog.Info(log)
 		return false
 	}
 	return true

@@ -12,8 +12,5 @@ type Repository interface {
 	// GetCount 客户端数量
 	GetCount() int64
 	// ToEntity 获取客户端
-	ToEntity(clientId int64) *DomainObject
-
-	//// GetClients 获取支持taskGroupName的客户端列表
-	//GetClients(taskGroupName string, version int) collections.List[DomainObject]
+	ToEntity(clientId int64) DomainObject
 }

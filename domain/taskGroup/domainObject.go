@@ -9,6 +9,8 @@ import (
 	"time"
 )
 
+var standardParser = cron.NewParser(cron.Second | cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow | cron.Descriptor)
+
 type DomainObject struct {
 	Name        string                                 // 实现Job的特性名称（客户端识别哪个实现类）
 	Ver         int                                    // 版本
@@ -27,16 +29,28 @@ type DomainObject struct {
 }
 
 // UpdateVer 更新新的版本
-func (receiver *DomainObject) UpdateVer(name string, caption string, ver int, cron string, StartAt int64, enable bool) {
+func (receiver *DomainObject) UpdateVer(name string, caption string, ver int, strCron string, StartAt int64, enable bool) {
 	// 只更新高一个版本号的数据
 	if receiver.Ver+1 == ver {
 		receiver.Name = name
 		receiver.Caption = caption
 		receiver.Ver = ver
-		receiver.Cron = cron
+		receiver.Cron = strCron
 		receiver.StartAt = time.Unix(StartAt, 0)
 		receiver.NeedSave = true
 		receiver.IsEnable = enable
+
+		if ver == 1 && enable {
+			cornSchedule, err := standardParser.Parse(receiver.Cron)
+			if err != nil {
+				_ = flog.Errorf("Name:%s，Cron格式错误:%s", receiver.Name, receiver.Cron)
+				receiver.NeedSave = false
+			} else {
+				receiver.NextAt = cornSchedule.Next(time.Now())
+				receiver.ActivateAt = time.Now()
+				receiver.LastRunAt = time.Now()
+			}
+		}
 	}
 }
 
@@ -104,9 +118,9 @@ func (receiver *DomainObject) CalculateNextAtByUnix(timespan int64) {
 // CalculateNextAtByCron 重新计算下一个执行周期
 func (receiver *DomainObject) CalculateNextAtByCron() {
 	if time.Now().After(receiver.NextAt) {
-		cornSchedule, err := cron.ParseStandard(receiver.Cron)
+		cornSchedule, err := standardParser.Parse(receiver.Cron)
 		if err != nil {
-			_ = flog.Errorf("Cron格式错误:%s", receiver.Cron)
+			_ = flog.Errorf("Name:%s，Cron格式错误:%s", receiver.Name, receiver.Cron)
 		}
 		receiver.NextAt = cornSchedule.Next(time.Now())
 	}

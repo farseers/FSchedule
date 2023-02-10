@@ -4,7 +4,7 @@ import (
 	"FSchedule/domain/taskGroup"
 	"FSchedule/infrastructure/repository/model"
 	"github.com/farseer-go/collections"
-	"github.com/farseer-go/data"
+	"github.com/farseer-go/fs/configure"
 	"github.com/farseer-go/fs/container"
 	"github.com/farseer-go/fs/core"
 	"github.com/farseer-go/mapper"
@@ -25,13 +25,14 @@ func registerTaskGroupRepository() {
 	// 多级缓存
 	cacheManage.SetListSource(func() collections.List[taskGroup.DomainObject] {
 		var lst collections.List[taskGroup.DomainObject]
-		repository := data.NewContext[taskGroupRepository]("default")
-		repository.TaskGroup.ToList().MapToList(&lst)
+		repository := newManagerRepository()
+		list := repository.TaskGroup.ToList()
+		list.MapToList(&lst)
 		return lst
 	})
 
 	cacheManage.SetItemSource(func(cacheId any) (taskGroup.DomainObject, bool) {
-		repository := data.NewContext[taskGroupRepository]("default")
+		repository := newManagerRepository()
 		po := repository.TaskGroup.Where("Name = ?", cacheId).ToEntity()
 		if po.Name != "" {
 			return mapper.Single[taskGroup.DomainObject](&po), true
@@ -40,18 +41,16 @@ func registerTaskGroupRepository() {
 	})
 
 	// 60秒同步一次任务组到数据库
-	cacheManage.SetSyncSource(60*time.Second, func(do taskGroup.DomainObject) {
+	cacheManage.SetSyncSource(time.Duration(configure.GetInt("FSchedule.DataSyncTime"))*time.Second, func(do taskGroup.DomainObject) {
 		po := mapper.Single[model.TaskGroupPO](&do)
-		repository := data.NewContext[taskGroupRepository]("default")
-		if repository.TaskGroup.Where("Name = ?", po.Name).Update(po) == 0 {
-			_ = repository.TaskGroup.Insert(&po)
-		}
+		repository := newManagerRepository()
+		_ = repository.TaskGroup.UpdateOrInsert(po, "Name")
 	})
 
 	// 注册仓储
 	container.Register(func() taskGroup.Repository {
-		repository := data.NewContext[taskGroupRepository]("default")
-		repository.managerRepository = data.NewContext[managerRepository]("default")
+		repository := container.ResolveIns(&taskGroupRepository{})
+		repository.managerRepository = newManagerRepository()
 		repository.taskRepository = &taskRepository{
 			Task: repository.managerRepository.Task,
 		}

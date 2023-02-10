@@ -7,6 +7,7 @@ import (
 	"github.com/farseer-go/cache"
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/data"
+	"github.com/farseer-go/fs/container"
 	"github.com/farseer-go/fs/dateTime"
 	"github.com/farseer-go/mapper"
 	"time"
@@ -15,9 +16,12 @@ import (
 type managerRepository struct {
 	Task        data.TableSet[model.TaskPO]                `data:"name=task"`
 	TaskGroup   data.TableSet[model.TaskGroupPO]           `data:"name=task_group"`
-	CacheManage cache.ICacheManage[taskGroup.DomainObject] `inject:"FSS_TaskGroup"`
+	CacheManage cache.ICacheManage[taskGroup.DomainObject] `inject:"FSchedule_TaskGroup"`
 }
 
+func newManagerRepository() *managerRepository {
+	return container.ResolveIns(data.NewContext[managerRepository]("default"))
+}
 func (receiver *managerRepository) ToListByClientId(clientId int64) collections.List[taskGroup.DomainObject] {
 	lst := receiver.CacheManage.Get()
 	return lst.Where(func(item taskGroup.DomainObject) bool {
@@ -34,7 +38,7 @@ func (receiver *managerRepository) Add(do *taskGroup.DomainObject) {
 	po.ActivateAt = time.Now()
 	po.LastRunAt = time.Now()
 	po.NextAt = time.Now()
-	receiver.TaskGroup.Insert(&po)
+	_ = receiver.TaskGroup.Insert(&po)
 	receiver.CacheManage.SaveItem(*do)
 }
 

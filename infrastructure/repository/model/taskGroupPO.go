@@ -17,6 +17,6 @@ type TaskGroupPO struct {
 	RunSpeedAvg int64                                  // 运行平均耗时
 	RunCount    int                                    // 运行次数
 	IsEnable    bool                                   // 是否开启
-	Data        collections.Dictionary[string, string] // 传给客户端的参数，按逗号分隔
-	Task        TaskPO                                 // 任务
+	Data        collections.Dictionary[string, string] `gorm:"serializer:json"` // 传给客户端的参数，按逗号分隔
+	Task        TaskPO                                 `gorm:"serializer:json"` // 任务
 }

@@ -11,5 +11,5 @@ type scheduleRepository struct {
 }
 
 func (receiver *scheduleRepository) NewLock(name string) core.ILock {
-	return receiver.LockNew("FSS_Scheduler:"+name, 5*time.Second)
+	return receiver.LockNew("FSchedule_Lock:"+name, 5*time.Second)
 }

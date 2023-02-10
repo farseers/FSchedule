@@ -1,9 +1,11 @@
 package repository
 
 import (
+	"FSchedule/domain/enum"
 	"FSchedule/domain/taskGroup"
 	"FSchedule/infrastructure/repository/model"
 	"github.com/farseer-go/cache"
+	"github.com/farseer-go/collections"
 	"github.com/farseer-go/data"
 	"github.com/farseer-go/fs/configure"
 	"github.com/farseer-go/fs/container"
@@ -60,4 +62,23 @@ func (receiver *taskRepository) SaveTask(taskEO taskGroup.TaskEO) {
 func (receiver *taskRepository) DeleteTask(name string) {
 	receiver.Task.Where("name = ?", name).Delete()
 	getCacheManager(name).Clear()
+}
+
+func (receiver *taskRepository) ToTaskSpeedList(name string) []int64 {
+	lstPO := receiver.Task.Where("name = ? and status = ?", name, enum.Success).Desc("create_at").Select("RunSpeed").Limit(100).ToList()
+	var lstSpeed []int64
+	lstPO.Select(&lstSpeed, func(item model.TaskPO) any {
+		return item.RunSpeed
+	})
+	return lstSpeed
+}
+
+func (receiver *taskRepository) ToFinishList(name string, top int) collections.List[taskGroup.TaskEO] {
+	lstPO := receiver.Task.Where("name = ? and (status = ? or status = ?)", name, enum.Success, enum.Fail).Desc("create_at").Limit(top).ToList()
+	return mapper.ToList[taskGroup.TaskEO](lstPO)
+}
+
+// ClearFinish 清除成功的任务记录（1天前）
+func (receiver *taskRepository) ClearFinish(name string, taskId int) {
+	receiver.Task.Where("task_group_name = ? and (status = ? or status = ?) and create_at < ? and Id < ?", name, enum.Success, enum.Fail, time.Now().Add(-24*time.Hour), taskId).Delete()
 }

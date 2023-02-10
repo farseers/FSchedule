@@ -105,22 +105,8 @@ func (receiver *managerRepository) GetEnableTaskList(status enum.TaskStatus, pag
 	return lst.ToPageList(pageSize, pageIndex)
 }
 
-func (receiver *managerRepository) ToTaskSpeedList(name string) []int64 {
-	lstPO := receiver.Task.Where("name = ? and status = ?", name, enum.Success).Desc("create_at").Select("RunSpeed").Limit(100).ToList()
-	var lstSpeed []int64
-	lstPO.Select(&lstSpeed, func(item model.TaskPO) any {
-		return item.RunSpeed
-	})
-	return lstSpeed
-}
-
 func (receiver *managerRepository) TodayFailCount() int64 {
 	return receiver.Task.Where("status = ? and create_at >= ?", enum.Fail, dateTime.Now().Date().ToTime()).Count()
-}
-
-// ClearFinish 清除成功的任务记录（1天前）
-func (receiver *managerRepository) ClearFinish(name string, taskId int) {
-	receiver.Task.Where("name = ? and (status = ? or status = ?) and create_at < ? and Id < ?", name, enum.Success, enum.Fail, time.Now().Add(-24*time.Hour), taskId).Delete()
 }
 
 func (receiver *managerRepository) ToListByGroupId(name string, pageSize int, pageIndex int) collections.PageList[taskGroup.TaskEO] {
@@ -131,11 +117,6 @@ func (receiver *managerRepository) ToFinishPageList(pageSize int, pageIndex int)
 	page := receiver.Task.Where("(status = ? or status = ?) and (create_at >= ?)", enum.Fail, enum.Success, time.Now().Add(-24*time.Hour)).
 		Desc("run_at").ToPageList(pageSize, pageIndex)
 	return receiver.toPageListTaskEO(page)
-}
-
-func (receiver *managerRepository) ToFinishList(name string, top int) collections.List[taskGroup.TaskEO] {
-	lstPO := receiver.Task.Where("name = ? and (status = ? or status = ?)", name, enum.Success, enum.Fail).Desc("create_at").Limit(top).ToList()
-	return mapper.ToList[taskGroup.TaskEO](lstPO)
 }
 
 func (receiver *managerRepository) toPageListTaskEO(page collections.PageList[model.TaskPO]) collections.PageList[taskGroup.TaskEO] {

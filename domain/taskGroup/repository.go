@@ -17,4 +17,10 @@ type Repository interface {
 	SaveTask(taskEO TaskEO)
 	// GetTask 获取任务信息
 	GetTask(name string, taskId int64) TaskEO
+	// ToTaskSpeedList 当前任务组下所有任务的执行速度
+	ToTaskSpeedList(name string) []int64
+	// ToFinishList 获取指定任务组执行成功的任务列表
+	ToFinishList(name string, top int) collections.List[TaskEO]
+	// ClearFinish 清除成功的任务记录（1天前）
+	ClearFinish(name string, taskId int)
 }

@@ -8,6 +8,7 @@ FSchedule:
   Server:
     Token: ""
   DataSyncTime: 1
+  ReservedTaskCount: 1000
 Log:
   LogLevel: "Information"
   Component:

@@ -8,6 +8,7 @@ import (
 	"github.com/farseer-go/fs/core"
 )
 
+// TaskFinishEvent 任务完成事件
 func TaskFinishEvent(message any, _ core.EventArgs) {
 	do := message.(*domain.TaskGroupMonitor)
 	taskGroupRepository := container.Resolve[taskGroup.Repository]()

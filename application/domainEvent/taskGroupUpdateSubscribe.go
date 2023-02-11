@@ -8,8 +8,8 @@ import (
 	"github.com/farseer-go/fs/flog"
 )
 
-// TaskGroupUpdateEvent 任务组有更新（Redis订阅）
-func TaskGroupUpdateEvent(message any, _ core.EventArgs) {
+// TaskGroupUpdateSubscribe 任务组有更新（Redis订阅）
+func TaskGroupUpdateSubscribe(message any, _ core.EventArgs) {
 	var taskGroupDO taskGroup.DomainObject
 	err := json.Unmarshal([]byte(message.(string)), &taskGroupDO)
 	if err != nil {

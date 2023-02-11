@@ -8,8 +8,8 @@ import (
 	"github.com/farseer-go/fs/flog"
 )
 
-// ClientUpdateEvent 客户端有更新（Redis订阅）
-func ClientUpdateEvent(message any, _ core.EventArgs) {
+// ClientUpdateSubscribe 客户端有更新（Redis订阅）
+func ClientUpdateSubscribe(message any, _ core.EventArgs) {
 	var clientDO client.DomainObject
 	err := json.Unmarshal([]byte(message.(string)), &clientDO)
 	if err != nil {

@@ -6,6 +6,7 @@ import (
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs"
 	"github.com/farseer-go/fs/container"
+	"github.com/farseer-go/fs/core"
 	"github.com/farseer-go/fs/flog"
 	"time"
 )
@@ -16,7 +17,6 @@ var clientList = collections.NewDictionary[int64, *ClientMonitor]()
 // ClientMonitor 等待任务执行
 type ClientMonitor struct {
 	client           *client.DomainObject
-	clientChan       chan *client.DomainObject
 	ctx              context.Context
 	cancelFunc       context.CancelFunc
 	clientRepository client.Repository
@@ -29,7 +29,6 @@ func MonitorClientPush(clientDO *client.DomainObject) {
 		ctx, cancelFunc := context.WithCancel(fs.Context)
 		clientMonitor := &ClientMonitor{
 			client:           clientDO,
-			clientChan:       make(chan *client.DomainObject, 1000),
 			ctx:              ctx,
 			cancelFunc:       cancelFunc,
 			clientRepository: container.Resolve[client.Repository](),
@@ -38,12 +37,20 @@ func MonitorClientPush(clientDO *client.DomainObject) {
 
 		// 异步检查客户端在线状态
 		go clientMonitor.checkOnline()
+
+		// 通知任务组，有新的客户端加入
+		_ = container.Resolve[core.IEvent]("ClientJoin").Publish(clientMonitor.client)
 	}
 
 	existsClientDO := clientList.GetValue(clientDO.Id)
-	existsClientDO.client = clientDO
 
-	pushClient(existsClientDO.client)
+	// 修改地址对应的值
+	*existsClientDO.client = *clientDO
+
+	// 客户端离线
+	if existsClientDO.client.IsOffline() {
+		_ = container.Resolve[core.IEvent]("ClientOffline").Publish(existsClientDO.client)
+	}
 }
 
 // checkOnline 异步检查客户端在线状态

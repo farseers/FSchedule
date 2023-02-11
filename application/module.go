@@ -23,7 +23,6 @@ func (module Module) Initialize() {
 }
 
 func (module Module) PostInitialize() {
-	return
 	job.InitTaskGroupMonitor()
 	job.InitClientMonitor()
 

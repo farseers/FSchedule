@@ -34,12 +34,16 @@ func (module Module) PostInitialize() {
 	eventBus.RegisterEvent("CheckWorking", domainEvent.CheckWorkingEvent)
 	// 任务完成事件
 	eventBus.RegisterEvent("TaskFinish", domainEvent.TaskFinishEvent)
+	// 新的客户端加入
+	eventBus.RegisterEvent("ClientJoin", domainEvent.ClientJoinEvent)
+	// 客户端下线了
+	eventBus.RegisterEvent("ClientOffline", domainEvent.ClientOfflineEvent)
 
 	// 注册客户端更新通知事件
-	redis.RegisterEvent("default", "ClientUpdate", domainEvent.ClientUpdateEvent)
+	redis.RegisterEvent("default", "ClientUpdate", domainEvent.ClientUpdateSubscribe)
 
 	// 注册任务组更新通知事件
-	redis.RegisterEvent("default", "TaskGroupUpdate", domainEvent.TaskGroupUpdateEvent)
+	redis.RegisterEvent("default", "TaskGroupUpdate", domainEvent.TaskGroupUpdateSubscribe)
 }
 
 func (module Module) Shutdown() {

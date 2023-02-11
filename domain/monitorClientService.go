@@ -16,10 +16,12 @@ var clientList = collections.NewDictionary[int64, *ClientMonitor]()
 
 // ClientMonitor 等待任务执行
 type ClientMonitor struct {
-	client           *client.DomainObject
-	ctx              context.Context
-	cancelFunc       context.CancelFunc
-	clientRepository client.Repository
+	client             *client.DomainObject
+	ctx                context.Context
+	cancelFunc         context.CancelFunc
+	clientRepository   client.Repository
+	clientJoinEvent    core.IEvent
+	clientOfflineEvent core.IEvent
 }
 
 // MonitorClientPush 将最新的客户端信息，推送到监控线程
@@ -28,10 +30,12 @@ func MonitorClientPush(clientDO *client.DomainObject) {
 	if !clientList.ContainsKey(clientDO.Id) {
 		ctx, cancelFunc := context.WithCancel(fs.Context)
 		clientMonitor := &ClientMonitor{
-			client:           clientDO,
-			ctx:              ctx,
-			cancelFunc:       cancelFunc,
-			clientRepository: container.Resolve[client.Repository](),
+			client:             clientDO,
+			ctx:                ctx,
+			cancelFunc:         cancelFunc,
+			clientRepository:   container.Resolve[client.Repository](),
+			clientJoinEvent:    container.Resolve[core.IEvent]("ClientJoin"),
+			clientOfflineEvent: container.Resolve[core.IEvent]("ClientOffline"),
 		}
 		clientList.Add(clientDO.Id, clientMonitor)
 
@@ -39,7 +43,7 @@ func MonitorClientPush(clientDO *client.DomainObject) {
 		go clientMonitor.checkOnline()
 
 		// 通知任务组，有新的客户端加入
-		_ = container.Resolve[core.IEvent]("ClientJoin").Publish(clientMonitor.client)
+		_ = clientMonitor.clientJoinEvent.Publish(clientMonitor.client)
 	}
 
 	existsClientDO := clientList.GetValue(clientDO.Id)
@@ -49,7 +53,7 @@ func MonitorClientPush(clientDO *client.DomainObject) {
 
 	// 客户端离线
 	if existsClientDO.client.IsOffline() {
-		_ = container.Resolve[core.IEvent]("ClientOffline").Publish(existsClientDO.client)
+		_ = existsClientDO.clientOfflineEvent.Publish(existsClientDO.client)
 	}
 }
 
@@ -58,8 +62,7 @@ func (receiver *ClientMonitor) checkOnline() {
 	for {
 		// 离线了，则退出
 		if receiver.client.IsOffline() {
-			repository := container.Resolve[client.Repository]()
-			repository.RemoveClient(receiver.client.Id)
+			receiver.clientRepository.RemoveClient(receiver.client.Id)
 			flog.Infof("客户端（%d）：%s:%d 下线", receiver.client.Id, receiver.client.Ip, receiver.client.Port)
 			break
 		}

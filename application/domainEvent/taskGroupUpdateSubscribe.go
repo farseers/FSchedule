@@ -16,6 +16,6 @@ func TaskGroupUpdateSubscribe(message any, _ core.EventArgs) {
 		return
 	}
 
-	flog.Debugf("收到任务组更新通知：%s Ver%d", taskGroupDO.Name, taskGroupDO.Ver)
+	flog.Debugf("任务组更新通知：%s Ver%d", taskGroupDO.Name, taskGroupDO.Ver)
 	domain.MonitorTaskGroupPush(&taskGroupDO)
 }

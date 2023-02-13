@@ -15,6 +15,6 @@ func ClientUpdateSubscribe(message any, _ core.EventArgs) {
 	if err != nil {
 		return
 	}
-	flog.Debugf("收到客户端（%d）更新通知：%s:%d", clientDO.Id, clientDO.Ip, clientDO.Port)
+	flog.Debugf("客户端（%d）更新通知：%s:%d", clientDO.Id, clientDO.Ip, clientDO.Port)
 	domain.MonitorClientPush(&clientDO)
 }

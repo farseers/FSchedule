@@ -3,6 +3,7 @@ package infrastructure
 import (
 	"FSchedule/application/domainEvent"
 	"FSchedule/infrastructure/http"
+	"FSchedule/infrastructure/localQueue"
 	"FSchedule/infrastructure/repository"
 	"github.com/farseer-go/data"
 	"github.com/farseer-go/eventBus"
@@ -44,6 +45,9 @@ func (module Module) PostInitialize() {
 
 	// 注册任务组更新通知事件
 	redis.RegisterEvent("default", "TaskGroupUpdate", domainEvent.TaskGroupUpdateSubscribe)
+
+	// 队列任务日志
+	queue.Subscribe("TaskLogQueue", "", 1000, localQueue.TaskLogQueueConsumer)
 }
 
 func (module Module) Shutdown() {

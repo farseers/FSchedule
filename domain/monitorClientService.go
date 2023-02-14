@@ -52,6 +52,7 @@ func MonitorClientPush(clientDO *client.DomainObject) {
 	if existsClientDO != nil {
 		// 修改地址对应的值
 		*existsClientDO.client = *clientDO
+		ClientUpdate(existsClientDO.client)
 	}
 
 	// 客户端离线

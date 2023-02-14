@@ -14,7 +14,7 @@ import (
 
 type taskGroupRepository struct {
 	Redis                   redis.IClient `inject:"default"`
-	TaskGroupUpdateEventBus core.IEvent   `inject:"ClientUpdate"`
+	TaskGroupUpdateEventBus core.IEvent   `inject:"TaskGroupUpdate"`
 	*managerRepository
 	*taskRepository
 }

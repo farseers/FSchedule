@@ -40,17 +40,23 @@ func (receiver *DomainObject) UpdateVer(name string, caption string, ver int, st
 		receiver.NeedSave = true
 		receiver.IsEnable = enable
 
-		if ver == 1 && enable {
+		if enable {
 			cornSchedule, err := standardParser.Parse(receiver.Cron)
 			if err != nil {
 				_ = flog.Errorf("Name:%s，Cron格式错误:%s", receiver.Name, receiver.Cron)
 				receiver.NeedSave = false
+				return
 			} else {
 				receiver.NextAt = cornSchedule.Next(time.Now())
 				receiver.ActivateAt = time.Now()
 				receiver.LastRunAt = time.Now()
 			}
 		}
+	}
+
+	if enable && receiver.Task.IsNull() {
+		receiver.CreateTask()
+		receiver.NeedSave = true
 	}
 }
 
@@ -62,12 +68,12 @@ func (receiver *DomainObject) CreateTask() {
 		Caption:     receiver.Caption,
 		Name:        receiver.Name,
 		StartAt:     receiver.NextAt,
-		RunAt:       time.Time{},
+		RunAt:       time.Now(),
 		RunSpeed:    0,
 		Progress:    0,
 		Status:      enum.None,
 		CreateAt:    time.Now(),
-		SchedulerAt: time.Time{},
+		SchedulerAt: time.Now(),
 		Data:        receiver.Data,
 	}
 }
@@ -105,7 +111,7 @@ func (receiver *DomainObject) ClientOffline() {
 
 // CanScheduler 是否可以调度
 func (receiver *DomainObject) CanScheduler() bool {
-	return (receiver.Task.Status == enum.None || receiver.Task.Status == enum.ScheduleFail) && receiver.IsEnable && time.Now().After(receiver.StartAt) && time.Now().After(receiver.NextAt)
+	return !receiver.Task.IsNull() && (receiver.Task.Status == enum.None || receiver.Task.Status == enum.ScheduleFail || receiver.Task.Status == enum.Scheduling) && receiver.IsEnable && time.Now().After(receiver.StartAt) && time.Now().After(receiver.Task.StartAt)
 }
 
 // CalculateNextAtByUnix 重新计算下一个执行周期

@@ -23,7 +23,7 @@ type RegistryJobDTO struct {
 	Caption  string // 任务标题
 	Cron     string // 任务执行表达式
 	StartAt  int64  // 任务开始时间
-	IsEnable bool   // 任务开始时间
+	IsEnable bool   // 任务是否启用
 }
 
 // Registry 客户端注册

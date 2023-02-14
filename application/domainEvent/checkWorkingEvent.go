@@ -21,10 +21,10 @@ func CheckWorkingEvent(message any, _ core.EventArgs) {
 	}
 
 	// 得到当前处理的客户端
-	clientDO := do.GetClient()
+	clientDO := do.GetClient(do.Task.Client.Id)
 
 	// 客户端下线了
-	if clientDO.IsNil() || clientDO.IsOffline() {
+	if clientDO == nil || clientDO.IsNil() || clientDO.IsOffline() {
 		do.ClientOffline()
 		taskGroupRepository.Save(*do.DomainObject)
 		return

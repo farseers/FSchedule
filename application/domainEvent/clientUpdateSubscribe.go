@@ -14,5 +14,8 @@ func ClientUpdateSubscribe(message any, _ core.EventArgs) {
 	if err != nil {
 		return
 	}
+	if clientDO.IsNil() {
+		return
+	}
 	domain.MonitorClientPush(&clientDO)
 }

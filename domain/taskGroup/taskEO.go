@@ -56,7 +56,7 @@ func (do *TaskEO) ScheduleFail() {
 
 // IsNull 未分配
 func (do *TaskEO) IsNull() bool {
-	return do.Id == 0 && do.Status == enum.None && do.Caption == "" && do.Name == ""
+	return do.Id == 0 && do.Caption == "" && do.Name == ""
 }
 
 // IsFinish 是否完成

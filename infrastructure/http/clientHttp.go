@@ -18,15 +18,17 @@ type clientHttp struct {
 
 func (receiver clientHttp) Check(do *client.DomainObject) (client.ResourceVO, error) {
 	clientUrl := fmt.Sprintf("http://%s:%d/api/check", do.Ip, do.Port)
+	body := map[string]any{
+		"clientId": do.Id,
+	}
 	var apiResponse core.ApiResponse[client.ResourceVO]
-	err := http.NewClient(clientUrl).HeadAdd(tokenName, token).PostUnmarshal(&apiResponse)
+	err := http.NewClient(clientUrl).HeadAdd(tokenName, token).Body(body).PostUnmarshal(&apiResponse)
 	if err != nil {
 		flog.Warningf("客户端（%d）：%s:%d  检查失败", do.Id, do.Ip, do.Port)
 		return client.ResourceVO{}, err
 	}
 	if apiResponse.StatusCode != 200 {
 		log := fmt.Sprintf("客户端（%d）：%s，状态码：%d，错误内容：%s", do.Id, clientUrl, apiResponse.StatusCode, apiResponse.StatusMessage)
-		flog.Info(log)
 		return client.ResourceVO{}, flog.Error(log)
 	}
 	return apiResponse.Data, nil

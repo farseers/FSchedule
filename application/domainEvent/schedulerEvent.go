@@ -7,6 +7,7 @@ import (
 	"FSchedule/domain/taskGroup"
 	"github.com/farseer-go/fs/container"
 	"github.com/farseer-go/fs/core"
+	"github.com/farseer-go/fs/flog"
 	"github.com/farseer-go/mapper"
 )
 
@@ -28,7 +29,7 @@ func SchedulerEvent(message any, _ core.EventArgs) {
 		// 轮询的方式取到客户端
 		clientSchedule := do.PollingClient()
 		// 没有可调度的客户端
-		if clientSchedule.IsNil() {
+		if clientSchedule == nil || clientSchedule.IsNil() {
 			do.Task.ScheduleFail()
 			taskGroupRepository.Save(*do.DomainObject)
 			return
@@ -40,6 +41,7 @@ func SchedulerEvent(message any, _ core.EventArgs) {
 		// 请求客户端
 		clientTask := mapper.Single[client.TaskEO](do.Task)
 		if clientSchedule.Schedule(&clientTask) {
+			flog.Infof("任务组：%s 调度成功 %d", do.Name, do.Task.Id)
 			// 调度成功
 			clientRepository.Save(clientSchedule)
 			taskGroupRepository.SaveAndTask(*do.DomainObject)

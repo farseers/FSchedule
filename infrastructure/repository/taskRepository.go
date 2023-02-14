@@ -12,16 +12,21 @@ import (
 	"github.com/farseer-go/mapper"
 	"github.com/farseer-go/redis"
 	"strconv"
+	"sync"
 	"time"
 )
+
+var lock = &sync.Mutex{}
 
 type taskRepository struct {
 	Task data.TableSet[model.TaskPO] `data:"name=task"`
 }
 
 func getCacheManager(name string) cache.ICacheManage[taskGroup.TaskEO] {
+	lock.Lock()
+	defer lock.Unlock()
 	key := "FSchedule_Task:" + name
-	if !container.IsRegister[taskGroup.TaskEO](key) {
+	if !container.IsRegister[cache.ICacheManage[taskGroup.TaskEO]](key) {
 		cacheManage := redis.SetProfiles[taskGroup.TaskEO](key, "Id", 0, "default")
 		cacheManage.SetItemSource(func(cacheId any) (taskGroup.TaskEO, bool) {
 			repository := newManagerRepository()

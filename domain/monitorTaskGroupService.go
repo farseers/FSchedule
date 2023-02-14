@@ -178,3 +178,8 @@ func (receiver *TaskGroupMonitor) CanScheduleClient() int {
 		}).Any()
 	}).Count()
 }
+
+// TaskGroupCount 返回当前正在监控的任务组数量
+func TaskGroupCount() int {
+	return taskGroupList.Count()
+}

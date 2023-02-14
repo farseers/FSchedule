@@ -2,7 +2,6 @@ package repository
 
 import (
 	"FSchedule/domain/client"
-	"FSchedule/domain/enum"
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs/core"
 	"github.com/farseer-go/redis"
@@ -18,10 +17,6 @@ type clientRepository struct {
 
 func (receiver *clientRepository) Save(do *client.DomainObject) {
 	if do.Id == 0 {
-		return
-	}
-	if do.Status == enum.Offline {
-		receiver.RemoveClient(do.Id)
 		return
 	}
 	_ = receiver.HashSetEntity(clientCacheKey, strconv.FormatInt(do.Id, 10), &do)

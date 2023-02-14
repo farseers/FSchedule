@@ -51,7 +51,7 @@ func (receiver clientHttp) Status(do *client.DomainObject, taskId int64) (client
 	clientUrl := fmt.Sprintf("http://%s:%d/api/status", do.Ip, do.Port)
 	var apiResponse core.ApiResponse[client.TaskReportVO]
 	body := map[string]any{
-		"taskId": taskId,
+		"TaskId": taskId,
 	}
 	err := http.NewClient(clientUrl).HeadAdd(tokenName, token).Body(body).PostUnmarshal(&apiResponse)
 	if err != nil {
@@ -69,7 +69,7 @@ func (receiver clientHttp) Kill(do *client.DomainObject, taskId int64) bool {
 	clientUrl := fmt.Sprintf("http://%s:%d/api/kill", do.Ip, do.Port)
 	var apiResponse core.ApiResponse[any]
 	body := map[string]any{
-		"taskId": taskId,
+		"TaskId": taskId,
 	}
 	err := http.NewClient(clientUrl).HeadAdd(tokenName, token).Body(body).PostUnmarshal(&apiResponse)
 	if err != nil {

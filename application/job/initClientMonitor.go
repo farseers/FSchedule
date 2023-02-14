@@ -11,7 +11,8 @@ func InitClientMonitor() {
 	clientRepository := container.Resolve[client.Repository]()
 	lst := clientRepository.ToList()
 	// 检查所有客户端
-	for _, clientDO := range lst.ToArray() {
+	for i := 0; i < lst.Count(); i++ {
+		clientDO := lst.Index(i)
 		domain.MonitorClientPush(&clientDO)
 	}
 }

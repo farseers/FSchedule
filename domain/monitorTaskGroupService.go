@@ -36,8 +36,9 @@ func MonitorTaskGroupPush(taskGroupDO *taskGroup.DomainObject) {
 func ClientJoin(clientDO *client.DomainObject) {
 	for i := 0; i < clientDO.Jobs.Count(); i++ {
 		// 找到客户端支持的任务组
-		if taskGroupList.ContainsKey(clientDO.Jobs.Index(i).Name) {
-			taskGroupMonitor := taskGroupList.GetValue(clientDO.Jobs.Index(i).Name)
+		jobName := clientDO.Jobs.Index(i).Name
+		if taskGroupList.ContainsKey(jobName) {
+			taskGroupMonitor := taskGroupList.GetValue(jobName)
 			taskGroupMonitor.addClient(clientDO)
 		}
 	}

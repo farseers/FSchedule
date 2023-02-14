@@ -10,7 +10,8 @@ import (
 func InitTaskGroupMonitor() {
 	repository := container.Resolve[taskGroup.Repository]()
 	lst := repository.ToList()
-	for _, taskGroupDO := range lst.ToArray() {
+	for i := 0; i < lst.Count(); i++ {
+		taskGroupDO := lst.Index(i)
 		domain.MonitorTaskGroupPush(&taskGroupDO)
 	}
 }

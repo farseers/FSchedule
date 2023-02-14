@@ -19,6 +19,7 @@ type TaskReportDTO struct {
 	RunSpeed     int64                                  // 执行速度
 }
 
+// TaskReport 客户端回调
 func TaskReport(dto TaskReportDTO, taskGroupRepository taskGroup.Repository, scheduleRepository schedule.Repository) {
 	taskEO := taskGroupRepository.GetTask(dto.Name, dto.Id)
 	if taskEO.IsNull() {

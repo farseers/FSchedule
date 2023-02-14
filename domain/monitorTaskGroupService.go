@@ -17,6 +17,7 @@ var taskGroupList = collections.NewDictionary[string, *TaskGroupMonitor]()
 
 // MonitorTaskGroupPush 将最新的任务组信息，推送到监控线程
 func MonitorTaskGroupPush(taskGroupDO *taskGroup.DomainObject) {
+	flog.Debugf("任务组更新通知：%s Ver%d", taskGroupDO.Name, taskGroupDO.Ver)
 	// 新的任务组不再当前列表，说明被其它节点处理了。
 	if !taskGroupList.ContainsKey(taskGroupDO.Name) {
 		monitor := newMonitor(taskGroupDO)

@@ -4,7 +4,6 @@ import (
 	"FSchedule/domain/enum"
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs/container"
-	"github.com/farseer-go/fs/flog"
 	"time"
 )
 
@@ -38,7 +37,6 @@ func (receiver *DomainObject) IsOffline() bool {
 func (receiver *DomainObject) Registry() {
 	receiver.ActivateAt = time.Now()
 	receiver.Status = enum.Online
-	flog.Infof("客户端（%d）注册成功：%s:%d", receiver.Id, receiver.Ip, receiver.Port)
 }
 
 // CheckOnline 检查客户端是否存活

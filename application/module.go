@@ -31,6 +31,9 @@ func (module Module) PostInitialize() {
 
 	// 自动清除历史任务记录
 	tasks.Run("ClearHisTaskJob", 1*time.Hour, job.ClearHisTaskJob, fs.Context)
+
+	// 打印客户端、任务组信息
+	tasks.Run("PrintInfoJob", 10*time.Second, job.PrintInfoJob, fs.Context)
 }
 
 func (module Module) Shutdown() {

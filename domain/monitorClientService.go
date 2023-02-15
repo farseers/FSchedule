@@ -76,9 +76,11 @@ func (receiver *ClientMonitor) checkOnline() {
 			return
 		}
 		select {
-		case <-time.After(10 * time.Second):
-			receiver.client.CheckOnline()
-			receiver.clientRepository.Save(receiver.client)
+		case <-time.After(30 * time.Second):
+			if !receiver.client.IsOffline() {
+				receiver.client.CheckOnline()
+				receiver.clientRepository.Save(receiver.client)
+			}
 		case <-receiver.ctx.Done():
 			return
 		}

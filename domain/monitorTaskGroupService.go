@@ -17,7 +17,7 @@ var taskGroupList = collections.NewDictionary[string, *TaskGroupMonitor]()
 
 // MonitorTaskGroupPush 将最新的任务组信息，推送到监控线程
 func MonitorTaskGroupPush(taskGroupDO *taskGroup.DomainObject) {
-	flog.Debugf("任务组更新通知：%s Ver%d", taskGroupDO.Name, taskGroupDO.Ver)
+	//flog.Debugf("任务组更新通知：%s Ver%d", taskGroupDO.Name, taskGroupDO.Ver)
 	// 新的任务组不再当前列表，说明被其它节点处理了。
 	if !taskGroupList.ContainsKey(taskGroupDO.Name) {
 		monitor := newMonitor(taskGroupDO)
@@ -92,9 +92,17 @@ func newMonitor(do *taskGroup.DomainObject) *TaskGroupMonitor {
 func (receiver *TaskGroupMonitor) Start() {
 	for {
 		// 任务组状态不可用、没有可用客户端，不需要调度
-		for !receiver.IsEnable || receiver.CanScheduleClient() == 0 {
-			flog.Infof("任务组：%s 为停止状态、或没有可调度的客户端", receiver.Name)
+		if !receiver.IsEnable {
+			flog.Debugf("任务组：%s 为停止状态", receiver.Name)
 			<-receiver.updated
+			continue
+		}
+
+		// 任务组状态不可用、没有可用客户端，不需要调度
+		if receiver.CanScheduleClient() == 0 {
+			flog.Debugf("任务组：%s 没有可调度的客户端", receiver.Name)
+			<-receiver.updated
+			continue
 		}
 
 		select {
@@ -105,7 +113,7 @@ func (receiver *TaskGroupMonitor) Start() {
 				receiver.waitScheduler()
 			case enum.Scheduling:
 				// 等待更新即可
-				flog.Infof("任务组：%s 等待更新", receiver.Name)
+				flog.Debugf("任务组：%s 等待更新", receiver.Name)
 				<-receiver.updated
 			case enum.Working:
 				// 已成功调度到客户端，需要等待客户端上报状态
@@ -122,7 +130,6 @@ func (receiver *TaskGroupMonitor) Start() {
 func (receiver *TaskGroupMonitor) waitScheduler() {
 	select {
 	case <-time.After(receiver.Task.StartAt.Sub(time.Now())): // 时间到了，需要调度
-		flog.Infof("任务组：%s 时间到了，需要调度", receiver.Name)
 		// 标记为调度中，阻止当前监听逻辑重复执行，否则会不停的重复执行调度
 		receiver.lock.TryLockRun(func() {
 			receiver.Task.Scheduling()
@@ -162,7 +169,7 @@ func (receiver *TaskGroupMonitor) addClient(newData *client.DomainObject) {
 
 // 移除客户端
 func (receiver *TaskGroupMonitor) removeClient(newData *client.DomainObject) {
-	flog.Infof("任务组：%s 移除客户端", receiver.Name)
+	flog.Debugf("任务组：%s 移除客户端", receiver.Name)
 	receiver.clients.RemoveAll(func(item *client.DomainObject) bool {
 		return item.Id == newData.Id
 	})

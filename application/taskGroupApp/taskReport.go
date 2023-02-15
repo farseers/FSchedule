@@ -7,7 +7,6 @@ import (
 	"FSchedule/domain/taskGroup"
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs/exception"
-	"github.com/farseer-go/fs/flog"
 )
 
 type TaskReportDTO struct {
@@ -38,7 +37,7 @@ func TaskReport(dto TaskReportDTO, taskGroupRepository taskGroup.Repository, sch
 		taskGroupDO.CalculateNextAtByUnix(dto.NextTimespan)
 		// 更新任务
 		taskEO.UpdateTask(dto.Status, dto.Data, dto.Progress, dto.RunSpeed)
-		flog.Infof("任务组：%s 收到任务上报：%d", dto.Name, dto.Id)
+		//flog.Debugf("任务组：%s 收到任务上报：%d", dto.Name, dto.Id)
 		domain.TaskReportService(taskEO, taskGroupDO, taskGroupRepository)
 	})
 }

@@ -50,5 +50,6 @@ func Registry(dto RegistryDTO, clientRepository client.Repository, taskGroupRepo
 
 	// 保存客户端信息
 	do.Registry()
+	do.CheckOnline()
 	clientRepository.Save(&do)
 }

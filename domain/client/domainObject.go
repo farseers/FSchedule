@@ -4,6 +4,7 @@ import (
 	"FSchedule/domain/enum"
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs/container"
+	"github.com/farseer-go/fs/flog"
 	"time"
 )
 
@@ -41,16 +42,13 @@ func (receiver *DomainObject) Registry() {
 
 // CheckOnline 检查客户端是否存活
 func (receiver *DomainObject) CheckOnline() {
-	if !receiver.IsOffline() {
-		status, err := container.Resolve[IClientCheck]().Check(receiver)
-		receiver.updateStatus(status, err)
-	}
+	status, err := container.Resolve[IClientCheck]().Check(receiver)
+	receiver.updateStatus(status, err)
 }
 
 // Logout 客户端下线
 func (receiver *DomainObject) Logout() {
 	receiver.Status = enum.Offline
-	//flog.Infof("客户端（%d）主动下线：%s:%d", receiver.Id, receiver.Ip, receiver.Port)
 }
 
 // Schedule 调度
@@ -62,6 +60,7 @@ func (receiver *DomainObject) Schedule(task *TaskEO) bool {
 		receiver.ScheduleAt = time.Now()
 	}
 
+	flog.Infof("调度成功：延迟：%d ms", time.Now().Sub(task.StartAt).Milliseconds())
 	return receiver.Status == enum.Scheduler
 }
 
@@ -88,11 +87,13 @@ func (receiver *DomainObject) updateStatus(status ResourceVO, err error) {
 
 // UnSchedule 客户端无法调度
 func (receiver *DomainObject) UnSchedule() {
-	receiver.ErrorCount++
-	receiver.Status = enum.UnSchedule
+	if !receiver.IsOffline() {
+		receiver.ErrorCount++
+		receiver.Status = enum.UnSchedule
 
-	// 大于3次、活动时间超过30秒，则判定为离线
-	if receiver.ErrorCount > 3 && time.Now().Sub(receiver.ActivateAt).Seconds() >= 30 {
-		receiver.Logout()
+		// 大于3次、活动时间超过30秒，则判定为离线
+		if receiver.ErrorCount > 3 && time.Now().Sub(receiver.ActivateAt).Seconds() >= 30 {
+			receiver.Logout()
+		}
 	}
 }

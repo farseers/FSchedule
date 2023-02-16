@@ -70,4 +70,5 @@ func (do *TaskEO) UpdateTask(status enum.TaskStatus, data collections.Dictionary
 	do.Data = data
 	do.Progress = progress
 	do.RunSpeed = speed
+	do.RunAt = time.Now()
 }

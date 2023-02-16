@@ -36,7 +36,6 @@ func CheckWorkingEvent(message any, _ core.EventArgs) {
 		clientDO.UnSchedule()
 		clientRepository.Save(clientDO)
 	} else {
-		do.Task.UpdateTask(dto.Status, dto.Data, dto.Progress, dto.RunSpeed)
-		taskGroupRepository.Save(*do.DomainObject)
+		do.Report(dto.Status, dto.Data, dto.Progress, dto.RunSpeed, dto.NextTimespan, taskGroupRepository)
 	}
 }

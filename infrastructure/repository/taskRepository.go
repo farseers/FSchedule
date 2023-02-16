@@ -7,11 +7,10 @@ import (
 	"github.com/farseer-go/cache"
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/data"
-	"github.com/farseer-go/fs/configure"
 	"github.com/farseer-go/fs/container"
+	"github.com/farseer-go/fs/flog"
 	"github.com/farseer-go/mapper"
 	"github.com/farseer-go/redis"
-	"strconv"
 	"sync"
 	"time"
 )
@@ -29,6 +28,7 @@ func getCacheManager(name string) cache.ICacheManage[taskGroup.TaskEO] {
 	if !container.IsRegister[cache.ICacheManage[taskGroup.TaskEO]](key) {
 		cacheManage := redis.SetProfiles[taskGroup.TaskEO](key, "Id", 0, "default")
 		cacheManage.SetItemSource(func(cacheId any) (taskGroup.TaskEO, bool) {
+			flog.Warningf("我在读数据库:task %d", cacheId)
 			repository := newManagerRepository()
 			po := repository.Task.Where("Id = ?", cacheId).ToEntity()
 			if po.Id > 0 {
@@ -38,18 +38,24 @@ func getCacheManager(name string) cache.ICacheManage[taskGroup.TaskEO] {
 		})
 
 		// 60秒同步一次任务到数据库
-		cacheManage.SetSyncSource(time.Duration(configure.GetInt("FSchedule.DataSyncTime"))*time.Second, func(do taskGroup.TaskEO) {
-			po := mapper.Single[model.TaskPO](&do)
-			repository := newManagerRepository()
-			result := repository.Task.UpdateOrInsert(po, "Id") == nil
-
-			// 保存成功后，已完成的任务，且最后运行时间大于1分钟的，移除列表
-			// 最后运行时间超过1小时的移除。（如果有读取，还是会从数据库重新读的）
-			if result && ((do.IsFinish() && time.Now().Sub(do.RunAt).Minutes() > float64(1)) ||
-				(time.Now().Sub(do.RunAt).Hours() > float64(1))) {
-				cacheManage.Remove(strconv.FormatInt(po.Id, 10))
-			}
-		})
+		//cacheManage.SetSyncSource(time.Duration(configure.GetInt("FSchedule.DataSyncTime"))*time.Second, func(do taskGroup.TaskEO) {
+		//	// 保存成功后，已完成的任务，且最后运行时间大于1分钟的，移除列表
+		//	// 最后运行时间超过1小时的移除。（如果有读取，还是会从数据库重新读的）
+		//	if (do.IsFinish() && time.Now().Sub(do.RunAt).Seconds() >= float64(30)) ||
+		//		(time.Now().Sub(do.RunAt).Hours() >= float64(1)) {
+		//		flog.Debugf("同步数据库:共%d条，task:%d", cacheManage.Count(), do.Id)
+		//		po := mapper.Single[model.TaskPO](&do)
+		//		repository := newManagerRepository()
+		//		result := repository.Task.UpdateOrInsert(po, "Id") == nil
+		//		if result {
+		//			cacheManage.Remove(po.Id)
+		//			if cacheManage.ExistsItem(po.Id) {
+		//				_ = flog.Error("数据删除失败")
+		//			}
+		//		}
+		//	}
+		//	time.Sleep(10 * time.Millisecond)
+		//})
 	}
 
 	return container.Resolve[cache.ICacheManage[taskGroup.TaskEO]](key)

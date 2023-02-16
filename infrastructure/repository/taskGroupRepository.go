@@ -2,14 +2,11 @@ package repository
 
 import (
 	"FSchedule/domain/taskGroup"
-	"FSchedule/infrastructure/repository/model"
 	"github.com/farseer-go/collections"
-	"github.com/farseer-go/fs/configure"
 	"github.com/farseer-go/fs/container"
 	"github.com/farseer-go/fs/core"
 	"github.com/farseer-go/mapper"
 	"github.com/farseer-go/redis"
-	"time"
 )
 
 type taskGroupRepository struct {
@@ -41,11 +38,14 @@ func registerTaskGroupRepository() {
 	})
 
 	// 60秒同步一次任务组到数据库
-	cacheManage.SetSyncSource(time.Duration(configure.GetInt("FSchedule.DataSyncTime"))*time.Second, func(do taskGroup.DomainObject) {
-		po := mapper.Single[model.TaskGroupPO](&do)
-		repository := newManagerRepository()
-		_ = repository.TaskGroup.UpdateOrInsert(po, "Name")
-	})
+	//syncTime := configure.GetInt("FSchedule.DataSyncTime")
+	//if syncTime > 0 {
+	//	cacheManage.SetSyncSource(time.Duration(syncTime)*time.Second, func(do taskGroup.DomainObject) {
+	//		po := mapper.Single[model.TaskGroupPO](&do)
+	//		repository := newManagerRepository()
+	//		_ = repository.TaskGroup.UpdateOrInsert(po, "Name")
+	//	})
+	//}
 
 	// 注册仓储
 	container.Register(func() taskGroup.Repository {

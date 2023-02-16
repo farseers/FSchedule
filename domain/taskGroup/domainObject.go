@@ -3,6 +3,8 @@ package taskGroup
 import (
 	"FSchedule/domain/enum"
 	"github.com/farseer-go/collections"
+	"github.com/farseer-go/fs/container"
+	"github.com/farseer-go/fs/core"
 	"github.com/farseer-go/fs/flog"
 	"github.com/farseer-go/fs/snowflake"
 	"github.com/robfig/cron/v3"
@@ -129,5 +131,28 @@ func (receiver *DomainObject) CalculateNextAtByCron() {
 			_ = flog.Errorf("Name:%s，Cron格式错误:%s", receiver.Name, receiver.Cron)
 		}
 		receiver.NextAt = cornSchedule.Next(time.Now())
+	}
+}
+
+// SyncData 同步Data
+func (receiver *DomainObject) SyncData() {
+	if receiver.Task.Status == enum.Success {
+		receiver.Data = receiver.Task.Data
+	}
+}
+
+// Report 任务报告
+func (receiver *DomainObject) Report(status enum.TaskStatus, data collections.Dictionary[string, string], progress int, runSpeed int64, nextTimespan int64, taskGroupRepository Repository) {
+	receiver.ActivateAt = time.Now()
+	receiver.LastRunAt = time.Now()
+	receiver.Task.UpdateTask(status, data, progress, runSpeed)
+	receiver.SyncData()
+	// 客户端动态计算下一个执行周期
+	receiver.CalculateNextAtByUnix(nextTimespan)
+
+	if receiver.Task.IsFinish() {
+		_ = container.Resolve[core.IEvent]("TaskFinish").Publish(receiver)
+	} else {
+		taskGroupRepository.Save(*receiver)
 	}
 }

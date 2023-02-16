@@ -40,27 +40,30 @@ func (receiver *DomainObject) Registry() {
 	receiver.Status = enum.Online
 }
 
+// Logout 客户端下线
+func (receiver *DomainObject) Logout() {
+	receiver.Status = enum.Offline
+}
+
 // CheckOnline 检查客户端是否存活
 func (receiver *DomainObject) CheckOnline() {
 	status, err := container.Resolve[IClientCheck]().Check(receiver)
 	receiver.updateStatus(status, err)
 }
 
-// Logout 客户端下线
-func (receiver *DomainObject) Logout() {
-	receiver.Status = enum.Offline
-}
-
 // Schedule 调度
 func (receiver *DomainObject) Schedule(task *TaskEO) bool {
+	milliseconds := time.Now().Sub(task.StartAt).Milliseconds()
 	status, err := container.Resolve[IClientCheck]().Invoke(receiver, task)
 	receiver.updateStatus(status, err)
 
 	if receiver.Status == enum.Scheduler {
 		receiver.ScheduleAt = time.Now()
+		flog.Infof("任务组：%s 调度成功 %d 延迟：%d ms", task.Name, task.Id, milliseconds)
+	} else {
+		flog.Warningf("任务组：%s 调度失败 %d 延迟：%d ms", task.Name, task.Id, milliseconds)
 	}
 
-	flog.Infof("调度成功：延迟：%d ms", time.Now().Sub(task.StartAt).Milliseconds())
 	return receiver.Status == enum.Scheduler
 }
 
@@ -92,7 +95,7 @@ func (receiver *DomainObject) UnSchedule() {
 		receiver.Status = enum.UnSchedule
 
 		// 大于3次、活动时间超过30秒，则判定为离线
-		if receiver.ErrorCount > 3 && time.Now().Sub(receiver.ActivateAt).Seconds() >= 30 {
+		if receiver.ErrorCount >= 3 && time.Now().Sub(receiver.ActivateAt).Seconds() >= 30 {
 			receiver.Logout()
 		}
 	}

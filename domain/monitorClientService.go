@@ -16,12 +16,11 @@ var clientList = collections.NewDictionary[int64, *ClientMonitor]()
 
 // ClientMonitor 等待任务执行
 type ClientMonitor struct {
-	client             *client.DomainObject
-	ctx                context.Context
-	cancelFunc         context.CancelFunc
-	clientRepository   client.Repository
-	clientJoinEvent    core.IEvent
-	clientOfflineEvent core.IEvent
+	client           *client.DomainObject
+	ctx              context.Context
+	cancelFunc       context.CancelFunc
+	ClientRepository client.Repository
+	ClientJoinEvent  core.IEvent `inject:"ClientJoin"`
 }
 
 // MonitorClientPush 将最新的客户端信息，推送到监控线程
@@ -30,21 +29,19 @@ func MonitorClientPush(clientDO *client.DomainObject) {
 	// 新客户端
 	if !clientDO.IsOffline() && !clientList.ContainsKey(clientDO.Id) {
 		ctx, cancelFunc := context.WithCancel(fs.Context)
-		clientMonitor := &ClientMonitor{
-			client:             clientDO,
-			ctx:                ctx,
-			cancelFunc:         cancelFunc,
-			clientRepository:   container.Resolve[client.Repository](),
-			clientJoinEvent:    container.Resolve[core.IEvent]("ClientJoin"),
-			clientOfflineEvent: container.Resolve[core.IEvent]("ClientOffline"),
-		}
+		clientMonitor := container.ResolveIns(&ClientMonitor{
+			client:     clientDO,
+			ctx:        ctx,
+			cancelFunc: cancelFunc,
+		})
 		clientList.Add(clientDO.Id, clientMonitor)
 
+		flog.Infof("客户端（%d）开始监听：%s:%d", clientDO.Id, clientDO.Ip, clientDO.Port)
 		// 异步检查客户端在线状态
-		go clientMonitor.checkOnline()
+		//go clientMonitor.checkOnline()
 
 		// 通知任务组，有新的客户端加入
-		_ = clientMonitor.clientJoinEvent.Publish(clientMonitor.client)
+		_ = clientMonitor.ClientJoinEvent.Publish(clientMonitor.client)
 	}
 
 	existsClientDO := clientList.GetValue(clientDO.Id)
@@ -59,18 +56,16 @@ func MonitorClientPush(clientDO *client.DomainObject) {
 	if clientDO.IsOffline() {
 		if existsClientDO != nil {
 			existsClientDO.cancelFunc()
-			// 客户端下线，移除客户端
-			_ = existsClientDO.clientOfflineEvent.Publish(clientDO)
 			clientList.Remove(clientDO.Id)
 		}
-		container.Resolve[client.Repository]().RemoveClient(clientDO.Id)
-		flog.Infof("客户端（%d）：%s:%d 下线", clientDO.Id, clientDO.Ip, clientDO.Port)
+
+		// 客户端下线，移除客户端
+		_ = container.Resolve[core.IEvent]("ClientOffline").Publish(clientDO)
 	}
 }
 
 // checkOnline 异步检查客户端在线状态
 func (receiver *ClientMonitor) checkOnline() {
-	flog.Infof("客户端（%d）开始监听：%s:%d", receiver.client.Id, receiver.client.Ip, receiver.client.Port)
 	for {
 		if receiver.client.IsOffline() {
 			return
@@ -79,7 +74,7 @@ func (receiver *ClientMonitor) checkOnline() {
 		case <-time.After(30 * time.Second):
 			if !receiver.client.IsOffline() {
 				receiver.client.CheckOnline()
-				receiver.clientRepository.Save(receiver.client)
+				receiver.ClientRepository.Save(receiver.client)
 			}
 		case <-receiver.ctx.Done():
 			return

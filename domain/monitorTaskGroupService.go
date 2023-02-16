@@ -31,18 +31,6 @@ func MonitorTaskGroupPush(taskGroupDO *taskGroup.DomainObject) {
 	}
 }
 
-// ClientJoin 推送新最新信息
-func ClientJoin(clientDO *client.DomainObject) {
-	for i := 0; i < clientDO.Jobs.Count(); i++ {
-		// 找到客户端支持的任务组
-		jobName := clientDO.Jobs.Index(i).Name
-		if taskGroupList.ContainsKey(jobName) {
-			taskGroupMonitor := taskGroupList.GetValue(jobName)
-			taskGroupMonitor.addClient(clientDO)
-		}
-	}
-}
-
 // ClientUpdate 客户端有更新，推送通知
 func ClientUpdate(clientDO *client.DomainObject) {
 	for i := 0; i < clientDO.Jobs.Count(); i++ {
@@ -50,31 +38,21 @@ func ClientUpdate(clientDO *client.DomainObject) {
 		jobName := clientDO.Jobs.Index(i).Name
 		if taskGroupList.ContainsKey(jobName) {
 			taskGroupMonitor := taskGroupList.GetValue(jobName)
-			taskGroupMonitor.updated <- struct{}{}
-		}
-	}
-}
-
-// ClientOffline 客户端移除
-func ClientOffline(clientDO *client.DomainObject) {
-	for i := 0; i < clientDO.Jobs.Count(); i++ {
-		// 找到客户端支持的任务组
-		if taskGroupList.ContainsKey(clientDO.Jobs.Index(i).Name) {
-			taskGroupMonitor := taskGroupList.GetValue(clientDO.Jobs.Index(i).Name)
-			taskGroupMonitor.removeClient(clientDO)
+			taskGroupMonitor.updateClient(clientDO)
 		}
 	}
 }
 
 // TaskGroupMonitor 等待任务执行
 type TaskGroupMonitor struct {
-	SchedulerEventBus    core.IEvent                            `inject:"TaskScheduler"` // 任务调度事件
-	FinishEventBus       core.IEvent                            `inject:"TaskFinish"`    // 任务完成
-	CheckWorkingEventBus core.IEvent                            `inject:"CheckWorking"`  // 检查进行中的任务
-	lock                 core.ILock                             // 锁
-	clients              collections.List[*client.DomainObject] // 客户端列表
-	updated              chan struct{}                          // 数据有更新，让流程重置
-	timer                *time.Timer
+	SchedulerEventBus    core.IEvent                                         `inject:"TaskScheduler"` // 任务调度事件
+	FinishEventBus       core.IEvent                                         `inject:"TaskFinish"`    // 任务完成
+	CheckWorkingEventBus core.IEvent                                         `inject:"CheckWorking"`  // 检查进行中的任务
+	lock                 core.ILock                                          // 锁
+	clients              collections.Dictionary[int64, *client.DomainObject] // 客户端列表
+	updated              chan struct{}                                       // 数据有更新，让流程重置
+	timer                *time.Timer                                         // 用于做定时select case
+	curClient            *client.DomainObject                                // 当前调度的客户端
 	*taskGroup.DomainObject
 }
 
@@ -83,7 +61,7 @@ func newMonitor(do *taskGroup.DomainObject) *TaskGroupMonitor {
 	return container.ResolveIns(&TaskGroupMonitor{
 		DomainObject: do,
 		updated:      make(chan struct{}, 1000),
-		clients:      collections.NewList[*client.DomainObject](),
+		clients:      collections.NewDictionary[int64, *client.DomainObject](),
 		lock:         container.Resolve[schedule.Repository]().NewLock(do.Name),
 		timer:        time.NewTimer(0),
 	})
@@ -155,6 +133,12 @@ func (receiver *TaskGroupMonitor) waitScheduler() {
 
 // 等待完成
 func (receiver *TaskGroupMonitor) waitWorking() {
+	if receiver.curClient == nil || receiver.curClient.IsNil() || receiver.curClient.IsOffline() {
+		receiver.lock.TryLockRun(func() {
+			_ = receiver.CheckWorkingEventBus.Publish(receiver)
+		})
+	}
+
 	receiver.ResetTime(60 * time.Second)
 	select {
 	case <-receiver.timer.C: // 每隔60秒，主动向客户端询问任务状态
@@ -176,49 +160,47 @@ func (receiver *TaskGroupMonitor) taskFinish() {
 	}
 }
 
-// 有新客户端
-func (receiver *TaskGroupMonitor) addClient(newData *client.DomainObject) {
-	flog.Infof("任务组：%s 有新客户端addClient", receiver.Name)
-	receiver.clients.Add(newData)
-	receiver.updated <- struct{}{}
-}
-
-// 移除客户端
-func (receiver *TaskGroupMonitor) removeClient(newData *client.DomainObject) {
-	flog.Debugf("任务组：%s 移除客户端removeClient", receiver.Name)
-	receiver.clients.RemoveAll(func(item *client.DomainObject) bool {
-		return item.Id == newData.Id
-	})
+// 更新客户端
+func (receiver *TaskGroupMonitor) updateClient(newData *client.DomainObject) {
+	flog.Infof("任务组：%s 更新客户端updateClient", receiver.Name)
+	// 状态为不可调度时，则移除列表
+	if newData.IsNotSchedule() {
+		receiver.clients.Remove(newData.Id)
+	} else {
+		receiver.clients.Add(newData.Id, newData)
+	}
 	receiver.updated <- struct{}{}
 }
 
 // PollingClient 轮询的方式取到客户端
 func (receiver *TaskGroupMonitor) PollingClient() *client.DomainObject {
-	// 使用轮询方式，根据调度时间排序，取最晚没调度的客户端
-	return receiver.clients.Where(func(item *client.DomainObject) bool {
-		return item.Status == enum.Scheduler && item.Jobs.Where(func(jobVO client.JobVO) bool {
-			return jobVO.Name == receiver.Name && jobVO.Ver == receiver.Ver
-		}).Any()
-	}).OrderBy(func(item *client.DomainObject) any {
-		return item.ScheduleAt.UnixMilli()
-	}).First()
+	lst := receiver.clients.Values()
+	for ver := receiver.Ver; ver > 0; ver-- {
+		// 使用轮询方式，根据调度时间排序，取最晚没调度的客户端
+		receiver.curClient = lst.Where(func(item *client.DomainObject) bool {
+			return item.Jobs.Where(func(jobVO client.JobVO) bool {
+				return jobVO.Name == receiver.Name && jobVO.Ver == ver
+			}).Any()
+		}).OrderBy(func(item *client.DomainObject) any {
+			return item.ScheduleAt.UnixMilli()
+		}).First()
+
+		// 找到了，不用继续往下找
+		if receiver.curClient != nil {
+			break
+		}
+	}
+	return receiver.curClient
 }
 
 // GetClient 获取客户端
-func (receiver *TaskGroupMonitor) GetClient(clientId int64) *client.DomainObject {
-	// 使用轮询方式，根据调度时间排序，取最晚没调度的客户端
-	return receiver.clients.Where(func(item *client.DomainObject) bool {
-		return item.Id == clientId
-	}).First()
+func (receiver *TaskGroupMonitor) GetClient() *client.DomainObject {
+	return receiver.curClient
 }
 
 // CanScheduleClient 能调度的客户端
 func (receiver *TaskGroupMonitor) CanScheduleClient() int {
-	return receiver.clients.Where(func(item *client.DomainObject) bool {
-		return item.Status == enum.Scheduler && item.Jobs.Where(func(jobVO client.JobVO) bool {
-			return jobVO.Name == receiver.Name && jobVO.Ver == receiver.Ver
-		}).Any()
-	}).Count()
+	return receiver.clients.Count()
 }
 
 // ResetTime 重置时间

@@ -18,7 +18,6 @@ type taskGroupRepository struct {
 
 func registerTaskGroupRepository() {
 	cacheManage := redis.SetProfiles[taskGroup.DomainObject]("FSchedule_TaskGroup", "Name", 0, "default")
-	cacheManage.EnableItemNullToLoadAll()
 	// 多级缓存
 	cacheManage.SetListSource(func() collections.List[taskGroup.DomainObject] {
 		var lst collections.List[taskGroup.DomainObject]

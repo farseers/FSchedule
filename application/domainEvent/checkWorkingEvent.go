@@ -21,7 +21,7 @@ func CheckWorkingEvent(message any, _ core.EventArgs) {
 	}
 
 	// 得到当前处理的客户端
-	clientDO := do.GetClient(do.Task.Client.Id)
+	clientDO := do.GetClient()
 
 	// 客户端下线了
 	if clientDO == nil || clientDO.IsNil() || clientDO.IsOffline() {

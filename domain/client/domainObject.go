@@ -34,6 +34,11 @@ func (receiver *DomainObject) IsOffline() bool {
 	return receiver.Status == enum.Offline
 }
 
+// IsNotSchedule 状态不是调度状态
+func (receiver *DomainObject) IsNotSchedule() bool {
+	return receiver.Status != enum.Scheduler
+}
+
 // Registry 注册客户端
 func (receiver *DomainObject) Registry() {
 	receiver.ActivateAt = time.Now()

@@ -73,15 +73,15 @@ func (receiver *TaskGroupMonitor) Start() {
 		switch receiver.Task.Status {
 		case enum.None, enum.ScheduleFail: // 如果调度失败状态，需要重新调度
 			// 等待时间达了之后，开始调度
-			flog.Debugf("任务组：%s 等待时间达了之后，开始调度", receiver.Name)
+			flog.Debugf("任务组：%s 等待任务开始时间", receiver.Name)
 			receiver.waitStart()
 		case enum.Scheduling:
 			// 等待更新即可
 			flog.Debugf("任务组：%s 等待更新", receiver.Name)
 			<-receiver.updated
 		case enum.Working:
-			// 已成功调度到客户端，需要等待客户端上报状态
-			flog.Debugf("任务组：%s 需要等待客户端上报状态", receiver.Name)
+			// 已成功调度到客户端，等待客户端执行完成
+			flog.Debugf("任务组：%s 等待客户端执行完成", receiver.Name)
 			receiver.waitWorking()
 		case enum.Fail, enum.Success:
 			flog.Debugf("任务组：%s 任务完成", receiver.Name)
@@ -109,6 +109,7 @@ func (receiver *TaskGroupMonitor) waitStart() {
 	receiver.ResetTime(receiver.StartAt.Sub(time.Now()))
 	select {
 	case <-receiver.timer.C: // 开始时间到了，可以开始计算任务执行赶时间
+		flog.Debugf("任务组：%s 等待执行时间", receiver.Name)
 		receiver.waitScheduler()
 	case <-receiver.updated:
 	}
@@ -118,7 +119,8 @@ func (receiver *TaskGroupMonitor) waitStart() {
 func (receiver *TaskGroupMonitor) waitScheduler() {
 	receiver.ResetTime(receiver.NextAt.Sub(time.Now()))
 	select {
-	case <-receiver.timer.C: // 任务时间到了，需要调度
+	case <-receiver.timer.C: // 执行时间到了，准开始调度
+		flog.Debugf("任务组：%s 执行时间到了，准开始调度", receiver.Name)
 		// 标记为调度中，阻止当前监听逻辑重复执行，否则会不停的重复执行调度
 		if !receiver.lock.TryLockRun(func() {
 			receiver.Task.Scheduling()
@@ -140,13 +142,19 @@ func (receiver *TaskGroupMonitor) waitWorking() {
 	}
 
 	receiver.ResetTime(60 * time.Second)
-	select {
-	case <-receiver.timer.C: // 每隔60秒，主动向客户端询问任务状态
-		flog.Debugf("任务组：%s 主动向客户端询问任务状态", receiver.Name)
-		receiver.lock.TryLockRun(func() {
-			_ = receiver.CheckWorkingEventBus.Publish(receiver)
-		})
-	case <-receiver.updated:
+	// 这里用循环是为了，任何的更新，如果仍处于Working状态，则不需要跳到外面重新执行
+	for {
+		select {
+		case <-receiver.timer.C: // 每隔60秒，主动向客户端询问任务状态
+			flog.Debugf("任务组：%s 主动向客户端询问任务状态", receiver.Name)
+			receiver.lock.TryLockRun(func() {
+				_ = receiver.CheckWorkingEventBus.Publish(receiver)
+			})
+		case <-receiver.updated:
+			if !receiver.Task.IsWorking() {
+				return
+			}
+		}
 	}
 }
 
@@ -162,7 +170,7 @@ func (receiver *TaskGroupMonitor) taskFinish() {
 
 // 更新客户端
 func (receiver *TaskGroupMonitor) updateClient(newData *client.DomainObject) {
-	flog.Infof("任务组：%s 更新客户端updateClient", receiver.Name)
+	flog.Debugf("任务组：%s 更新客户端updateClient", receiver.Name)
 	// 状态为不可调度时，则移除列表
 	if newData.IsNotSchedule() {
 		receiver.clients.Remove(newData.Id)
@@ -178,7 +186,7 @@ func (receiver *TaskGroupMonitor) PollingClient() *client.DomainObject {
 	for ver := receiver.Ver; ver > 0; ver-- {
 		// 使用轮询方式，根据调度时间排序，取最晚没调度的客户端
 		receiver.curClient = lst.Where(func(item *client.DomainObject) bool {
-			return item.Jobs.Where(func(jobVO client.JobVO) bool {
+			return item.Status == enum.Scheduler && item.Jobs.Where(func(jobVO client.JobVO) bool {
 				return jobVO.Name == receiver.Name && jobVO.Ver == ver
 			}).Any()
 		}).OrderBy(func(item *client.DomainObject) any {

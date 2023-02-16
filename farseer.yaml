@@ -10,7 +10,7 @@ FSchedule:
   DataSyncTime: 1
   ReservedTaskCount: 1000
 Log:
-  LogLevel: "Information"
+  LogLevel: "info"
   Component:
     httpInvoke: true
     task: false

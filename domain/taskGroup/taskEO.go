@@ -28,47 +28,52 @@ func NewTaskDO() *TaskEO {
 }
 
 // SetClient 调度时设置客户端
-func (do *TaskEO) SetClient(client ClientVO) {
-	do.Status = enum.Working
-	do.SchedulerAt = time.Now()
-	do.Client = client
+func (receiver *TaskEO) SetClient(client ClientVO) {
+	receiver.Status = enum.Working
+	receiver.SchedulerAt = time.Now()
+	receiver.Client = client
 }
 
 // SetJobName 更新了JobName，则要立即更新Task的JobName
-func (do *TaskEO) SetJobName(name string) {
-	do.Name = name
+func (receiver *TaskEO) SetJobName(name string) {
+	receiver.Name = name
 }
 
 // SetFail 设备为失败
-func (do *TaskEO) SetFail() {
-	do.Status = enum.Fail
+func (receiver *TaskEO) SetFail() {
+	receiver.Status = enum.Fail
 }
 
 // Scheduling 调度
-func (do *TaskEO) Scheduling() {
-	do.Status = enum.Scheduling
+func (receiver *TaskEO) Scheduling() {
+	receiver.Status = enum.Scheduling
 }
 
 // ScheduleFail 调度失败
-func (do *TaskEO) ScheduleFail() {
-	do.Status = enum.ScheduleFail
+func (receiver *TaskEO) ScheduleFail() {
+	receiver.Status = enum.ScheduleFail
 }
 
 // IsNull 未分配
-func (do *TaskEO) IsNull() bool {
-	return do.Id == 0 && do.Caption == "" && do.Name == ""
+func (receiver *TaskEO) IsNull() bool {
+	return receiver.Id == 0 && receiver.Caption == "" && receiver.Name == ""
 }
 
 // IsFinish 是否完成
-func (do *TaskEO) IsFinish() bool {
-	return do.Status == enum.Success || do.Status == enum.Fail
+func (receiver *TaskEO) IsFinish() bool {
+	return receiver.Status == enum.Success || receiver.Status == enum.Fail
+}
+
+// IsWorking 是否为执行中
+func (receiver *TaskEO) IsWorking() bool {
+	return receiver.Status == enum.Working
 }
 
 // UpdateTask 更新任务
-func (do *TaskEO) UpdateTask(status enum.TaskStatus, data collections.Dictionary[string, string], progress int, speed int64) {
-	do.Status = status
-	do.Data = data
-	do.Progress = progress
-	do.RunSpeed = speed
-	do.RunAt = time.Now()
+func (receiver *TaskEO) UpdateTask(status enum.TaskStatus, data collections.Dictionary[string, string], progress int, speed int64) {
+	receiver.Status = status
+	receiver.Data = data
+	receiver.Progress = progress
+	receiver.RunSpeed = speed
+	receiver.RunAt = time.Now()
 }

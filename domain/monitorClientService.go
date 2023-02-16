@@ -6,7 +6,6 @@ import (
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs"
 	"github.com/farseer-go/fs/container"
-	"github.com/farseer-go/fs/core"
 	"github.com/farseer-go/fs/flog"
 	"time"
 )
@@ -20,7 +19,6 @@ type ClientMonitor struct {
 	ctx              context.Context
 	cancelFunc       context.CancelFunc
 	ClientRepository client.Repository
-	ClientJoinEvent  core.IEvent `inject:"ClientJoin"`
 }
 
 // MonitorClientPush 将最新的客户端信息，推送到监控线程
@@ -39,6 +37,7 @@ func MonitorClientPush(clientDO *client.DomainObject) {
 		clientList.Add(clientDO.Id, clientMonitor)
 
 		flog.Infof("客户端（%d）开始监听：%s:%d", clientDO.Id, clientDO.Ip, clientDO.Port)
+
 		// 异步检查客户端在线状态
 		go clientMonitor.checkOnline()
 	}
@@ -48,7 +47,9 @@ func MonitorClientPush(clientDO *client.DomainObject) {
 	if existsClientDO != nil {
 		// 非新客户端时，对比前后状态是否不一致，有变化时，才需要通知任务组
 		if !needPushUpdate {
-			needPushUpdate = existsClientDO.client.Status != clientDO.Status
+			needPushUpdate = existsClientDO.client.Status != clientDO.Status ||
+				existsClientDO.client.ScheduleAt != clientDO.ScheduleAt ||
+				existsClientDO.client.ErrorCount != clientDO.ErrorCount
 		}
 
 		// 修改地址对应的值
@@ -59,6 +60,7 @@ func MonitorClientPush(clientDO *client.DomainObject) {
 
 		// 客户端离线
 		if clientDO.IsOffline() {
+			flog.Infof("客户端（%d）：%s:%d 下线", clientDO.Id, clientDO.Ip, clientDO.Port)
 			existsClientDO.cancelFunc()
 			clientList.Remove(clientDO.Id)
 		}

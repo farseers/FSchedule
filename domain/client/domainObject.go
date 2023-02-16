@@ -65,11 +65,11 @@ func (receiver *DomainObject) Schedule(task *TaskEO) bool {
 	if receiver.Status == enum.Scheduler {
 		receiver.ScheduleAt = time.Now()
 		flog.Infof("任务组：%s 调度成功 %d 延迟：%d ms", task.Name, task.Id, milliseconds)
-	} else {
-		flog.Warningf("任务组：%s 调度失败 %d 延迟：%d ms", task.Name, task.Id, milliseconds)
+		return true
 	}
 
-	return receiver.Status == enum.Scheduler
+	flog.Warningf("任务组：%s 调度失败 %d 延迟：%d ms", task.Name, task.Id, milliseconds)
+	return false
 }
 
 // 更新状态

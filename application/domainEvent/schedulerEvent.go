@@ -8,6 +8,7 @@ import (
 	"github.com/farseer-go/fs/container"
 	"github.com/farseer-go/fs/core"
 	"github.com/farseer-go/mapper"
+	"time"
 )
 
 // SchedulerEvent 任务调度
@@ -50,5 +51,7 @@ func SchedulerEvent(message any, _ core.EventArgs) {
 		do.ScheduleFail()
 		clientRepository.Save(clientSchedule)
 		taskGroupRepository.Save(*do.DomainObject)
+
+		time.Sleep(100 * time.Millisecond)
 	}
 }

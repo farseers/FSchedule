@@ -23,11 +23,8 @@ type ClientMonitor struct {
 
 // MonitorClientPush 将最新的客户端信息，推送到监控线程
 func MonitorClientPush(clientDO *client.DomainObject) {
-	needPushUpdate := false
-	//flog.Debugf("客户端（%d）更新通知：%s:%d", clientDO.Id, clientDO.Ip, clientDO.Port)
 	// 新客户端
 	if !clientDO.IsOffline() && !clientList.ContainsKey(clientDO.Id) {
-		needPushUpdate = true
 		ctx, cancelFunc := context.WithCancel(fs.Context)
 		clientMonitor := container.ResolveIns(&ClientMonitor{
 			client:     clientDO,
@@ -40,21 +37,18 @@ func MonitorClientPush(clientDO *client.DomainObject) {
 
 		// 异步检查客户端在线状态
 		go clientMonitor.checkOnline()
+
+		ClientUpdate(clientDO)
 	}
 
 	existsClientDO := clientList.GetValue(clientDO.Id)
 
 	if existsClientDO != nil {
-		// 非新客户端时，对比前后状态是否不一致，有变化时，才需要通知任务组
-		if !needPushUpdate {
-			needPushUpdate = existsClientDO.client.Status != clientDO.Status ||
-				existsClientDO.client.ScheduleAt != clientDO.ScheduleAt ||
-				existsClientDO.client.ErrorCount != clientDO.ErrorCount
-		}
-
 		// 修改地址对应的值
 		*existsClientDO.client = *clientDO
-		if needPushUpdate {
+
+		// 只有状态不一样时，才要更新
+		if existsClientDO.client.NeedNotice {
 			ClientUpdate(existsClientDO.client)
 		}
 
@@ -73,8 +67,13 @@ func (receiver *ClientMonitor) checkOnline() {
 		if receiver.client.IsOffline() {
 			return
 		}
+		checkTime := 60 * time.Second
+		if receiver.client.IsNotSchedule() || time.Since(receiver.client.ActivateAt).Seconds() >= 60 {
+			checkTime = 10 * time.Second
+		}
+
 		select {
-		case <-time.After(30 * time.Second):
+		case <-tw.Add(checkTime).C:
 			if !receiver.client.IsOffline() {
 				receiver.client.CheckOnline()
 				receiver.ClientRepository.Save(receiver.client)

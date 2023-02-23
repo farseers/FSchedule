@@ -7,7 +7,7 @@ WebApi:
 FSchedule:
   Server:
     Token: ""
-  DataSyncTime: 1
+  DataSyncTime: 0
   ReservedTaskCount: 1000
 Log:
   LogLevel: "info"

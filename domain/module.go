@@ -18,6 +18,7 @@ func (module Module) Initialize() {
 }
 
 func (module Module) PostInitialize() {
+	tw.Start()
 }
 
 func (module Module) Shutdown() {

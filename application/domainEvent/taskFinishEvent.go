@@ -25,6 +25,6 @@ func TaskFinishEvent(message any, _ core.EventArgs) {
 	}
 	// 任务初始化
 	do.CreateTask()
-	flog.Debugf("任务组：%s 任务完成，下次执行时间：%s", do.Name, do.Task.StartAt.Format(time.DateTime))
+	flog.Debugf("任务组：%s %d 任务完成，下次执行时间：%s\n", do.Name, do.Task.Id, do.Task.StartAt.Format(time.DateTime))
 	taskGroupRepository.SaveAndTask(*do)
 }

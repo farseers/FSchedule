@@ -64,6 +64,11 @@ func (receiver *DomainObject) UpdateVer(name string, caption string, ver int, st
 
 // CreateTask 创建新的Task
 func (receiver *DomainObject) CreateTask() {
+	if receiver.Task.IsFinish() {
+		receiver.RunCount++
+		receiver.LastRunAt = time.Now()
+		receiver.ActivateAt = time.Now()
+	}
 	receiver.Task = TaskEO{
 		Id:          snowflake.GenerateId(),
 		Ver:         receiver.Ver,
@@ -113,7 +118,13 @@ func (receiver *DomainObject) ClientOffline() {
 
 // CanScheduler 是否可以调度
 func (receiver *DomainObject) CanScheduler() bool {
-	return !receiver.Task.IsNull() && (receiver.Task.Status == enum.None || receiver.Task.Status == enum.ScheduleFail || receiver.Task.Status == enum.Scheduling) && receiver.IsEnable && time.Now().After(receiver.StartAt) && time.Now().After(receiver.Task.StartAt)
+	return !receiver.Task.IsNull() &&
+		(receiver.Task.Status == enum.None ||
+			receiver.Task.Status == enum.ScheduleFail ||
+			receiver.Task.Status == enum.Scheduling) &&
+		receiver.IsEnable &&
+		time.Now().After(receiver.StartAt) &&
+		time.Now().Sub(receiver.Task.StartAt).Milliseconds() >= -1
 }
 
 // CalculateNextAtByUnix 重新计算下一个执行周期

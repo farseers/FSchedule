@@ -22,6 +22,7 @@ type DomainObject struct {
 	MemoryUsage float32                 // 内存百分比
 	ErrorCount  int                     // 错误次数
 	Jobs        collections.List[JobVO] // 客户端支持的任务
+	NeedNotice  bool                    //	是否需要通知任务组
 }
 
 // IsNil 判断注册的客户端是否有效
@@ -43,11 +44,13 @@ func (receiver *DomainObject) IsNotSchedule() bool {
 func (receiver *DomainObject) Registry() {
 	receiver.ActivateAt = time.Now()
 	receiver.Status = enum.Online
+	receiver.NeedNotice = true
 }
 
 // Logout 客户端下线
 func (receiver *DomainObject) Logout() {
 	receiver.Status = enum.Offline
+	receiver.NeedNotice = true
 }
 
 // CheckOnline 检查客户端是否存活
@@ -58,22 +61,24 @@ func (receiver *DomainObject) CheckOnline() {
 
 // Schedule 调度
 func (receiver *DomainObject) Schedule(task *TaskEO) bool {
-	milliseconds := time.Now().Sub(task.StartAt).Milliseconds()
-	status, err := container.Resolve[IClientCheck]().Invoke(receiver, task)
-	receiver.updateStatus(status, err)
+	//status, err := container.Resolve[IClientCheck]().Invoke(receiver, task)
+	//receiver.updateStatus(status, err)
+	receiver.Status = enum.Scheduler
 
 	if receiver.Status == enum.Scheduler {
 		receiver.ScheduleAt = time.Now()
-		flog.Infof("任务组：%s 调度成功 %d 延迟：%d ms", task.Name, task.Id, milliseconds)
+		flog.Infof("任务组：%s 调度成功 %d 延迟：%s ms", task.Name, task.Id, flog.RedInt64(time.Since(task.StartAt).Milliseconds()))
 		return true
 	}
 
-	flog.Warningf("任务组：%s 调度失败 %d 延迟：%d ms", task.Name, task.Id, milliseconds)
+	flog.Warningf("任务组：%s 调度失败 %d 延迟：%d ms", task.Name, task.Id, time.Since(task.StartAt).Milliseconds())
 	return false
 }
 
 // 更新状态
 func (receiver *DomainObject) updateStatus(status ResourceVO, err error) {
+	oldStatus := receiver.Status
+
 	if err != nil {
 		// 先设置为无法调度
 		receiver.UnSchedule()
@@ -91,6 +96,8 @@ func (receiver *DomainObject) updateStatus(status ResourceVO, err error) {
 			receiver.Status = enum.StopSchedule
 		}
 	}
+
+	receiver.NeedNotice = oldStatus != receiver.Status
 }
 
 // UnSchedule 客户端无法调度

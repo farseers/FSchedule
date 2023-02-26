@@ -74,7 +74,7 @@ func (receiver *DomainObject) Schedule(task *TaskEO) bool {
 		flog.Infof("任务组：%s 调度成功 %d 延迟：%s ms", task.Name, task.Id, flog.Red(milliseconds))
 		return true
 	}
-	flog.Warningf("任务组：%s 调度失败 %d 延迟：%d ms", task.Name, task.Id, flog.Red(time.Since(task.StartAt).Milliseconds()))
+	flog.Warningf("任务组：%s 调度失败 %d 延迟：%s ms", task.Name, task.Id, flog.Red(time.Since(task.StartAt).Milliseconds()))
 	return false
 }
 

@@ -5,20 +5,16 @@ import (
 	"FSchedule/domain/enum"
 	"FSchedule/domain/schedule"
 	"FSchedule/domain/taskGroup"
-	"bytes"
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs/container"
 	"github.com/farseer-go/fs/core"
 	"github.com/farseer-go/fs/flog"
 	"github.com/farseer-go/fs/timingWheel"
-	"runtime"
-	"strconv"
 	"time"
 )
 
 // 加入到监控的列表
 var taskGroupList = collections.NewDictionary[string, *TaskGroupMonitor]()
-var tw = timingWheel.New(100*time.Millisecond, 120)
 
 // MonitorTaskGroupPush 将最新的任务组信息，推送到监控线程
 func MonitorTaskGroupPush(taskGroupDO *taskGroup.DomainObject) {
@@ -28,17 +24,12 @@ func MonitorTaskGroupPush(taskGroupDO *taskGroup.DomainObject) {
 		taskGroupList.Add(taskGroupDO.Name, monitor)
 		flog.Infof("任务组：%s ver:%d 加入调度线程", taskGroupDO.Name, taskGroupDO.Ver)
 		go monitor.Start()
+		monitor.updated <- struct{}{}
 	} else {
 		taskGroupMonitor := taskGroupList.GetValue(taskGroupDO.Name)
-		//oldTaskGroup := *taskGroupMonitor.DomainObject
 		*taskGroupMonitor.DomainObject = *taskGroupDO
+		flog.Debugf("任务组更新通知：%s Ver:%d", taskGroupDO.Name, taskGroupDO.Ver)
 		taskGroupMonitor.updated <- struct{}{}
-		//if oldTaskGroup.Task.Status != taskGroupMonitor.DomainObject.Task.Status ||
-		//	oldTaskGroup.Task.Id != taskGroupMonitor.DomainObject.Task.Id ||
-		//	oldTaskGroup.IsEnable != taskGroupMonitor.DomainObject.IsEnable {
-		//	flog.Debugf("任务组更新通知：%s Ver:%d", taskGroupDO.Name, taskGroupDO.Ver)
-		//	taskGroupMonitor.updated <- struct{}{}
-		//}
 	}
 }
 
@@ -110,20 +101,20 @@ func (receiver *TaskGroupMonitor) waitStart() {
 
 		// 任务组状态不可用、没有可用客户端，不需要调度
 		if !receiver.IsEnable {
-			flog.Debugf("任务组：%s "+flog.YellowString("停止状态，等待任务重新开启"), receiver.Name)
+			flog.Debugf("任务组：%s "+flog.Yellow("停止状态，等待任务重新开启"), receiver.Name)
 			<-receiver.updated
 			continue
 		}
 
 		// 任务组状态不可用、没有可用客户端，不需要调度
 		if receiver.CanScheduleClient() == 0 {
-			flog.Debugf("任务组：%s "+flog.YellowString("没有客户端，等待客户端接入"), receiver.Name)
+			flog.Debugf("任务组：%s "+flog.Yellow("没有客户端，等待客户端接入"), receiver.Name)
 			<-receiver.updated
 			continue
 		}
 
 		flog.Debugf("任务组：%s 等待开始时间", receiver.Name)
-		timer := tw.AddTimePrecision(receiver.StartAt)
+		timer := timingWheel.AddTimePrecision(receiver.StartAt)
 		select {
 		case <-timer.C: // 开始时间到了，可以开始计算任务执行赶时间
 			flog.Debugf("任务组：%s 等待执行时间", receiver.Name)
@@ -137,35 +128,34 @@ func (receiver *TaskGroupMonitor) waitStart() {
 
 // 等待调度
 func (receiver *TaskGroupMonitor) waitScheduler() {
-	// 由于创建锁的时候，需要网络IO开销，所以这里提前50ms进入
+	// 由于创建锁的时候，需要网络IO开销，所以这里提前100ms进入
 	select {
-	case <-tw.AddTime(receiver.Task.StartAt.Add(-50 * time.Millisecond)).C: // 执行时间到了，准开始调度
-		flog.Debugf("任务组：%s %d 准备抢占锁，延迟：%d us GoID:%d", receiver.Name, receiver.Task.Id, time.Since(receiver.Task.StartAt).Microseconds(), GoID())
+	case <-timingWheel.AddTime(receiver.Task.StartAt.Add(-200 * time.Millisecond)).C: // 执行时间到了，准开始调度
 		// 标记为调度中，阻止当前监听逻辑重复执行，否则会不停的重复执行调度
 		if !receiver.lock.TryLockRun(func() {
-			flog.Debugf("任务组：%s %d 抢锁成功，延迟：%d us GoID:%d", receiver.Name, receiver.Task.Id, time.Since(receiver.Task.StartAt).Microseconds(), GoID())
-			// 前面，提前了50ms进到这里。所以这里需要转成正确的时间
-			<-tw.AddTimePrecision(receiver.Task.StartAt).C
+			// 提前了100ms进到这里。
 			receiver.Task.Scheduling()
-			flog.Debugf("任务组：%s %d 发布调度事件，延迟：%d us GoID:%d", receiver.Name, receiver.Task.Id, time.Since(receiver.Task.StartAt).Microseconds(), GoID())
+			if m := time.Since(receiver.Task.StartAt).Microseconds(); m > 0 {
+				flog.Infof("任务组：%s %d 发布调度事件，延迟：%d us", receiver.Name, receiver.Task.Id, time.Since(receiver.Task.StartAt).Microseconds())
+			}
 			_ = receiver.SchedulerEventBus.Publish(receiver)
 		}) {
-			flog.Debugf("任务组：%s %d 没有抢到锁，延迟：%d us GoID:%d", receiver.Name, receiver.Task.Id, time.Since(receiver.Task.StartAt).Microseconds(), GoID())
-			// 没有抢到锁，就等更新
-			<-receiver.updated
+			flog.Debugf("任务组：%s %d 没有抢到锁，延迟：%d us", receiver.Name, receiver.Task.Id, time.Since(receiver.Task.StartAt).Microseconds())
+			<-timingWheel.Add(100 * time.Millisecond).C
 		}
 	case <-receiver.updated:
 		flog.Debugf("任务组：%s %d 有更新", receiver.Name, receiver.Task.Id)
 	}
 }
-func GoID() uint64 {
-	b := make([]byte, 64)
-	b = b[:runtime.Stack(b, false)]
-	b = bytes.TrimPrefix(b, []byte("goroutine "))
-	b = b[:bytes.IndexByte(b, ' ')]
-	n, _ := strconv.ParseUint(string(b), 10, 64)
-	return n
-}
+
+//func GoID() uint64 {
+//	b := make([]byte, 64)
+//	b = b[:runtime.Stack(b, false)]
+//	b = bytes.TrimPrefix(b, []byte("goroutine "))
+//	b = b[:bytes.IndexByte(b, ' ')]
+//	n, _ := strconv.ParseUint(string(b), 10, 64)
+//	return n
+//}
 
 // 等待完成
 func (receiver *TaskGroupMonitor) waitWorking() {
@@ -174,24 +164,20 @@ func (receiver *TaskGroupMonitor) waitWorking() {
 		receiver.lock.TryLockRun(func() {
 			_ = receiver.CheckWorkingEventBus.Publish(receiver)
 		})
+		return
 	}
 
 	flog.Debugf("任务组：%s 等待客户端执行完成", receiver.Name)
-	timer := tw.Add(60 * time.Second)
+	timer := timingWheel.Add(60 * time.Second)
 	// 这里用循环是为了，任何的更新，如果仍处于Working状态，则不需要跳到外面重新执行
-	for {
-		select {
-		case <-timer.C: // 每隔60秒，主动向客户端询问任务状态
-			flog.Debugf("任务组：%s 主动向客户端询问任务状态", receiver.Name)
-			receiver.lock.TryLockRun(func() {
-				_ = receiver.CheckWorkingEventBus.Publish(receiver)
-			})
-		case <-receiver.updated:
-			if !receiver.Task.IsWorking() {
-				timer.Stop()
-				return
-			}
-		}
+	select {
+	case <-timer.C: // 每隔60秒，主动向客户端询问任务状态
+		flog.Debugf("任务组：%s 主动向客户端询问任务状态", receiver.Name)
+		receiver.lock.TryLockRun(func() {
+			_ = receiver.CheckWorkingEventBus.Publish(receiver)
+		})
+	case <-receiver.updated:
+		timer.Stop()
 	}
 }
 

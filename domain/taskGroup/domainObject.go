@@ -123,8 +123,7 @@ func (receiver *DomainObject) CanScheduler() bool {
 			receiver.Task.Status == enum.ScheduleFail ||
 			receiver.Task.Status == enum.Scheduling) &&
 		receiver.IsEnable &&
-		time.Now().After(receiver.StartAt) &&
-		time.Now().Sub(receiver.Task.StartAt).Milliseconds() >= -1
+		time.Now().After(receiver.StartAt)
 }
 
 // CalculateNextAtByUnix 重新计算下一个执行周期

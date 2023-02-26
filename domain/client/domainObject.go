@@ -61,17 +61,20 @@ func (receiver *DomainObject) CheckOnline() {
 
 // Schedule 调度
 func (receiver *DomainObject) Schedule(task *TaskEO) bool {
-	//status, err := container.Resolve[IClientCheck]().Invoke(receiver, task)
-	//receiver.updateStatus(status, err)
-	receiver.Status = enum.Scheduler
+	status, err := container.Resolve[IClientCheck]().Invoke(receiver, task)
+	receiver.updateStatus(status, err)
 
+	milliseconds := time.Since(task.StartAt).Milliseconds()
+	if milliseconds < 0 {
+		milliseconds = 0
+	}
 	if receiver.Status == enum.Scheduler {
 		receiver.ScheduleAt = time.Now()
-		flog.Infof("任务组：%s 调度成功 %d 延迟：%s ms", task.Name, task.Id, flog.RedInt64(time.Since(task.StartAt).Milliseconds()))
+
+		flog.Infof("任务组：%s 调度成功 %d 延迟：%s ms", task.Name, task.Id, flog.Red(milliseconds))
 		return true
 	}
-
-	flog.Warningf("任务组：%s 调度失败 %d 延迟：%d ms", task.Name, task.Id, time.Since(task.StartAt).Milliseconds())
+	flog.Warningf("任务组：%s 调度失败 %d 延迟：%d ms", task.Name, task.Id, flog.Red(time.Since(task.StartAt).Milliseconds()))
 	return false
 }
 

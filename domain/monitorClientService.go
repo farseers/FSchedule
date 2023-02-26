@@ -2,11 +2,13 @@ package domain
 
 import (
 	"FSchedule/domain/client"
+	"FSchedule/domain/enum"
 	"context"
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs"
 	"github.com/farseer-go/fs/container"
 	"github.com/farseer-go/fs/flog"
+	"github.com/farseer-go/fs/timingWheel"
 	"time"
 )
 
@@ -73,7 +75,7 @@ func (receiver *ClientMonitor) checkOnline() {
 		}
 
 		select {
-		case <-tw.Add(checkTime).C:
+		case <-timingWheel.Add(checkTime).C:
 			if !receiver.client.IsOffline() {
 				receiver.client.CheckOnline()
 				receiver.ClientRepository.Save(receiver.client)
@@ -87,4 +89,11 @@ func (receiver *ClientMonitor) checkOnline() {
 // ClientCount 返回当前正在监控的客户端数量
 func ClientCount() int {
 	return clientList.Count()
+}
+
+// ClientNormalCount 返回正常状态的客户端数量
+func ClientNormalCount() int {
+	return clientList.Values().Where(func(item *ClientMonitor) bool {
+		return item.client.Status == enum.Scheduler
+	}).Count()
 }

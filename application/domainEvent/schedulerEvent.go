@@ -47,7 +47,6 @@ func SchedulerEvent(message any, _ core.EventArgs) {
 		clientTask := mapper.Single[client.TaskEO](do.Task)
 		flog.Debugf("任务组：%s %d 分配完客户端，立即调度，延迟：%d us", do.Name, do.Task.Id, time.Since(do.Task.StartAt).Microseconds())
 		if clientSchedule.Schedule(&clientTask) {
-			do.DomainObject.Task.Status = enum.Success
 			// 调度成功
 			clientRepository.Save(clientSchedule)
 			taskGroupRepository.SaveAndTask(*do.DomainObject)

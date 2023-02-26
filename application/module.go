@@ -23,8 +23,6 @@ func (module Module) Initialize() {
 }
 
 func (module Module) PostInitialize() {
-	job.InitTaskGroupMonitor()
-	job.InitClientMonitor()
 
 	// 计算任务组的平均耗时
 	tasks.Run("SyncAvgSpeedJob", 30*time.Minute, job.SyncAvgSpeedJob, fs.Context)
@@ -34,6 +32,14 @@ func (module Module) PostInitialize() {
 
 	// 打印客户端、任务组信息
 	tasks.Run("PrintInfoJob", 10*time.Second, job.PrintInfoJob, fs.Context)
+
+	fs.AddInitCallback("初始化任务组监听", func() {
+		job.InitTaskGroupMonitor()
+	})
+
+	fs.AddInitCallback("初始化客户端监听", func() {
+		job.InitClientMonitor()
+	})
 }
 
 func (module Module) Shutdown() {

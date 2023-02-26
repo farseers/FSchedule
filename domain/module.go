@@ -2,7 +2,6 @@ package domain
 
 import (
 	"github.com/farseer-go/fs/modules"
-	"github.com/farseer-go/fs/timingWheel"
 )
 
 type Module struct {
@@ -13,7 +12,6 @@ func (module Module) DependsModule() []modules.FarseerModule {
 }
 
 func (module Module) PreInitialize() {
-	timingWheel.Start()
 }
 
 func (module Module) Initialize() {

@@ -33,6 +33,9 @@ func (module Module) PostInitialize() {
 	// 打印客户端、任务组信息
 	tasks.Run("PrintInfoJob", 10*time.Second, job.PrintInfoJob, fs.Context)
 
+	// 10秒更新一次服务端信息
+	tasks.Run("ServerNodeJob", 10*time.Second, job.ServerNodeJob, fs.Context)
+
 	fs.AddInitCallback("初始化任务组监听", func() {
 		job.InitTaskGroupMonitor()
 	})

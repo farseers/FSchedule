@@ -8,6 +8,7 @@ import (
 	"github.com/farseer-go/data"
 	"github.com/farseer-go/eventBus"
 	"github.com/farseer-go/fs/modules"
+	"github.com/farseer-go/fs/timingWheel"
 	"github.com/farseer-go/queue"
 	"github.com/farseer-go/redis"
 )
@@ -28,6 +29,7 @@ func (module Module) Initialize() {
 func (module Module) PostInitialize() {
 	repository.InitRepository()
 	http.InitHttp()
+	timingWheel.Start()
 
 	// 任务状态有变更
 	eventBus.RegisterEvent("TaskScheduler", domainEvent.SchedulerEvent)

@@ -4,6 +4,7 @@ import (
 	"FSchedule/application/job"
 	"FSchedule/domain"
 	"github.com/farseer-go/fs"
+	"github.com/farseer-go/fs/configure"
 	"github.com/farseer-go/fs/modules"
 	"github.com/farseer-go/tasks"
 	"time"
@@ -28,7 +29,9 @@ func (module Module) PostInitialize() {
 	tasks.Run("SyncAvgSpeedJob", 30*time.Minute, job.SyncAvgSpeedJob, fs.Context)
 
 	// 自动清除历史任务记录
-	tasks.Run("ClearHisTaskJob", 1*time.Hour, job.ClearHisTaskJob, fs.Context)
+	if configure.GetInt("FSchedule.ReservedTaskCount") > 0 {
+		tasks.Run("ClearHisTaskJob", 1*time.Hour, job.ClearHisTaskJob, fs.Context)
+	}
 
 	// 打印客户端、任务组信息
 	tasks.Run("PrintInfoJob", 10*time.Second, job.PrintInfoJob, fs.Context)

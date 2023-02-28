@@ -21,7 +21,7 @@ func (repository TaskLogRepository) Add(taskLogDO taskLog.DomainObject) {
 }
 
 func (repository TaskLogRepository) GetList(jobName string, logLevel eumLogLevel.Enum, pageSize int, pageIndex int) collections.PageList[taskLog.DomainObject] {
-	pageList := repository.TaskLog.Where("JobName", jobName).Where("LogLevel", logLevel).ToPageList(pageSize, pageIndex)
+	pageList := repository.TaskLog.Where("name", jobName).Where("log_level", logLevel).ToPageList(pageSize, pageIndex)
 	var pageListDO collections.PageList[taskLog.DomainObject]
 	pageList.MapToPageList(&pageListDO)
 	return pageListDO

@@ -27,8 +27,6 @@ func (module Module) Initialize() {
 }
 
 func (module Module) PostInitialize() {
-	repository.InitRepository()
-	http.InitHttp()
 	timingWheel.Start()
 
 	// 任务状态有变更
@@ -46,6 +44,12 @@ func (module Module) PostInitialize() {
 
 	// 队列任务日志
 	queue.Subscribe("TaskLogQueue", "", 1000, localQueue.TaskLogQueueConsumer)
+
+	// 注册仓储
+	repository.InitRepository()
+
+	// 注册客户端http
+	http.InitHttp()
 }
 
 func (module Module) Shutdown() {

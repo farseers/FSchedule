@@ -20,7 +20,7 @@ import (
 var lock = &sync.Mutex{}
 
 type taskRepository struct {
-	Task data.TableSet[model.TaskPO] `data:"name=test_task"`
+	Task data.TableSet[model.TaskPO] `data:"name=fschedule_task"`
 }
 
 func getCacheManager(name string) cache.ICacheManage[taskGroup.TaskEO] {

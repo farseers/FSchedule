@@ -16,7 +16,7 @@ import (
 )
 
 type taskGroupRepository struct {
-	TaskGroup               data.TableSet[model.TaskGroupPO]           `data:"name=test_task_group"`
+	TaskGroup               data.TableSet[model.TaskGroupPO]           `data:"name=fschedule_task_group"`
 	Redis                   redis.IClient                              `inject:"default"`
 	TaskGroupUpdateEventBus core.IEvent                                `inject:"TaskGroupUpdate"`
 	CacheManage             cache.ICacheManage[taskGroup.DomainObject] `inject:"FSchedule_TaskGroup"`

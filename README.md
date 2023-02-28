@@ -1,36 +1,157 @@
 # FSchedule概述
-FSchedule2.0版本是完全重新设计的全新版本。
+调度中心，是一款支持分布式定时任务调度，支持几千个任务同时调度。有着高性能、高可用（集群）、低延迟（0ms延迟）、低内存（80m以内）等特点。
 
-在1.x的版本中我们尝试了许多方案，在这些方案中，我们对比了各项指标，但仍然不是很满意。并不是一个比较理想的框架设计。
+FSchedule运行的是调度逻辑，到达时间节点时，会通知你的应用程序执行任务。
 
-在全新的版本中，将打造一款明星级产品，支持几千个任务同时运行。并且做到任务在50ms以内的延迟。
+它有分布式、高可用、解耦任务执行与调度逻辑、弹性伸缩、跨语言、一致性、数据分片执行、集群模式、广播模式、分布式日志等特性。
 
-## 2.0调整
-1、相比1.x客户端拉取方式，2.0改由每个客户端（任务执行器）开启http服务，服务端通过调度器主动通知客户端执行任务
+Server端依赖Redis、Mysql，通常使用Docker运行（支持集群HA），部署完后我们一般不需要再去维护。
 
-2、新建任务组改由客户端根据配置，自动创建。不需要提前到管理端配置， 可以随时创建数千个临时任务。
+客户端，就是我们写的应用程序，通过官方SDK集成到你的应用，比如我需要凌晨2点执行数据库清理操作，在接入后就能按计划执行任务了。
 
-## 性能
-闲时 CPU：0.2%，内存：22.3m
+## 为什么需要分布式？
+在传统的本地任务执行，无法做到高可用、一致性，并且调度与任务执行在同一个进程中。
+
+我们的应用为了高可用，通常运行2个及以上的实例（进程），在传统的定时任务中，同一时刻这些实例都会同时运行。（但实际我们只需要运行一次就可以了）
+
+如果在A应用程序执行失败或程序崩溃，我们还希望能自动切换到B应用程序重新执行。这些都是本地任务无法做到的。
+
+FSchedule将调度、控制权放到服务端，由服务端统一调度。可以做到统一管理的效果，并且它是高性能、高可用的。
+
+## 架构设计
+![架构设计](https://farseer-go.gitee.io/fSchedule/images/1.png)
+
+FSchedule采用go语言设计，编译出来后就是一个二进制的可执行文件（约6.91mb），所以它非常轻巧，且占用资源非常低。
+
+2.0是一个全新的架构设计，学习了1.x的经验后，总结而来。
+
+2.0采用订阅发布的方式来代替1.x的轮循机制，用于共享集群节点之间的数据，同时延用1.x的事件驱动机制，让各个执行单元更加独立。
+
+2.0的客户端改成http协议来代替轮循拉取的方式，以此让服务端可以直接与客户端通讯
+
+2.0改为动态任务组模式，在1.x版本的时候需要到管理端配置。而在新的版本中，可直接在客户端做参数配置，动态创建任务组。
+
+得益于go的协程能力，在2.0中100个并发同时调度，做到0延迟了，且内存控制到80m左右。
 
 ## 特性
-1. `动态任务组`：支持动态创建任务组，客户端上线时动态注册任务组。
-2. `服务端HA`：服务端支持集群部署，保证HA。
-3. `客户端HA`：客户端支持集群部署，保证所有任务的HA。
-4. `调度解耦`：服务端只部署一次，调度器与任务执行分离，调度器由服务端提供，任务的执行在客户端自行实现，相互之间没有耦合。
-5. `弹性伸缩`：客户端每次上下线时，调度器将重新计算分配任务。
-6. `少依赖`：服务端只依赖redis，不需要依赖数据库或zk、etcd。
-7. `官方SDK`：官方提供go、c#客户端，可快速接入服务端。
-8. `跨语言支持`：提供了http协议，其它语言客户端可自行接入。
-9. `故障转移`：客户端异常退出后，进行中的任务将转移到可用的客户端节点，重新运行。
-10. `一致性`：集群模式保证只会调度一次到客户端。广播模式保证每个客户端只会运行一次。
-11. `自定义参数`：支持对任务组配置参数，客户端运行期间也可以动态更新参数。
-12. `Docker支持`：官方提供Docker镜像部署。
-13. `高性能`：每个任务组将单独分配一个协程，并利用多个通道及时通知处理。
-14. `任务版本号`：任务组有版本号属性，新版本号覆盖旧版本号。同时旧版本不再被调度。
-15. `任务集群模式`：同一个任务执行将只调度到其中一个客户端执行。
-16. `任务广播模式`：同一个任务将调度到所有可用的客户端上执行。
-17. `数据分片`：任务可根据当前客户端数量自动分片到所有客户端，每个客户端只处理一部份数据，做到并行处理。
-18. `动态更新计划`：支持客户端更新下次执行计划时间。
-19. `分布式日志`：支持日志上传到集群，统一查看。
-20. `失败重试`：支持任务失败后重新调度。
+1. [x] `动态任务组`：支持动态创建任务组，客户端上线时动态注册任务组。
+2. [x] `服务端HA`：服务端支持集群部署，保证HA。
+3. [x] `客户端HA`：客户端支持集群部署，保证所有任务的HA。
+4. [x] `调度解耦`：服务端只部署一次，调度器与任务执行分离，调度器由服务端提供，任务的执行在客户端自行实现，相互之间没有耦合。
+5. [x] `弹性伸缩`：客户端每次上下线时，调度器将重新计算分配任务。
+6. [x] `少依赖`：服务端只依赖redis、数据库，不需要依赖zk、etcd。
+7. [x] `时间轮算法`：得益于时间轮算法，为几千个任务同时运行时，极大降低使用内存。
+8. [x] `官方SDK`：官方提供go、c#客户端，可快速接入服务端。
+9. [x] `跨语言支持`：提供了http协议，其它语言客户端可自行接入。
+10. [x] `故障转移`：客户端异常退出后，进行中的任务将转移到可用的客户端节点，重新运行。
+11. [x] `一致性`：集群模式保证只会调度一次到客户端。广播模式保证每个客户端只会运行一次。
+12. [x] `自定义参数`：支持对任务组配置参数，客户端运行期间也可以动态更新参数。
+13. [x] `Docker支持`：官方提供Docker镜像部署。
+14. [x] `高性能`：每个任务组将单独分配一个协程，并利用多个通道实时通知处理。
+15. [x] `任务版本号`：任务组有版本号属性，新版本号覆盖旧版本号。同时旧版本不再被调度。
+16. [x] `任务集群模式`：同一个任务执行将只调度到其中一个客户端执行。
+17. [ ] `任务广播模式`：同一个任务将调度到所有可用的客户端上执行。
+18. [ ] `数据分片`：任务可根据当前客户端数量自动分片到所有客户端，每个客户端只处理一部份数据，做到并行处理。
+19. [ ] `任务依赖`：可以设置任务执行前、执行后时运行依赖的任务。
+20. [x] `动态更新计划`：支持客户端更新下次执行计划时间。
+21. [ ] `分布式日志`：支持日志上传到集群，统一查看。
+
+## 安装
+安装前准备，需要自行准备以下服务：
+1. `mysql`（已测：mysql8.0.28），并创建好库
+2. `redis`（已测：6.2.6）
+
+> fSchedule运行时，会自动创建表
+### Docker（推荐）
+```shell
+docker run --name fschedule -p 8886:8886 -d \
+-e Database_default="DataType=mysql,PoolMaxSize=50,PoolMinSize=1,ConnectionString=root:123456@tcp(127.0.0.1:3306)/fschedule?charset=utf8&parseTime=True&loc=Local" \
+-e Redis_default="Server=127.0.0.1:6379,DB=14,Password=123456,ConnectTimeout=600000,SyncTimeout=10000,ResponseTimeout=10000" \
+steden88/fschedule:latest
+docker logs fschedule
+```
+
+#### 环境变量说明
+* `Database_default`：数据库配置
+* `Redis_default`：Redis配置
+* `FSchedule_Server_Token`: 鉴权token（默认空）
+* `FSchedule_DataSyncTime`: 多少秒同步一次任务组数据到数据库（单位秒，默认60）
+* `FSchedule_ReservedTaskCount`: 保留多少条已完成的任务数据（0不清理，默认60）
+
+### linux二进制
+需要`go 1.20+`
+```shell
+git clone https://github.com/FSchedule/FSchedule
+cd FSchedule
+# 编译应用
+GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o fschedule-server -ldflags="-w -s" .
+chmod +x fschedule-server
+./fschedule-server
+```
+
+> 在应用程序根目录中有`farseer.yaml`配置文件，配置方式参考环境变量说明
+
+### mac二进制
+需要`go 1.20+`
+```shell
+git clone https://github.com/FSchedule/FSchedule
+cd FSchedule
+# 编译应用
+GOOS=darwin GOARCH=amd64 CGO_ENABLED=0 go build -o fschedule-server -ldflags="-w -s" .
+chmod +x fschedule-server
+./fschedule-server
+```
+> 在应用程序根目录中有`farseer.yaml`配置文件，配置方式参考环境变量说明
+
+> 未打勾的，在将来的版本中支持。
+
+## 客户端使用方式
+### go
+[go接入档](https://farseer-go.gitee.io/#/fSchedule/client/go)
+> 包：`"github.com/farseer-go/fSchedule"`
+>
+> 模块：`fSchedule.Module`
+```go
+
+import (
+	"github.com/farseer-go/fSchedule"
+	"github.com/farseer-go/fs"
+	"github.com/farseer-go/fs/modules"
+	"strconv"
+	"testing"
+	"time"
+)
+
+// 启动模块
+type startupModule struct {}
+func (module startupModule) DependsModule() []modules.FarseerModule {
+	return []modules.FarseerModule{fSchedule.Module{}}
+}
+func (module startupModule) PreInitialize() {}
+func (module startupModule) Initialize() {}
+func (module startupModule) PostInitialize() {
+	// 在这里注册任务
+    fSchedule.AddJob(true, "Hello1", "测试HelloJob1", 1, "0/1 * * * * ?", 1674571566, job1)
+}
+func (module startupModule) Shutdown() {}
+
+// 主函数
+func main() {
+	fs.Initialize[startupModule]("test fSchedule")
+	time.Sleep(300000 * time.Second)
+}
+
+// 执行任务
+func job1(jobContext *fSchedule.JobContext) bool {
+	// db.delete()... 比如清理日志数据
+    return true
+}
+```
+
+### http
+[http接入档](https://farseer-go.gitee.io/#/fSchedule/client/http)
+
+
+## 历史回顾
+1. `2023-02-27` 发布第一个版本
+2. `2023-01-24` github创建仓库

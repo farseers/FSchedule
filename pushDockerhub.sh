@@ -1,4 +1,4 @@
-ver='1.0.0'
+ver='2.0.0'
 # 编译应用
 GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o fschedule-server -ldflags="-w -s" .
 # 打包

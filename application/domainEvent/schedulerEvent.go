@@ -53,8 +53,8 @@ func SchedulerEvent(message any, _ core.EventArgs) {
 			return
 		}
 		// 调度失败
-		do.ScheduleFail()
 		clientRepository.Save(clientSchedule)
+		do.ScheduleFail()
 		taskGroupRepository.Save(*do.DomainObject)
 
 		time.Sleep(100 * time.Millisecond)

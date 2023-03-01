@@ -25,12 +25,6 @@ func (receiver *serverNodeRepository) Save(do *serverNode.DomainObject) {
 func (receiver *serverNodeRepository) ToList() collections.List[serverNode.DomainObject] {
 	var servers []serverNode.DomainObject
 	_ = receiver.HashToArray(serverCacheKey, &servers)
-
-	for _, node := range servers {
-		if time.Since(node.ActivateAt).Seconds() >= 30 {
-			receiver.Remove(node.Id)
-		}
-	}
 	return collections.NewList(servers...)
 }
 

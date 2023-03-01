@@ -22,7 +22,7 @@ func MonitorTaskGroupPush(taskGroupDO *taskGroup.DomainObject) {
 	if !taskGroupList.ContainsKey(taskGroupDO.Name) {
 		monitor := newMonitor(taskGroupDO)
 		taskGroupList.Add(taskGroupDO.Name, monitor)
-		flog.Infof("任务组：%s ver:%d 加入调度线程", taskGroupDO.Name, taskGroupDO.Ver)
+		flog.Infof("任务组：%s ver:%s 加入调度线程", flog.Blue(taskGroupDO.Name), flog.Yellow(taskGroupDO.Ver))
 		go monitor.Start()
 		monitor.updated <- struct{}{}
 	} else {
@@ -64,7 +64,7 @@ func newMonitor(do *taskGroup.DomainObject) *TaskGroupMonitor {
 		DomainObject: do,
 		updated:      make(chan struct{}, 1000),
 		clients:      collections.NewDictionary[int64, *client.DomainObject](),
-		lock:         container.Resolve[schedule.Repository]().NewLock(do.Name),
+		lock:         container.Resolve[schedule.Repository]().ScheduleLock(do.Name),
 	})
 }
 
@@ -136,7 +136,7 @@ func (receiver *TaskGroupMonitor) waitScheduler() {
 			// 提前了100ms进到这里。
 			receiver.Task.Scheduling()
 			if m := time.Since(receiver.Task.StartAt).Microseconds(); m > 0 {
-				flog.Infof("任务组：%s %d 发布调度事件，延迟：%d us", receiver.Name, receiver.Task.Id, time.Since(receiver.Task.StartAt).Microseconds())
+				flog.Debugf("任务组：%s %d 发布调度事件，延迟：%d us", receiver.Name, receiver.Task.Id, time.Since(receiver.Task.StartAt).Microseconds())
 			}
 			_ = receiver.SchedulerEventBus.Publish(receiver)
 		}) {

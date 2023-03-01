@@ -2,11 +2,14 @@ package infrastructure
 
 import (
 	"FSchedule/application/domainEvent"
+	"FSchedule/domain/serverNode"
 	"FSchedule/infrastructure/http"
 	"FSchedule/infrastructure/localQueue"
 	"FSchedule/infrastructure/repository"
 	"github.com/farseer-go/data"
 	"github.com/farseer-go/eventBus"
+	"github.com/farseer-go/fs"
+	"github.com/farseer-go/fs/container"
 	"github.com/farseer-go/fs/modules"
 	"github.com/farseer-go/fs/timingWheel"
 	"github.com/farseer-go/queue"
@@ -38,9 +41,10 @@ func (module Module) PostInitialize() {
 
 	// 注册客户端更新通知事件
 	redis.RegisterEvent("default", "ClientUpdate", domainEvent.ClientUpdateSubscribe)
-
 	// 注册任务组更新通知事件
 	redis.RegisterEvent("default", "TaskGroupUpdate", domainEvent.TaskGroupUpdateSubscribe)
+	// 注册选举事件
+	redis.RegisterEvent("default", "ClusterLeader", domainEvent.ClusterLeaderSubscribe)
 
 	// 队列任务日志
 	queue.Subscribe("TaskLogQueue", "", 1000, localQueue.TaskLogQueueConsumer)
@@ -50,6 +54,10 @@ func (module Module) PostInitialize() {
 
 	// 注册客户端http
 	http.InitHttp()
+
+	fs.AddInitCallback("注册节点信息", func() {
+		container.Resolve[serverNode.Repository]().Save(serverNode.New())
+	})
 }
 
 func (module Module) Shutdown() {

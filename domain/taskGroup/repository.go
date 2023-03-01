@@ -23,4 +23,6 @@ type Repository interface {
 	ToFinishList(name string, top int) collections.List[TaskEO]
 	// ClearFinish 清除成功的任务记录（1天前）
 	ClearFinish(name string, taskId int)
+	// Sync 同步任务组数据
+	Sync()
 }

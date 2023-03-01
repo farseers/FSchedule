@@ -38,7 +38,7 @@ func Registry(dto RegistryDTO, clientRepository client.Repository, taskGroupRepo
 	// 更新任务组
 	for _, jobDTO := range dto.Jobs {
 		// 加锁
-		scheduleRepository.NewLock(jobDTO.Name).GetLockRun(func() {
+		scheduleRepository.ScheduleLock(jobDTO.Name).GetLockRun(func() {
 			taskGroupDO := taskGroupRepository.ToEntity(jobDTO.Name)
 			taskGroupDO.UpdateVer(jobDTO.Name, jobDTO.Caption, jobDTO.Ver, jobDTO.Cron, jobDTO.StartAt, jobDTO.IsEnable)
 			if taskGroupDO.NeedSave {

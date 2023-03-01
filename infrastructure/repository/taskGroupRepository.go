@@ -7,7 +7,6 @@ import (
 	"github.com/farseer-go/cache"
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/data"
-	"github.com/farseer-go/fs/configure"
 	"github.com/farseer-go/fs/container"
 	"github.com/farseer-go/fs/core"
 	"github.com/farseer-go/mapper"
@@ -43,15 +42,6 @@ func registerTaskGroupRepository() {
 		}
 		return taskGroup.DomainObject{}, false
 	})
-
-	// 60秒同步一次任务组到数据库
-	syncTime := configure.GetInt("FSchedule.DataSyncTime")
-	if syncTime > 0 {
-		repository.CacheManage.SetSyncSource(time.Duration(syncTime)*time.Second, func(do taskGroup.DomainObject) {
-			po := mapper.Single[model.TaskGroupPO](&do)
-			_ = repository.TaskGroup.UpdateOrInsert(po, "Name")
-		})
-	}
 
 	*repository = *container.ResolveIns(repository)
 
@@ -89,6 +79,18 @@ func (receiver *taskGroupRepository) SaveAndTask(do taskGroup.DomainObject) {
 	do.NeedSave = false
 	receiver.Save(do)
 	receiver.SaveTask(do.Task)
+}
+
+func (receiver *taskGroupRepository) Sync() {
+	lst := receiver.CacheManage.Get()
+	for i := 0; i < lst.Count(); i++ {
+		do := lst.Index(i)
+		po := mapper.Single[model.TaskGroupPO](&do)
+		_ = receiver.TaskGroup.UpdateOrInsert(po, "Name")
+
+		// 同步任务
+		receiver.taskRepository.syncTask(po.Name)
+	}
 }
 
 func (receiver *taskGroupRepository) ToListByClientId(clientId int64) collections.List[taskGroup.DomainObject] {

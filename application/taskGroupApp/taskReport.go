@@ -10,7 +10,7 @@ import (
 // TaskReport 客户端回调
 func TaskReport(dto client.TaskReportVO, taskGroupRepository taskGroup.Repository, scheduleRepository schedule.Repository) {
 	// 加锁
-	scheduleRepository.NewLock(dto.Name).GetLockRun(func() {
+	scheduleRepository.ScheduleLock(dto.Name).GetLockRun(func() {
 		taskGroupDO := taskGroupRepository.ToEntity(dto.Name)
 		if taskGroupDO.IsNil() {
 			exception.ThrowWebExceptionf(403, "任务组[%s] 不存在", dto.Name)

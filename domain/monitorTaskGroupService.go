@@ -27,8 +27,10 @@ func MonitorTaskGroupPush(taskGroupDO *taskGroup.DomainObject) {
 	} else {
 		taskGroupMonitor := taskGroupList.GetValue(taskGroupDO.Name)
 		*taskGroupMonitor.DomainObject = *taskGroupDO
-		flog.Debugf("任务组更新通知：%s Ver:%d", taskGroupDO.Name, taskGroupDO.Ver)
-		taskGroupMonitor.updated <- struct{}{}
+		if taskGroupMonitor.isWorking {
+			flog.Debugf("任务组更新通知：%s Ver:%d", taskGroupDO.Name, taskGroupDO.Ver)
+			taskGroupMonitor.updated <- struct{}{}
+		}
 	}
 }
 
@@ -54,6 +56,7 @@ type TaskGroupMonitor struct {
 	clients              collections.Dictionary[int64, *client.DomainObject] // 客户端列表
 	updated              chan struct{}                                       // 数据有更新，让流程重置
 	curClient            *client.DomainObject                                // 当前调度的客户端
+	isWorking            bool                                                // 是否进入工作状态
 	*taskGroup.DomainObject
 }
 
@@ -78,6 +81,7 @@ func (receiver *TaskGroupMonitor) Start() {
 	receiver.ScheduleRepository.Schedule(receiver.Name, func() {
 		flog.Infof("任务组：%s ver:%s 加入调度线程", flog.Blue(receiver.Name), flog.Yellow(receiver.Ver))
 		for {
+			receiver.isWorking = true
 			// 清空更新队列
 			receiver.updated = make(chan struct{}, 1000)
 

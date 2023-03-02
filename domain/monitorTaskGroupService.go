@@ -29,7 +29,7 @@ func MonitorTaskGroupPush(taskGroupDO *taskGroup.DomainObject) {
 		*taskGroupMonitor.DomainObject = *taskGroupDO
 		if taskGroupMonitor.isWorking {
 			flog.Debugf("任务组更新通知：%s Ver:%d", taskGroupDO.Name, taskGroupDO.Ver)
-			taskGroupMonitor.updated <- struct{}{}
+			taskGroupMonitor.updateNotice()
 		}
 	}
 }
@@ -57,6 +57,7 @@ type TaskGroupMonitor struct {
 	updated              chan struct{}                                       // 数据有更新，让流程重置
 	curClient            *client.DomainObject                                // 当前调度的客户端
 	isWorking            bool                                                // 是否进入工作状态
+	isReadWork           bool                                                // 是否进入抢锁中（false：任务组enable=false、没有客户端）
 	*taskGroup.DomainObject
 }
 
@@ -78,6 +79,7 @@ func (receiver *TaskGroupMonitor) Start() {
 	}
 
 	// 抢占锁，谁抢到，谁负责这个任务组的调度
+	receiver.isReadWork = true
 	receiver.ScheduleRepository.Schedule(receiver.Name, func() {
 		flog.Infof("任务组：%s ver:%s 加入调度线程", flog.Blue(receiver.Name), flog.Yellow(receiver.Ver))
 		for {
@@ -153,15 +155,6 @@ func (receiver *TaskGroupMonitor) waitScheduler() {
 	}
 }
 
-//func GoID() uint64 {
-//	b := make([]byte, 64)
-//	b = b[:runtime.Stack(b, false)]
-//	b = bytes.TrimPrefix(b, []byte("goroutine "))
-//	b = b[:bytes.IndexByte(b, ' ')]
-//	n, _ := strconv.ParseUint(string(b), 10, 64)
-//	return n
-//}
-
 // 等待完成
 func (receiver *TaskGroupMonitor) waitWorking() {
 	if receiver.curClient == nil || receiver.curClient.IsNil() || receiver.curClient.IsOffline() {
@@ -200,13 +193,13 @@ func (receiver *TaskGroupMonitor) updateClient(newData *client.DomainObject) {
 				receiver.curClient = nil
 			}
 
-			receiver.updated <- struct{}{}
+			receiver.updateNotice()
 			flog.Debugf("任务组：%s 移除客户端updateClient", receiver.Name)
 		}
 	} else {
 		if !receiver.clients.ContainsKey(newData.Id) {
 			receiver.clients.Add(newData.Id, newData)
-			receiver.updated <- struct{}{}
+			receiver.updateNotice()
 			flog.Debugf("任务组：%s 添加客户端updateClient", receiver.Name)
 		}
 	}
@@ -243,6 +236,13 @@ func (receiver *TaskGroupMonitor) CanScheduleClient() int {
 	return receiver.clients.Count()
 }
 
+// 通知客户端有更新
+func (receiver *TaskGroupMonitor) updateNotice() {
+	if !receiver.isReadWork || receiver.isWorking {
+		receiver.updated <- struct{}{}
+	}
+}
+
 // TaskGroupCount 返回当前正在监控的任务组数量
 func TaskGroupCount() int {
 	for _, v := range taskGroupList.ToMap() {
@@ -251,7 +251,7 @@ func TaskGroupCount() int {
 			if v.curClient != nil {
 				curClientId = v.curClient.Id
 			}
-			flog.Debugf("任务组：%s，状态：%s，客户端：%s，%s 个", flog.Blue(v.Name), v.Task.Status.String(), flog.Green(curClientId), flog.Red(v.clients.Count()))
+			flog.Debugf("任务组：%s，状态：%s，客户端%s个，当前客户端：%s", flog.Blue(v.Name), v.Task.Status.String(), flog.Red(v.clients.Count()), flog.Green(curClientId))
 		}
 	}
 	return taskGroupList.Count()
@@ -263,3 +263,12 @@ func TaskGroupEnableCount() int {
 		return item.CanScheduleClient() > 0
 	}).Count()
 }
+
+//func GoID() uint64 {
+//	b := make([]byte, 64)
+//	b = b[:runtime.Stack(b, false)]
+//	b = bytes.TrimPrefix(b, []byte("goroutine "))
+//	b = b[:bytes.IndexByte(b, ' ')]
+//	n, _ := strconv.ParseUint(string(b), 10, 64)
+//	return n
+//}

@@ -57,7 +57,7 @@ func (receiver *taskRepository) syncTask(name string) {
 	lst := cacheManager.Get()
 	for i := 0; i < lst.Count(); i++ {
 		do := lst.Index(i)
-		flog.Infof("同步数据库:共%d条，task:%d", lst.Count(), do.Id)
+		flog.Infof("同步数据库:%d/%d，task:%d", i+1, lst.Count(), do.Id)
 		// 保存成功后，已完成的任务，且最后运行时间大于1分钟的，移除列表
 		// 最后运行时间超过1小时的移除。（如果有读取，还是会从数据库重新读的）
 		if (do.IsFinish() && time.Now().Sub(do.RunAt).Seconds() >= float64(30)) ||

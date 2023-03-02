@@ -1,6 +1,8 @@
 package domainEvent
 
 import (
+	"FSchedule/application/job"
+	"FSchedule/domain"
 	"FSchedule/domain/serverNode"
 	"FSchedule/domain/taskGroup"
 	"github.com/farseer-go/fs"
@@ -30,13 +32,27 @@ func ClusterLeaderSubscribe(message any, _ core.EventArgs) {
 			serverNodeRepository.Save(&serverNodeDO)
 		}
 
-		// 同步数据
+		// 同步任务组、任务数据
 		syncTime := configure.GetInt("FSchedule.DataSyncTime")
 		if syncTime > 0 {
-			// 每60s，同步一次任务组、任务
-			tasks.RunNow("ServerNodeJob", 60*time.Second, func(context *tasks.TaskContext) {
+			tasks.RunNow("taskGroupSync", 60*time.Second, func(context *tasks.TaskContext) {
 				container.Resolve[taskGroup.Repository]().Sync()
 			}, fs.Context)
+		}
+
+		// 标记当前节点为Leader
+		domain.CheckOnline()
+		serverNode.IsLeaderNode = true
+
+		// 移除30秒不活跃的
+		tasks.Run("ServerNodeTimeoutJob", 30*time.Second, job.ServerNodeTimeoutJob, fs.Context)
+
+		// 计算任务组的平均耗时
+		tasks.Run("SyncAvgSpeedJob", 30*time.Minute, job.SyncAvgSpeedJob, fs.Context)
+
+		// 自动清除历史任务记录
+		if configure.GetInt("FSchedule.ReservedTaskCount") > 0 {
+			tasks.Run("ClearHisTaskJob", 1*time.Hour, job.ClearHisTaskJob, fs.Context)
 		}
 	}
 }

@@ -3,6 +3,7 @@ package domain
 import (
 	"FSchedule/domain/client"
 	"FSchedule/domain/enum"
+	"FSchedule/domain/serverNode"
 	"context"
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs"
@@ -38,7 +39,9 @@ func MonitorClientPush(clientDO *client.DomainObject) {
 		flog.Infof("客户端（%d）开始监听：%s:%d", clientDO.Id, clientDO.Ip, clientDO.Port)
 
 		// 异步检查客户端在线状态
-		go clientMonitor.checkOnline()
+		if serverNode.IsLeaderNode {
+			go clientMonitor.checkOnline()
+		}
 
 		ClientUpdate(clientDO)
 	}
@@ -92,4 +95,11 @@ func ClientNormalCount() int {
 	return clientList.Values().Where(func(item *ClientMonitor) bool {
 		return item.client.Status == enum.Scheduler
 	}).Count()
+}
+
+func CheckOnline() {
+	clients := clientList.Values()
+	for i := 0; i < clients.Count(); i++ {
+		go clients.Index(i).checkOnline()
+	}
 }

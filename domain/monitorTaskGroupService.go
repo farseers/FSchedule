@@ -186,7 +186,6 @@ func (receiver *TaskGroupMonitor) taskFinish() {
 
 // 更新客户端
 func (receiver *TaskGroupMonitor) updateClient(newData *client.DomainObject) {
-	flog.Debugf("任务组：%s 更新客户端updateClient", receiver.Name)
 	// 状态为不可调度时，则移除列表
 	if newData.IsNotSchedule() {
 		// 移除客户端
@@ -198,11 +197,13 @@ func (receiver *TaskGroupMonitor) updateClient(newData *client.DomainObject) {
 			}
 
 			receiver.updated <- struct{}{}
+			flog.Debugf("任务组：%s 移除客户端updateClient", receiver.Name)
 		}
 	} else {
 		if !receiver.clients.ContainsKey(newData.Id) {
 			receiver.clients.Add(newData.Id, newData)
 			receiver.updated <- struct{}{}
+			flog.Debugf("任务组：%s 添加客户端updateClient", receiver.Name)
 		}
 	}
 }

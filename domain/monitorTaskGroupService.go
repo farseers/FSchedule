@@ -36,7 +36,7 @@ func MonitorTaskGroupPush(taskGroupDO *taskGroup.DomainObject) {
 
 // ClientUpdate 客户端有更新，推送通知
 func ClientUpdate(clientDO *client.DomainObject) {
-	flog.Debugf("客户端（%d）更新通知：%s:%d", clientDO.Id, clientDO.Ip, clientDO.Port)
+	//flog.Debugf("客户端（%d）更新通知：%s:%d", clientDO.Id, clientDO.Ip, clientDO.Port)
 	for i := 0; i < clientDO.Jobs.Count(); i++ {
 		// 找到客户端支持的任务组
 		jobName := clientDO.Jobs.Index(i).Name

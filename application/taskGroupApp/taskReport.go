@@ -5,10 +5,12 @@ import (
 	"FSchedule/domain/schedule"
 	"FSchedule/domain/taskGroup"
 	"github.com/farseer-go/fs/exception"
+	"github.com/farseer-go/fs/flog"
 )
 
 // TaskReport 客户端回调
 func TaskReport(dto client.TaskReportVO, taskGroupRepository taskGroup.Repository, scheduleRepository schedule.Repository) {
+	flog.Debugf("任务组：%s %d 通知执行结果：%s", dto.Name, dto.Id, flog.Red(dto.Status.String()))
 	// 加锁
 	scheduleRepository.ScheduleLock(dto.Name, dto.Id).GetLockRun(func() {
 		taskGroupDO := taskGroupRepository.ToEntity(dto.Name)

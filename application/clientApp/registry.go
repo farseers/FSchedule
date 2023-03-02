@@ -37,15 +37,12 @@ func Registry(dto RegistryDTO, clientRepository client.Repository, taskGroupRepo
 	// 先推送任务信息再保存客户端
 	// 更新任务组
 	for _, jobDTO := range dto.Jobs {
-		// 加锁
-		scheduleRepository.ScheduleLock(jobDTO.Name).GetLockRun(func() {
-			taskGroupDO := taskGroupRepository.ToEntity(jobDTO.Name)
-			taskGroupDO.UpdateVer(jobDTO.Name, jobDTO.Caption, jobDTO.Ver, jobDTO.Cron, jobDTO.StartAt, jobDTO.IsEnable)
-			if taskGroupDO.NeedSave {
-				taskGroupRepository.Save(taskGroupDO)
-			}
-			do.Jobs.Add(mapper.Single[client.JobVO](jobDTO))
-		})
+		taskGroupDO := taskGroupRepository.ToEntity(jobDTO.Name)
+		taskGroupDO.UpdateVer(jobDTO.Name, jobDTO.Caption, jobDTO.Ver, jobDTO.Cron, jobDTO.StartAt, jobDTO.IsEnable)
+		if taskGroupDO.NeedSave {
+			taskGroupRepository.Save(taskGroupDO)
+		}
+		do.Jobs.Add(mapper.Single[client.JobVO](jobDTO))
 	}
 
 	// 保存客户端信息

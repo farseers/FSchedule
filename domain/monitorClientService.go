@@ -48,11 +48,7 @@ func MonitorClientPush(clientDO *client.DomainObject) {
 	if existsClientDO != nil {
 		// 修改地址对应的值
 		*existsClientDO.client = *clientDO
-
-		// 只有状态不一样时，才要更新
-		//if existsClientDO.client.IsNotSchedule() {
 		ClientUpdate(existsClientDO.client)
-		//}
 
 		// 客户端离线
 		if clientDO.IsOffline() {

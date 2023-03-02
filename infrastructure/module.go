@@ -32,6 +32,12 @@ func (module Module) Initialize() {
 func (module Module) PostInitialize() {
 	timingWheel.Start()
 
+	// 注册仓储
+	repository.InitRepository()
+
+	// 注册任务组更新通知事件
+	redis.RegisterEvent("default", "TaskGroupUpdate", domainEvent.TaskGroupUpdateSubscribe)
+
 	// 任务状态有变更
 	eventBus.RegisterEvent("TaskScheduler", domainEvent.SchedulerEvent)
 	// 检查进行中的任务
@@ -41,16 +47,11 @@ func (module Module) PostInitialize() {
 
 	// 注册客户端更新通知事件
 	redis.RegisterEvent("default", "ClientUpdate", domainEvent.ClientUpdateSubscribe)
-	// 注册任务组更新通知事件
-	redis.RegisterEvent("default", "TaskGroupUpdate", domainEvent.TaskGroupUpdateSubscribe)
 	// 注册选举事件
 	redis.RegisterEvent("default", "ClusterLeader", domainEvent.ClusterLeaderSubscribe)
 
 	// 队列任务日志
 	queue.Subscribe("TaskLogQueue", "", 1000, localQueue.TaskLogQueueConsumer)
-
-	// 注册仓储
-	repository.InitRepository()
 
 	// 注册客户端http
 	http.InitHttp()

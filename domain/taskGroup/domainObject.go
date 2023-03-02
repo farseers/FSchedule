@@ -3,8 +3,6 @@ package taskGroup
 import (
 	"FSchedule/domain/enum"
 	"github.com/farseer-go/collections"
-	"github.com/farseer-go/fs/container"
-	"github.com/farseer-go/fs/core"
 	"github.com/farseer-go/fs/flog"
 	"github.com/farseer-go/fs/snowflake"
 	"github.com/robfig/cron/v3"
@@ -159,10 +157,11 @@ func (receiver *DomainObject) Report(status enum.TaskStatus, data collections.Di
 	receiver.SyncData()
 	// 客户端动态计算下一个执行周期
 	receiver.CalculateNextAtByUnix(nextTimespan)
+	taskGroupRepository.Save(*receiver)
 
-	if receiver.Task.IsFinish() {
-		_ = container.Resolve[core.IEvent]("TaskFinish").Publish(receiver)
-	} else {
-		taskGroupRepository.Save(*receiver)
-	}
+	//if receiver.Task.IsFinish() {
+	//	_ = container.Resolve[core.IEvent]("TaskFinish").Publish(receiver)
+	//} else {
+	//	taskGroupRepository.Save(*receiver)
+	//}
 }

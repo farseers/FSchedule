@@ -15,10 +15,9 @@ import (
 )
 
 type taskGroupRepository struct {
-	TaskGroup               data.TableSet[model.TaskGroupPO]           `data:"name=fschedule_task_group"`
-	Redis                   redis.IClient                              `inject:"default"`
-	TaskGroupUpdateEventBus core.IEvent                                `inject:"TaskGroupUpdate"`
-	CacheManage             cache.ICacheManage[taskGroup.DomainObject] `inject:"FSchedule_TaskGroup"`
+	TaskGroup   data.TableSet[model.TaskGroupPO]           `data:"name=fschedule_task_group"`
+	Redis       redis.IClient                              `inject:"default"`
+	CacheManage cache.ICacheManage[taskGroup.DomainObject] `inject:"FSchedule_TaskGroup"`
 	*taskRepository
 }
 
@@ -72,7 +71,7 @@ func (receiver *taskGroupRepository) Save(do taskGroup.DomainObject) {
 	receiver.CacheManage.SaveItem(do)
 
 	// 发到所有节点上
-	_ = receiver.TaskGroupUpdateEventBus.Publish(do)
+	_ = container.Resolve[core.IEvent]("TaskGroupUpdate").Publish(do)
 }
 
 func (receiver *taskGroupRepository) SaveAndTask(do taskGroup.DomainObject) {

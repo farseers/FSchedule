@@ -31,7 +31,6 @@ func getCacheManager(name string) cache.ICacheManage[taskGroup.TaskEO] {
 			repository := data.NewContext[taskRepository]("default", false)
 			cacheManage := redis.SetProfiles[taskGroup.TaskEO](key, "Id", 0, "default")
 			cacheManage.SetItemSource(func(cacheId any) (taskGroup.TaskEO, bool) {
-				flog.Warningf("我在读数据库:task %d", cacheId)
 				po := repository.Task.Where("Id = ?", cacheId).ToEntity()
 				if po.Id > 0 {
 					return mapper.Single[taskGroup.TaskEO](&po), true
@@ -58,11 +57,11 @@ func (receiver *taskRepository) syncTask(name string) {
 	lst := cacheManager.Get()
 	for i := 0; i < lst.Count(); i++ {
 		do := lst.Index(i)
+		flog.Infof("同步数据库:共%d条，task:%d", lst.Count(), do.Id)
 		// 保存成功后，已完成的任务，且最后运行时间大于1分钟的，移除列表
 		// 最后运行时间超过1小时的移除。（如果有读取，还是会从数据库重新读的）
 		if (do.IsFinish() && time.Now().Sub(do.RunAt).Seconds() >= float64(30)) ||
 			(time.Now().Sub(do.RunAt).Hours() >= float64(1)) {
-			flog.Debugf("同步数据库:共%d条，task:%d", lst.Count(), do.Id)
 			po := mapper.Single[model.TaskPO](&do)
 			if receiver.Task.UpdateOrInsert(po, "Id") == nil {
 				cacheManager.Remove(po.Id)

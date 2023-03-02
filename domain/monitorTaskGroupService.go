@@ -22,9 +22,8 @@ func MonitorTaskGroupPush(taskGroupDO *taskGroup.DomainObject) {
 	if !taskGroupList.ContainsKey(taskGroupDO.Name) {
 		monitor := newMonitor(taskGroupDO)
 		taskGroupList.Add(taskGroupDO.Name, monitor)
-		flog.Infof("任务组：%s ver:%s 加入调度线程", flog.Blue(taskGroupDO.Name), flog.Yellow(taskGroupDO.Ver))
+
 		go monitor.Start()
-		monitor.updated <- struct{}{}
 	} else {
 		taskGroupMonitor := taskGroupList.GetValue(taskGroupDO.Name)
 		*taskGroupMonitor.DomainObject = *taskGroupDO
@@ -51,7 +50,7 @@ type TaskGroupMonitor struct {
 	SchedulerEventBus    core.IEvent                                         `inject:"TaskScheduler"` // 任务调度事件
 	FinishEventBus       core.IEvent                                         `inject:"TaskFinish"`    // 任务完成
 	CheckWorkingEventBus core.IEvent                                         `inject:"CheckWorking"`  // 检查进行中的任务
-	lock                 core.ILock                                          // 锁
+	ScheduleRepository   schedule.Repository                                 // 锁
 	clients              collections.Dictionary[int64, *client.DomainObject] // 客户端列表
 	updated              chan struct{}                                       // 数据有更新，让流程重置
 	curClient            *client.DomainObject                                // 当前调度的客户端
@@ -64,32 +63,40 @@ func newMonitor(do *taskGroup.DomainObject) *TaskGroupMonitor {
 		DomainObject: do,
 		updated:      make(chan struct{}, 1000),
 		clients:      collections.NewDictionary[int64, *client.DomainObject](),
-		lock:         container.Resolve[schedule.Repository]().ScheduleLock(do.Name),
 	})
 }
 
 // Start 监听任务组
 func (receiver *TaskGroupMonitor) Start() {
-	for {
-		// 清空更新队列
-		for len(receiver.updated) > 0 {
-			<-receiver.updated
-		}
-		switch receiver.Task.Status {
-		case enum.None, enum.ScheduleFail: // 如果调度失败状态，需要重新调度
-			// 等待时间达了之后，开始调度
-			receiver.waitStart()
-		case enum.Scheduling:
-			// 等待更新即可
-			flog.Debugf("任务组：%s 等待更新", receiver.Name)
-			<-receiver.updated
-		case enum.Working:
-			// 已成功调度到客户端，等待客户端执行完成
-			receiver.waitWorking()
-		case enum.Fail, enum.Success:
-			receiver.taskFinish()
-		}
+	// 任务组状态不可用、没有可用客户端，不需要调度
+	for !receiver.IsEnable || receiver.CanScheduleClient() == 0 {
+		<-receiver.updated
+		continue
 	}
+
+	// 抢占锁，谁抢到，谁负责这个任务组的调度
+	receiver.ScheduleRepository.Schedule(receiver.Name, func() {
+		flog.Infof("任务组：%s ver:%s 加入调度线程", flog.Blue(receiver.Name), flog.Yellow(receiver.Ver))
+		for {
+			// 清空更新队列
+			receiver.updated = make(chan struct{}, 1000)
+
+			switch receiver.Task.Status {
+			case enum.None, enum.ScheduleFail: // 如果调度失败状态，需要重新调度
+				// 等待时间达了之后，开始调度
+				receiver.waitStart()
+			case enum.Scheduling:
+				// 等待更新即可
+				flog.Debugf("任务组：%s 等待更新", receiver.Name)
+				<-receiver.updated
+			case enum.Working:
+				// 已成功调度到客户端，等待客户端执行完成
+				receiver.waitWorking()
+			case enum.Fail, enum.Success:
+				receiver.taskFinish()
+			}
+		}
+	})
 }
 
 // 等待开始
@@ -131,18 +138,12 @@ func (receiver *TaskGroupMonitor) waitScheduler() {
 	// 由于创建锁的时候，需要网络IO开销，所以这里提前100ms进入
 	select {
 	case <-timingWheel.AddTime(receiver.Task.StartAt.Add(-200 * time.Millisecond)).C: // 执行时间到了，准开始调度
-		// 标记为调度中，阻止当前监听逻辑重复执行，否则会不停的重复执行调度
-		if !receiver.lock.TryLockRun(func() {
-			// 提前了100ms进到这里。
-			receiver.Task.Scheduling()
-			if m := time.Since(receiver.Task.StartAt).Microseconds(); m > 0 {
-				flog.Debugf("任务组：%s %d 发布调度事件，延迟：%d us", receiver.Name, receiver.Task.Id, time.Since(receiver.Task.StartAt).Microseconds())
-			}
-			_ = receiver.SchedulerEventBus.Publish(receiver)
-		}) {
-			flog.Debugf("任务组：%s %d 没有抢到锁，延迟：%d us", receiver.Name, receiver.Task.Id, time.Since(receiver.Task.StartAt).Microseconds())
-			<-timingWheel.Add(100 * time.Millisecond).C
+		// 提前了100ms进到这里。
+		receiver.Task.Scheduling()
+		if m := time.Since(receiver.Task.StartAt).Microseconds(); m > 0 {
+			flog.Debugf("任务组：%s %d 发布调度事件，延迟：%d us", receiver.Name, receiver.Task.Id, time.Since(receiver.Task.StartAt).Microseconds())
 		}
+		_ = receiver.SchedulerEventBus.Publish(receiver)
 	case <-receiver.updated:
 		flog.Debugf("任务组：%s %d 有更新", receiver.Name, receiver.Task.Id)
 	}
@@ -161,21 +162,17 @@ func (receiver *TaskGroupMonitor) waitScheduler() {
 func (receiver *TaskGroupMonitor) waitWorking() {
 	if receiver.curClient == nil || receiver.curClient.IsNil() || receiver.curClient.IsOffline() {
 		flog.Debugf("任务组：%s 当前客户端已离线", receiver.Name)
-		receiver.lock.TryLockRun(func() {
-			_ = receiver.CheckWorkingEventBus.Publish(receiver)
-		})
+		_ = receiver.CheckWorkingEventBus.Publish(receiver)
 		return
 	}
 
 	flog.Debugf("任务组：%s 等待客户端执行完成", receiver.Name)
-	timer := timingWheel.Add(60 * time.Second)
+	timer := timingWheel.Add(time.Duration(receiver.RunSpeedAvg+3000) * time.Millisecond)
 	// 这里用循环是为了，任何的更新，如果仍处于Working状态，则不需要跳到外面重新执行
 	select {
 	case <-timer.C: // 每隔60秒，主动向客户端询问任务状态
 		flog.Debugf("任务组：%s 主动向客户端询问任务状态", receiver.Name)
-		receiver.lock.TryLockRun(func() {
-			_ = receiver.CheckWorkingEventBus.Publish(receiver)
-		})
+		_ = receiver.CheckWorkingEventBus.Publish(receiver)
 	case <-receiver.updated:
 		timer.Stop()
 	}
@@ -184,12 +181,7 @@ func (receiver *TaskGroupMonitor) waitWorking() {
 // 任务完成
 func (receiver *TaskGroupMonitor) taskFinish() {
 	flog.Debugf("任务组：%s 任务完成", receiver.Name)
-	if !receiver.lock.TryLockRun(func() {
-		_ = receiver.FinishEventBus.Publish(receiver.DomainObject)
-	}) {
-		// 没有抢到锁，就等更新
-		<-receiver.updated
-	}
+	_ = receiver.FinishEventBus.Publish(receiver.DomainObject)
 }
 
 // 更新客户端
@@ -208,8 +200,10 @@ func (receiver *TaskGroupMonitor) updateClient(newData *client.DomainObject) {
 			receiver.updated <- struct{}{}
 		}
 	} else {
-		receiver.clients.Add(newData.Id, newData)
-		receiver.updated <- struct{}{}
+		if !receiver.clients.ContainsKey(newData.Id) {
+			receiver.clients.Add(newData.Id, newData)
+			receiver.updated <- struct{}{}
+		}
 	}
 }
 
@@ -247,7 +241,13 @@ func (receiver *TaskGroupMonitor) CanScheduleClient() int {
 // TaskGroupCount 返回当前正在监控的任务组数量
 func TaskGroupCount() int {
 	for _, v := range taskGroupList.ToMap() {
-		flog.Debugf("任务组：%s，状态：%s", v.Name, v.Task.Status.String())
+		if v.clients.Count() > 0 {
+			var curClientId int64
+			if v.curClient != nil {
+				curClientId = v.curClient.Id
+			}
+			flog.Debugf("任务组：%s，状态：%s，客户端：%s，%s 个", flog.Blue(v.Name), v.Task.Status.String(), flog.Green(curClientId), flog.Red(v.clients.Count()))
+		}
 	}
 	return taskGroupList.Count()
 }

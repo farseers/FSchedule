@@ -3,17 +3,17 @@ module FSchedule
 go 1.20
 
 require (
-	github.com/farseer-go/cache v0.1.1
-	github.com/farseer-go/collections v0.3.0
-	github.com/farseer-go/data v0.1.1
-	github.com/farseer-go/eventBus v0.1.0
-	github.com/farseer-go/fs v0.6.0
+	github.com/farseer-go/cache v0.2.0
+	github.com/farseer-go/collections v0.4.0
+	github.com/farseer-go/data v0.2.0
+	github.com/farseer-go/eventBus v0.2.0
+	github.com/farseer-go/fs v0.7.0
 	github.com/farseer-go/mapper v0.2.0
-	github.com/farseer-go/queue v0.1.0
-	github.com/farseer-go/redis v0.1.0
-	github.com/farseer-go/tasks v0.0.0-20220831082810-7af977206ad0
-	github.com/farseer-go/utils v0.2.1-0.20221212104253-44d162058c4d
-	github.com/farseer-go/webapi v0.2.0
+	github.com/farseer-go/queue v0.2.0
+	github.com/farseer-go/redis v0.2.0
+	github.com/farseer-go/tasks v0.2.0
+	github.com/farseer-go/utils v0.3.0
+	github.com/farseer-go/webapi v0.3.0
 	github.com/robfig/cron/v3 v3.0.1
 )
 

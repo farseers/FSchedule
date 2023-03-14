@@ -35,7 +35,7 @@ FSchedule将调度、控制权放到服务端，由服务端统一调度。可�
 ## 架构设计
 ![架构设计](https://farseer-go.gitee.io/fSchedule/images/1.png)
 
-FSchedule采用go语言设计，编译出来后就是一个二进制的可执行文件（约6.91mb），所以它非常轻巧，且占用资源非常低。
+FSchedule2.0采用go语言设计，编译后是一个二进制的可执行文件（约20.8mb），它非常轻巧，且占用资源非常低。
 
 2.0是一个全新的架构设计，学习了1.x的经验后，总结而来。
 
@@ -45,7 +45,7 @@ FSchedule采用go语言设计，编译出来后就是一个二进制的可执行
 
 2.0改为动态任务组模式，在1.x版本的时候需要到管理端配置。而在新的版本中，可直接在客户端做参数配置，动态创建任务组。
 
-得益于go的协程能力，在2.0中100个并发同时调度，做到0延迟了，且内存控制到80m左右。
+2.0中100个并发调度，做到0延迟，内存控制到单节点：80m（集群模式25m）。
 
 ## 特性
 1. [x] `动态任务组`：支持动态创建任务组，客户端上线时动态注册任务组。
@@ -70,30 +70,49 @@ FSchedule采用go语言设计，编译出来后就是一个二进制的可执行
 20. [x] `动态更新计划`：支持客户端更新下次执行计划时间。
 21. [ ] `分布式日志`：支持日志上传到集群，统一查看。
 
+> 未打勾的，在将来的版本中支持。
 
-## 安装
+# 安装
 安装前准备，需要自行准备以下服务：
 1. `mysql`（已测：mysql8.0.28），并创建好库
 2. `redis`（已测：6.2.6）
 
 > fSchedule运行时，会自动创建表
-### Docker（推荐）
+## docker（推荐）
 ```shell
 docker run --name fschedule -p 8886:8886 -d \
 -e Database_default="DataType=mysql,PoolMaxSize=50,PoolMinSize=1,ConnectionString=root:123456@tcp(127.0.0.1:3306)/fschedule?charset=utf8&parseTime=True&loc=Local" \
 -e Redis_default="Server=127.0.0.1:6379,DB=14,Password=123456,ConnectTimeout=600000,SyncTimeout=10000,ResponseTimeout=10000" \
 steden88/fschedule:latest
-docker logs fschedule
 ```
 
-#### 环境变量说明
+**`环境变量说明`**
 * `Database_default`：数据库配置
 * `Redis_default`：Redis配置
 * `FSchedule_Server_Token`: 鉴权token（默认空）
 * `FSchedule_DataSyncTime`: 多少秒同步一次任务组数据到数据库（单位秒，默认60）
 * `FSchedule_ReservedTaskCount`: 保留多少条已完成的任务数据（0不清理，默认60）
 
-### linux二进制
+## 集群部署
+```shell
+docker run --name fschedule1 -p 80:8886 -d \
+-e Database_default="DataType=mysql,PoolMaxSize=50,PoolMinSize=1,ConnectionString=root:123456@tcp(127.0.0.1:3306)/fschedule?charset=utf8&parseTime=True&loc=Local" \
+-e Redis_default="Server=127.0.0.1:6379,DB=14,Password=123456,ConnectTimeout=600000,SyncTimeout=10000,ResponseTimeout=10000" \
+steden88/fschedule:latest
+
+docker run --name fschedule2 -p 81:8886 -d \
+-e Database_default="DataType=mysql,PoolMaxSize=50,PoolMinSize=1,ConnectionString=root:123456@tcp(127.0.0.1:3306)/fschedule?charset=utf8&parseTime=True&loc=Local" \
+-e Redis_default="Server=127.0.0.1:6379,DB=14,Password=123456,ConnectTimeout=600000,SyncTimeout=10000,ResponseTimeout=10000" \
+steden88/fschedule:latest
+
+docker run --name fschedule3 -p 82:8886 -d \
+-e Database_default="DataType=mysql,PoolMaxSize=50,PoolMinSize=1,ConnectionString=root:123456@tcp(127.0.0.1:3306)/fschedule?charset=utf8&parseTime=True&loc=Local" \
+-e Redis_default="Server=127.0.0.1:6379,DB=14,Password=123456,ConnectTimeout=600000,SyncTimeout=10000,ResponseTimeout=10000" \
+steden88/fschedule:latest
+```
+> 多个节点运行，不需要特别配置，与单节点运行是一样的。
+
+## linux
 需要`go 1.20+`
 ```shell
 git clone https://github.com/FSchedule/FSchedule
@@ -106,7 +125,7 @@ chmod +x fschedule-server
 
 > 在应用程序根目录中有`farseer.yaml`配置文件，配置方式参考环境变量说明
 
-### mac二进制
+## mac
 需要`go 1.20+`
 ```shell
 git clone https://github.com/FSchedule/FSchedule
@@ -117,8 +136,6 @@ chmod +x fschedule-server
 ./fschedule-server
 ```
 > 在应用程序根目录中有`farseer.yaml`配置文件，配置方式参考环境变量说明
-
-> 未打勾的，在将来的版本中支持。
 
 ## 客户端使用方式
 ### go
@@ -168,5 +185,5 @@ func job1(jobContext *fSchedule.JobContext) bool {
 
 
 ## 历史回顾
-1. `2023-03-02` 发布2.0版本
+1. `2023-03-03` 发布2.0版本
 2. `2023-01-24` github创建仓库

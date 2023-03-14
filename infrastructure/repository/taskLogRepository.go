@@ -12,22 +12,22 @@ import (
 )
 
 type TaskLogRepository struct {
-	TaskLog data.TableSet[model.TaskLogPO] `data:"name=task_log"`
+	TaskLog data.TableSet[model.TaskLogPO] `data:"name=fschedule_task_log"`
 }
 
-func (repository TaskLogRepository) Add(taskLogDO taskLog.DomainObject) {
+func (repository *TaskLogRepository) Add(taskLogDO taskLog.DomainObject) {
 	po := mapper.Single[model.TaskLogPO](taskLogDO)
 	queue.Push("TaskLogQueue", po)
 }
 
-func (repository TaskLogRepository) GetList(jobName string, logLevel eumLogLevel.Enum, pageSize int, pageIndex int) collections.PageList[taskLog.DomainObject] {
+func (repository *TaskLogRepository) GetList(jobName string, logLevel eumLogLevel.Enum, pageSize int, pageIndex int) collections.PageList[taskLog.DomainObject] {
 	pageList := repository.TaskLog.Where("name", jobName).Where("log_level", logLevel).ToPageList(pageSize, pageIndex)
 	var pageListDO collections.PageList[taskLog.DomainObject]
 	pageList.MapToPageList(&pageListDO)
 	return pageListDO
 }
 
-func (repository TaskLogRepository) AddBatch(lstPO collections.List[model.TaskLogPO]) {
+func (repository *TaskLogRepository) AddBatch(lstPO collections.List[model.TaskLogPO]) {
 	err := repository.TaskLog.InsertList(lstPO, 50)
 	if err != nil {
 		exception.ThrowRefuseException("批量添加报错")

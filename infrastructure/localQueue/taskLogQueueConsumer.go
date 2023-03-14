@@ -13,5 +13,5 @@ func TaskLogQueueConsumer(subscribeName string, message collections.ListAny, rem
 	// 转成BuildLogVO数组
 	var lstPO collections.List[model.TaskLogPO]
 	message.MapToList(&lstPO)
-	container.Resolve[taskLog.Repository]().(repository.TaskLogRepository).AddBatch(lstPO)
+	container.Resolve[taskLog.Repository]().(*repository.TaskLogRepository).AddBatch(lstPO)
 }

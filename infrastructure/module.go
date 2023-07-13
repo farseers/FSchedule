@@ -23,12 +23,6 @@ func (module Module) DependsModule() []modules.FarseerModule {
 	return []modules.FarseerModule{data.Module{}, redis.Module{}, eventBus.Module{}, queue.Module{}}
 }
 
-func (module Module) PreInitialize() {
-}
-
-func (module Module) Initialize() {
-}
-
 func (module Module) PostInitialize() {
 	timingWheel.Start()
 
@@ -59,7 +53,4 @@ func (module Module) PostInitialize() {
 	fs.AddInitCallback("注册节点信息", func() {
 		container.Resolve[serverNode.Repository]().Save(serverNode.New())
 	})
-}
-
-func (module Module) Shutdown() {
 }

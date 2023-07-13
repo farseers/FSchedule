@@ -19,12 +19,6 @@ func (module Module) DependsModule() []modules.FarseerModule {
 	return []modules.FarseerModule{domain.Module{}}
 }
 
-func (module Module) PreInitialize() {
-}
-
-func (module Module) Initialize() {
-}
-
 func (module Module) PostInitialize() {
 	// 打印客户端、任务组信息
 	fs.AddInitCallback("打印客户端、任务组信息", func() {
@@ -51,7 +45,4 @@ func (module Module) PostInitialize() {
 			_ = container.Resolve[core.IEvent]("ClusterLeader").Publish(fs.AppId)
 		})
 	})
-}
-
-func (module Module) Shutdown() {
 }

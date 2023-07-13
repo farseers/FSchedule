@@ -5,7 +5,6 @@ import (
 	"FSchedule/domain/schedule"
 	"FSchedule/domain/serverNode"
 	"FSchedule/domain/taskLog"
-	"github.com/farseer-go/data"
 	"github.com/farseer-go/fs/container"
 )
 
@@ -28,8 +27,9 @@ func InitRepository() {
 
 	// 注册taskLog仓储
 	container.Register(func() taskLog.Repository {
-		return data.NewContext[TaskLogRepository]("default", true)
+		return &TaskLogRepository{}
 	})
 
+	// 注册taskGroup仓储
 	registerTaskGroupRepository()
 }

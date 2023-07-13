@@ -31,7 +31,7 @@ func NewDO(mame, caption string, ver int, taskId int64, data collections.Diction
 		CreateAt: time.UnixMilli(createAt),
 	}
 	if logLevel == eumLogLevel.Error || logLevel == eumLogLevel.Warning {
-		log.Println(eumLogLevel.GetName(logLevel) + "：" + content)
+		log.Println(logLevel.ToString() + "：" + content)
 	}
 	return do
 }

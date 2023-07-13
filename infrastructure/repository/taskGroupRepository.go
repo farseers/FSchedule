@@ -3,10 +3,10 @@ package repository
 import (
 	"FSchedule/domain/enum"
 	"FSchedule/domain/taskGroup"
+	"FSchedule/infrastructure/repository/context"
 	"FSchedule/infrastructure/repository/model"
 	"github.com/farseer-go/cache"
 	"github.com/farseer-go/collections"
-	"github.com/farseer-go/data"
 	"github.com/farseer-go/fs/container"
 	"github.com/farseer-go/fs/core"
 	"github.com/farseer-go/mapper"
@@ -15,37 +15,32 @@ import (
 )
 
 type taskGroupRepository struct {
-	TaskGroup   data.TableSet[model.TaskGroupPO]           `data:"name=fschedule_task_group"`
-	Redis       redis.IClient                              `inject:"default"`
 	CacheManage cache.ICacheManage[taskGroup.DomainObject] `inject:"FSchedule_TaskGroup"`
 	*taskRepository
 }
 
 func registerTaskGroupRepository() {
-	repository := data.NewContext[taskGroupRepository]("default", true)
-	repository.taskRepository = data.NewContext[taskRepository]("default", true)
-
-	repository.CacheManage = redis.SetProfiles[taskGroup.DomainObject]("FSchedule_TaskGroup", "Name", 0, "default")
+	taskGroupCache := redis.SetProfiles[taskGroup.DomainObject]("FSchedule_TaskGroup", "Name", "default")
 	// 多级缓存
-	repository.CacheManage.SetListSource(func() collections.List[taskGroup.DomainObject] {
+	taskGroupCache.SetListSource(func() collections.List[taskGroup.DomainObject] {
 		var lst collections.List[taskGroup.DomainObject]
-		list := repository.TaskGroup.ToList()
+		list := context.MysqlContextIns.TaskGroup.ToList()
 		list.MapToList(&lst)
 		return lst
 	})
 
-	repository.CacheManage.SetItemSource(func(cacheId any) (taskGroup.DomainObject, bool) {
-		po := repository.TaskGroup.Where("Name = ?", cacheId).ToEntity()
+	taskGroupCache.SetItemSource(func(cacheId any) (taskGroup.DomainObject, bool) {
+		po := context.MysqlContextIns.TaskGroup.Where("Name = ?", cacheId).ToEntity()
 		if po.Name != "" {
 			return mapper.Single[taskGroup.DomainObject](&po), true
 		}
 		return taskGroup.DomainObject{}, false
 	})
 
-	*repository = *container.ResolveIns(repository)
-
 	// 注册仓储
-	container.RegisterInstance[taskGroup.Repository](repository)
+	container.Register(func() taskGroup.Repository {
+		return &taskGroupRepository{taskRepository: &taskRepository{}}
+	})
 }
 
 func (receiver *taskGroupRepository) Add(do *taskGroup.DomainObject) {
@@ -53,7 +48,7 @@ func (receiver *taskGroupRepository) Add(do *taskGroup.DomainObject) {
 	po.ActivateAt = time.Now()
 	po.LastRunAt = time.Now()
 	po.NextAt = time.Now()
-	_ = receiver.TaskGroup.Insert(&po)
+	_ = context.MysqlContextIns.TaskGroup.Insert(&po)
 	receiver.CacheManage.SaveItem(*do)
 }
 
@@ -85,7 +80,7 @@ func (receiver *taskGroupRepository) Sync() {
 	for i := 0; i < lst.Count(); i++ {
 		do := lst.Index(i)
 		po := mapper.Single[model.TaskGroupPO](&do)
-		_ = receiver.TaskGroup.UpdateOrInsert(po, "Name")
+		_ = context.MysqlContextIns.TaskGroup.UpdateOrInsert(po, "Name")
 
 		// 同步任务
 		receiver.taskRepository.syncTask(po.Name)
@@ -104,7 +99,7 @@ func (receiver *taskGroupRepository) GetTaskGroupCount() int64 {
 }
 
 func (receiver *taskGroupRepository) Delete(name string) {
-	receiver.TaskGroup.Where("name = ?", name).Delete()
+	context.MysqlContextIns.TaskGroup.Where("name = ?", name).Delete()
 	receiver.CacheManage.Remove(name)
 }
 
@@ -131,12 +126,12 @@ func (receiver *taskGroupRepository) GetTaskUnFinishList(jobsNames []string, top
 // SaveToDb 保存到数据库
 func (receiver *taskGroupRepository) SaveToDb(do taskGroup.DomainObject) {
 	po := mapper.Single[model.TaskGroupPO](&do)
-	receiver.TaskGroup.Where("name = ?", do.Name).Update(po)
+	context.MysqlContextIns.TaskGroup.Where("name = ?", do.Name).Update(po)
 }
 
 // ToIdList 从数据库中读取数据
 func (receiver *taskGroupRepository) ToIdList() []string {
-	lst := receiver.TaskGroup.Select("name").ToList()
+	lst := context.MysqlContextIns.TaskGroup.Select("name").ToList()
 	var lstName []string
 	lst.Select(&lstName, func(item model.TaskGroupPO) any {
 		return item.Name

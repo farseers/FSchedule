@@ -7,7 +7,7 @@ import (
 	"github.com/farseer-go/tasks"
 )
 
-// ServerActivateJob 更新节点信息
+// ServerActivateJob 更新节点活跃时间
 func ServerActivateJob(context *tasks.TaskContext) {
 	repository := container.Resolve[serverNode.Repository]()
 	serverNodeDO := repository.ToEntity(fs.AppId)

@@ -26,7 +26,7 @@ func (module Module) PostInitialize() {
 	})
 
 	// 10秒更新一次服务端信息
-	fs.AddInitCallback("10秒更新一次服务端信息", func() {
+	fs.AddInitCallback("每10秒更新节点活跃时间", func() {
 		tasks.Run("ServerNodeJob", 10*time.Second, job.ServerActivateJob, fs.Context)
 	})
 

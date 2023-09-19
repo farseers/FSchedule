@@ -9,7 +9,7 @@ import (
 // SyncAvgSpeedJob 计算任务组的平均耗时
 func SyncAvgSpeedJob(context *tasks.TaskContext) {
 	repository := container.Resolve[taskGroup.Repository]()
-	for _, taskGroupDO := range repository.ToList().ToArray() {
+	repository.ToList().Foreach(func(taskGroupDO *taskGroup.DomainObject) {
 		var speedList = repository.ToTaskSpeedList(taskGroupDO.Name)
 		var runSpeedAvg = taskGroup.NewTaskSpeed(speedList).GetAvgSpeed()
 
@@ -20,5 +20,5 @@ func SyncAvgSpeedJob(context *tasks.TaskContext) {
 				repository.Save(do)
 			}
 		}
-	}
+	})
 }

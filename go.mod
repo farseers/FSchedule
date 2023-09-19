@@ -3,23 +3,23 @@ module FSchedule
 go 1.20
 
 require (
-	github.com/farseer-go/cache v0.2.0
-	github.com/farseer-go/collections v0.4.0
-	github.com/farseer-go/data v0.2.0
-	github.com/farseer-go/eventBus v0.2.0
-	github.com/farseer-go/fs v0.7.0
-	github.com/farseer-go/mapper v0.2.0
-	github.com/farseer-go/queue v0.2.0
-	github.com/farseer-go/redis v0.2.0
-	github.com/farseer-go/tasks v0.2.0
-	github.com/farseer-go/utils v0.3.0
-	github.com/farseer-go/webapi v0.3.0
+	github.com/farseer-go/cache v0.8.0
+	github.com/farseer-go/collections v0.8.0
+	github.com/farseer-go/data v0.8.0
+	github.com/farseer-go/eventBus v0.8.0
+	github.com/farseer-go/fs v0.8.0
+	github.com/farseer-go/mapper v0.8.0
+	github.com/farseer-go/queue v0.8.0
+	github.com/farseer-go/redis v0.8.0
+	github.com/farseer-go/tasks v0.8.0
+	github.com/farseer-go/utils v0.8.0
+	github.com/farseer-go/webapi v0.8.0
 	github.com/robfig/cron/v3 v3.0.1
 )
 
 require (
 	github.com/andybalholm/brotli v1.0.4 // indirect
-	github.com/cespare/xxhash/v2 v2.1.2 // indirect
+	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/chzyer/readline v1.5.1 // indirect
 	github.com/cilium/ebpf v0.10.0 // indirect
 	github.com/cosiner/argv v0.1.0 // indirect
@@ -27,6 +27,7 @@ require (
 	github.com/derekparker/trie v0.0.0-20221221181808-1424fce0c981 // indirect
 	github.com/devfeel/mapper v0.7.10 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
+	github.com/farseer-go/cacheMemory v0.8.0 // indirect
 	github.com/go-delve/delve v1.20.1 // indirect
 	github.com/go-delve/liner v1.2.3-0.20220127212407-d32d89dd2a5d // indirect
 	github.com/go-redis/redis/v8 v8.11.5 // indirect

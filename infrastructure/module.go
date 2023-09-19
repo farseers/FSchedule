@@ -6,6 +6,7 @@ import (
 	"FSchedule/infrastructure/http"
 	"FSchedule/infrastructure/localQueue"
 	"FSchedule/infrastructure/repository"
+	"FSchedule/infrastructure/repository/context"
 	"github.com/farseer-go/data"
 	"github.com/farseer-go/eventBus"
 	"github.com/farseer-go/fs"
@@ -25,6 +26,10 @@ func (module Module) DependsModule() []modules.FarseerModule {
 
 func (module Module) PostInitialize() {
 	timingWheel.Start()
+
+	// 注册上下文
+	context.InitMysqlContext()
+	context.InitRedisContext()
 
 	// 注册仓储
 	repository.InitRepository()

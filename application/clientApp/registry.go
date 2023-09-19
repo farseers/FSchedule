@@ -36,12 +36,19 @@ func Registry(dto RegistryDTO, clientRepository client.Repository, taskGroupRepo
 
 	// 更新任务组
 	for _, jobDTO := range dto.Jobs {
-		taskGroupRepository.ToListByName(jobDTO.Name).Foreach(func(taskGroupDO *taskGroup.DomainObject) {
-			taskGroupDO.UpdateVer(jobDTO.Name, jobDTO.Caption, jobDTO.Ver, jobDTO.Cron, jobDTO.StartAt, jobDTO.IsEnable)
-			if taskGroupDO.NeedSave {
-				taskGroupRepository.Save(*taskGroupDO)
-			}
-		})
+		lstTaskGroup := taskGroupRepository.ToListByName(jobDTO.Name)
+		// 当没有找到任务组时，注册一个新的任务组
+		if lstTaskGroup.Count() == 0 {
+			taskGroupDO := taskGroup.New(jobDTO.Name, jobDTO.Caption, jobDTO.Ver, jobDTO.Cron, jobDTO.StartAt, jobDTO.IsEnable)
+			taskGroupRepository.Save(*taskGroupDO)
+		} else { // 找到任务组，则更新现有任务组版本（如果有变动）
+			lstTaskGroup.Foreach(func(taskGroupDO *taskGroup.DomainObject) {
+				taskGroupDO.UpdateVer(jobDTO.Name, jobDTO.Caption, jobDTO.Ver, jobDTO.Cron, jobDTO.StartAt, jobDTO.IsEnable)
+				if taskGroupDO.NeedSave {
+					taskGroupRepository.Save(*taskGroupDO)
+				}
+			})
+		}
 		do.Jobs.Add(mapper.Single[client.JobVO](jobDTO))
 	}
 

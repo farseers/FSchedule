@@ -69,6 +69,13 @@ func (receiver *taskGroupRepository) ToEntity(id int64) taskGroup.DomainObject {
 
 func (receiver *taskGroupRepository) Save(do taskGroup.DomainObject) {
 	do.NeedSave = false
+	// 说明是新注册的任务
+	if do.Id == 0 {
+		po := mapper.Single[model.TaskGroupPO](&do)
+		_ = context.MysqlContextIns.TaskGroup.Insert(&po)
+		do.Id = po.Id
+		do.Task.TaskGroupId = po.Id
+	}
 	receiver.CacheManage.SaveItem(do)
 
 	// 发到所有节点上

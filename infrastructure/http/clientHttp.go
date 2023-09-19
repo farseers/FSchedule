@@ -22,7 +22,7 @@ func (receiver clientHttp) Check(do *client.DomainObject) (client.ResourceVO, er
 		"clientId": do.Id,
 	}
 	var apiResponse core.ApiResponse[client.ResourceVO]
-	err := http.NewClient(clientUrl).HeadAdd(tokenName, token).Body(body).PostUnmarshal(&apiResponse)
+	_, err := http.NewClient(clientUrl).HeadAdd(tokenName, token).Body(body).PostUnmarshal(&apiResponse)
 	if err != nil {
 		flog.Warningf("客户端（%d）：%s:%d  检查失败", do.Id, do.Ip, do.Port)
 		return client.ResourceVO{}, err
@@ -37,7 +37,7 @@ func (receiver clientHttp) Check(do *client.DomainObject) (client.ResourceVO, er
 func (receiver clientHttp) Invoke(do *client.DomainObject, task *client.TaskEO) (client.ResourceVO, error) {
 	clientUrl := fmt.Sprintf("http://%s:%d/api/invoke", do.Ip, do.Port)
 	var apiResponse core.ApiResponse[client.ResourceVO]
-	err := http.NewClient(clientUrl).HeadAdd(tokenName, token).Body(task).PostUnmarshal(&apiResponse)
+	_, err := http.NewClient(clientUrl).HeadAdd(tokenName, token).Body(task).PostUnmarshal(&apiResponse)
 	if err != nil {
 		return client.ResourceVO{}, err
 	}
@@ -55,7 +55,7 @@ func (receiver clientHttp) Status(do *client.DomainObject, taskId int64) (client
 	body := map[string]any{
 		"TaskId": taskId,
 	}
-	err := http.NewClient(clientUrl).HeadAdd(tokenName, token).Body(body).PostUnmarshal(&apiResponse)
+	_, err := http.NewClient(clientUrl).HeadAdd(tokenName, token).Body(body).PostUnmarshal(&apiResponse)
 	if err != nil {
 		return client.TaskReportVO{}, err
 	}
@@ -73,7 +73,7 @@ func (receiver clientHttp) Kill(do *client.DomainObject, taskId int64) bool {
 	body := map[string]any{
 		"TaskId": taskId,
 	}
-	err := http.NewClient(clientUrl).HeadAdd(tokenName, token).Body(body).PostUnmarshal(&apiResponse)
+	_, err := http.NewClient(clientUrl).HeadAdd(tokenName, token).Body(body).PostUnmarshal(&apiResponse)
 	if err != nil {
 		return false
 	}

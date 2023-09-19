@@ -20,7 +20,7 @@ type taskGroupRepository struct {
 }
 
 func registerTaskGroupRepository() {
-	taskGroupCache := redis.SetProfiles[taskGroup.DomainObject]("FSchedule_TaskGroup", "Name", "default")
+	taskGroupCache := redis.SetProfiles[taskGroup.DomainObject]("FSchedule_TaskGroup", "Id", "default")
 	// 多级缓存
 	taskGroupCache.SetListSource(func() collections.List[taskGroup.DomainObject] {
 		var lst collections.List[taskGroup.DomainObject]
@@ -30,8 +30,8 @@ func registerTaskGroupRepository() {
 	})
 
 	taskGroupCache.SetItemSource(func(cacheId any) (taskGroup.DomainObject, bool) {
-		po := context.MysqlContextIns.TaskGroup.Where("Name = ?", cacheId).ToEntity()
-		if po.Name != "" {
+		po := context.MysqlContextIns.TaskGroup.Where("Id = ?", cacheId).ToEntity()
+		if po.Name != "" && po.Id > 0 {
 			return mapper.Single[taskGroup.DomainObject](&po), true
 		}
 		return taskGroup.DomainObject{}, false
@@ -56,8 +56,14 @@ func (receiver *taskGroupRepository) ToList() collections.List[taskGroup.DomainO
 	return receiver.CacheManage.Get()
 }
 
-func (receiver *taskGroupRepository) ToEntity(name string) taskGroup.DomainObject {
-	item, _ := receiver.CacheManage.GetItem(name)
+func (receiver *taskGroupRepository) ToListByName(name string) collections.List[taskGroup.DomainObject] {
+	return receiver.CacheManage.Get().Where(func(item taskGroup.DomainObject) bool {
+		return item.Name == name
+	}).ToList()
+}
+
+func (receiver *taskGroupRepository) ToEntity(id int64) taskGroup.DomainObject {
+	item, _ := receiver.CacheManage.GetItem(id)
 	return item
 }
 
@@ -80,10 +86,10 @@ func (receiver *taskGroupRepository) Sync() {
 	for i := 0; i < lst.Count(); i++ {
 		do := lst.Index(i)
 		po := mapper.Single[model.TaskGroupPO](&do)
-		_ = context.MysqlContextIns.TaskGroup.UpdateOrInsert(po, "Name")
+		_ = context.MysqlContextIns.TaskGroup.UpdateOrInsert(po, "id")
 
 		// 同步任务
-		receiver.taskRepository.syncTask(po.Name)
+		receiver.taskRepository.syncTask(po.Id)
 	}
 }
 
@@ -98,9 +104,9 @@ func (receiver *taskGroupRepository) GetTaskGroupCount() int64 {
 	return int64(receiver.CacheManage.Count())
 }
 
-func (receiver *taskGroupRepository) Delete(name string) {
-	context.MysqlContextIns.TaskGroup.Where("name = ?", name).Delete()
-	receiver.CacheManage.Remove(name)
+func (receiver *taskGroupRepository) Delete(id int64) {
+	context.MysqlContextIns.TaskGroup.Where("id = ?", id).Delete()
+	receiver.CacheManage.Remove(id)
 }
 
 func (receiver *taskGroupRepository) ToUnRunCount() int {
@@ -126,17 +132,17 @@ func (receiver *taskGroupRepository) GetTaskUnFinishList(jobsNames []string, top
 // SaveToDb 保存到数据库
 func (receiver *taskGroupRepository) SaveToDb(do taskGroup.DomainObject) {
 	po := mapper.Single[model.TaskGroupPO](&do)
-	context.MysqlContextIns.TaskGroup.Where("name = ?", do.Name).Update(po)
+	context.MysqlContextIns.TaskGroup.Where("id = ?", do.Id).Update(po)
 }
 
 // ToIdList 从数据库中读取数据
-func (receiver *taskGroupRepository) ToIdList() []string {
-	lst := context.MysqlContextIns.TaskGroup.Select("name").ToList()
-	var lstName []string
-	lst.Select(&lstName, func(item model.TaskGroupPO) any {
-		return item.Name
+func (receiver *taskGroupRepository) ToIdList() []int64 {
+	lst := context.MysqlContextIns.TaskGroup.Select("id").ToList()
+	var lstId []int64
+	lst.Select(&lstId, func(item model.TaskGroupPO) any {
+		return item.Id
 	})
-	return lstName
+	return lstId
 }
 
 func (receiver *taskGroupRepository) GetEnableTaskList(status enum.TaskStatus, pageSize int, pageIndex int) collections.PageList[taskGroup.TaskEO] {

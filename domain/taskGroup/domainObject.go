@@ -12,6 +12,7 @@ import (
 var standardParser = cron.NewParser(cron.Second | cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow | cron.Descriptor)
 
 type DomainObject struct {
+	Id          int64                                  // 主键ID
 	Name        string                                 // 实现Job的特性名称（客户端识别哪个实现类）
 	Ver         int                                    // 版本
 	Task        TaskEO                                 // 最新的任务
@@ -72,6 +73,7 @@ func (receiver *DomainObject) CreateTask() {
 		Ver:         receiver.Ver,
 		Caption:     receiver.Caption,
 		Name:        receiver.Name,
+		TaskGroupId: receiver.Id,
 		StartAt:     receiver.NextAt,
 		RunAt:       time.Now(),
 		RunSpeed:    0,

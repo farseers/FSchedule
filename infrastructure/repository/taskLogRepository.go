@@ -19,8 +19,8 @@ func (repository *TaskLogRepository) Add(taskLogDO taskLog.DomainObject) {
 	queue.Push("TaskLogQueue", po)
 }
 
-func (repository *TaskLogRepository) GetList(jobName string, logLevel eumLogLevel.Enum, pageSize int, pageIndex int) collections.PageList[taskLog.DomainObject] {
-	pageList := context.MysqlContextIns.TaskLog.Where("name", jobName).Where("log_level", logLevel).ToPageList(pageSize, pageIndex)
+func (repository *TaskLogRepository) GetList(taskGroupId int64, logLevel eumLogLevel.Enum, pageSize int, pageIndex int) collections.PageList[taskLog.DomainObject] {
+	pageList := context.MysqlContextIns.TaskLog.Where("task_group_id", taskGroupId).Where("log_level", logLevel).ToPageList(pageSize, pageIndex)
 	var pageListDO collections.PageList[taskLog.DomainObject]
 	pageList.MapToPageList(&pageListDO)
 	return pageListDO

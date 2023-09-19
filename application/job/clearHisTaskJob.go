@@ -12,14 +12,12 @@ func ClearHisTaskJob(context *tasks.TaskContext) {
 	reservedTaskCount := configure.GetInt("FSchedule.ReservedTaskCount")
 	taskGroupRepository := container.Resolve[taskGroup.Repository]()
 
-	curIndex := 0
+	//curIndex := 0
 	result := 0
-	lst := taskGroupRepository.ToList()
-	for _, taskGroupDO := range lst.ToArray() {
-		curIndex++
-		lstTask := taskGroupRepository.ToFinishList(taskGroupDO.Name, reservedTaskCount)
+	taskGroupRepository.ToList().Foreach(func(taskGroupDO *taskGroup.DomainObject) {
+		lstTask := taskGroupRepository.ToFinishList(taskGroupDO.Id, reservedTaskCount)
 		if lstTask.Count() == 0 {
-			continue
+			return
 		}
 
 		result += lstTask.Count()
@@ -28,6 +26,6 @@ func ClearHisTaskJob(context *tasks.TaskContext) {
 		}).(int)
 
 		// 清除历史记录
-		taskGroupRepository.ClearFinish(taskGroupDO.Name, taskId)
-	}
+		taskGroupRepository.ClearFinish(taskGroupDO.Id, taskId)
+	})
 }

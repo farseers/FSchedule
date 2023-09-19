@@ -11,10 +11,7 @@ import (
 func ClientUpdateSubscribe(message any, _ core.EventArgs) {
 	var clientDO client.DomainObject
 	err := json.Unmarshal([]byte(message.(string)), &clientDO)
-	if err != nil {
-		return
-	}
-	if clientDO.IsNil() {
+	if err != nil || clientDO.IsNil() {
 		return
 	}
 	domain.MonitorClientPush(&clientDO)

@@ -34,14 +34,14 @@ func Registry(dto RegistryDTO, clientRepository client.Repository, taskGroupRepo
 		exception.ThrowWebException(403, "客户端ID、Name、IP、Port未完整传入")
 	}
 
-	// 先推送任务信息再保存客户端
 	// 更新任务组
 	for _, jobDTO := range dto.Jobs {
-		taskGroupDO := taskGroupRepository.ToEntity(jobDTO.Name)
-		taskGroupDO.UpdateVer(jobDTO.Name, jobDTO.Caption, jobDTO.Ver, jobDTO.Cron, jobDTO.StartAt, jobDTO.IsEnable)
-		if taskGroupDO.NeedSave {
-			taskGroupRepository.Save(taskGroupDO)
-		}
+		taskGroupRepository.ToListByName(jobDTO.Name).Foreach(func(taskGroupDO *taskGroup.DomainObject) {
+			taskGroupDO.UpdateVer(jobDTO.Name, jobDTO.Caption, jobDTO.Ver, jobDTO.Cron, jobDTO.StartAt, jobDTO.IsEnable)
+			if taskGroupDO.NeedSave {
+				taskGroupRepository.Save(*taskGroupDO)
+			}
+		})
 		do.Jobs.Add(mapper.Single[client.JobVO](jobDTO))
 	}
 

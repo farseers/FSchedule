@@ -80,7 +80,7 @@ func (receiver *TaskGroupMonitor) Start() {
 
 	// 抢占锁，谁抢到，谁负责这个任务组的调度
 	receiver.isReadWork = true
-	receiver.ScheduleRepository.Schedule(receiver.Name, func() {
+	receiver.ScheduleRepository.Schedule(receiver.Id, func() {
 		receiver.isWorking = true
 		flog.Infof("任务组：%s ver:%s 加入调度线程", flog.Blue(receiver.Name), flog.Yellow(receiver.Ver))
 		for {

@@ -43,15 +43,6 @@ func registerTaskGroupRepository() {
 	})
 }
 
-func (receiver *taskGroupRepository) Add(do *taskGroup.DomainObject) {
-	po := mapper.Single[model.TaskGroupPO](do)
-	po.ActivateAt = time.Now()
-	po.LastRunAt = time.Now()
-	po.NextAt = time.Now()
-	_ = context.MysqlContextIns.TaskGroup.Insert(&po)
-	receiver.CacheManage.SaveItem(*do)
-}
-
 func (receiver *taskGroupRepository) ToList() collections.List[taskGroup.DomainObject] {
 	return receiver.CacheManage.Get()
 }
@@ -71,6 +62,9 @@ func (receiver *taskGroupRepository) Save(do taskGroup.DomainObject) {
 	do.NeedSave = false
 	// 说明是新注册的任务
 	if do.Id == 0 {
+		do.ActivateAt = time.Now()
+		do.LastRunAt = time.Now()
+		do.NextAt = time.Now()
 		po := mapper.Single[model.TaskGroupPO](&do)
 		_ = context.MysqlContextIns.TaskGroup.Insert(&po)
 		do.Id = po.Id

@@ -163,7 +163,7 @@ func (receiver *TaskGroupMonitor) waitWorking() {
 		return
 	}
 
-	flog.Debugf("任务组：%s 等待客户端执行完成", receiver.Name)
+	//flog.Debugf("任务组：%s 等待客户端执行完成", receiver.Name)
 	timer := timingWheel.Add(time.Duration(receiver.RunSpeedAvg+3000) * time.Millisecond)
 	// 这里用循环是为了，任何的更新，如果仍处于Working状态，则不需要跳到外面重新执行
 	select {
@@ -177,7 +177,7 @@ func (receiver *TaskGroupMonitor) waitWorking() {
 
 // 任务完成
 func (receiver *TaskGroupMonitor) taskFinish() {
-	flog.Debugf("任务组：%s 任务完成", receiver.Name)
+	//flog.Debugf("任务组：%s 任务完成", receiver.Name)
 	_ = receiver.FinishEventBus.Publish(receiver.DomainObject)
 }
 

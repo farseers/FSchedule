@@ -97,6 +97,10 @@ func (receiver *DomainObject) SetClient(client ClientVO) {
 	receiver.Task.Status = enum.Working
 	receiver.Task.SchedulerAt = time.Now()
 	receiver.Task.RunAt = time.Now()
+	// 重新赋值是为了担心数据被手动改了
+	receiver.Task.Data = receiver.Data
+	receiver.Task.Name = receiver.Name
+	receiver.Task.TaskGroupId = receiver.Id
 }
 
 // IsNil 不存在
@@ -159,7 +163,7 @@ func (receiver *DomainObject) CalculateNextAtByCron() {
 
 // SyncData 同步Data
 func (receiver *DomainObject) SyncData() {
-	if receiver.Task.Status == enum.Success {
+	if receiver.Task.Status == enum.Success || receiver.Task.Status == enum.Fail {
 		receiver.Data = receiver.Task.Data
 	}
 }

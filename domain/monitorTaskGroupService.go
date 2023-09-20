@@ -121,7 +121,7 @@ func (receiver *TaskGroupMonitor) waitStart() {
 
 		// 任务组状态不可用、没有可用客户端，不需要调度
 		if receiver.CanScheduleClient() == 0 {
-			flog.Debugf("任务组：%s "+flog.Yellow("没有客户端，等待客户端接入"), receiver.Name)
+			flog.Debugf("任务组：%s "+flog.Yellow("等待客户端接入"), receiver.Name)
 			<-receiver.updated
 			continue
 		}

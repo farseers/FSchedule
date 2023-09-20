@@ -1,3 +1,5 @@
+// Package taskGroupApp
+// @area /api/
 package taskGroupApp
 
 import (
@@ -22,12 +24,13 @@ type LogContent struct {
 }
 
 // LogReport 日志上报
+// @post /logReport
 func LogReport(dto logReportDTO, taskGroupRepository taskGroup.Repository, taskLogRepository taskLog.Repository) {
 	for _, log := range dto.Logs {
 		taskDO := taskGroupRepository.GetTask(log.TaskGroupId, log.TaskId)
 
 		if log.LogLevel == eumLogLevel.Error || log.LogLevel == eumLogLevel.Warning {
-			flog.Printf("%d %s %s [%s]%s", log.TaskGroupId, log.Name, taskDO.Caption, log.LogLevel.ToString(), log.Content)
+			flog.Printf("%d %s %s [%s]%s\n", log.TaskGroupId, log.Name, taskDO.Caption, log.LogLevel.ToString(), log.Content)
 		}
 
 		taskLogDO := taskLog.NewDO(log.Name, taskDO.Caption, log.Ver, log.TaskId, log.TaskGroupId, taskDO.Data, log.LogLevel, log.Content, log.CreateAt)

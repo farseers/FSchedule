@@ -1,3 +1,5 @@
+// Package clientApp
+// @area /api/
 package clientApp
 
 import (
@@ -27,6 +29,7 @@ type RegistryJobDTO struct {
 }
 
 // Registry 客户端注册
+// @post /registry
 func Registry(dto RegistryDTO, clientRepository client.Repository, taskGroupRepository taskGroup.Repository, scheduleRepository schedule.Repository) {
 	do := mapper.Single[client.DomainObject](dto)
 	do.Jobs = collections.NewList[client.JobVO]()

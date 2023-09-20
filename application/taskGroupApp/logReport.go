@@ -30,7 +30,7 @@ func LogReport(dto logReportDTO, taskGroupRepository taskGroup.Repository, taskL
 		taskDO := taskGroupRepository.GetTask(log.TaskGroupId, log.TaskId)
 
 		if log.LogLevel == eumLogLevel.Error || log.LogLevel == eumLogLevel.Warning {
-			flog.Infof("【客户端日志上报】 %s（%d） %s [%s] %s\n", log.Name, log.TaskGroupId, taskDO.Caption, log.LogLevel.ToString(), log.Content)
+			flog.Infof("【客户端日志上报】 %s（%d） %s [%s] %s", log.Name, log.TaskGroupId, taskDO.Caption, log.LogLevel.ToString(), log.Content)
 		}
 
 		taskLogDO := taskLog.NewDO(log.Name, taskDO.Caption, log.Ver, log.TaskId, log.TaskGroupId, taskDO.Data, log.LogLevel, log.Content, log.CreateAt)

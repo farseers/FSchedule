@@ -108,14 +108,6 @@ func (receiver *DomainObject) IsNil() bool {
 	return receiver.Name == ""
 }
 
-// UpdateTask 更新任务信息
-func (receiver *DomainObject) UpdateTask(taskEO TaskEO) {
-	if taskEO.Id >= receiver.Task.Id {
-		receiver.Data = taskEO.Data
-		receiver.Task = taskEO
-	}
-}
-
 // ScheduleFail 调度失败
 func (receiver *DomainObject) ScheduleFail() {
 	receiver.Task.ScheduleFail()
@@ -165,6 +157,9 @@ func (receiver *DomainObject) CalculateNextAtByCron() {
 func (receiver *DomainObject) SyncData() {
 	if receiver.Task.Status == enum.Success || receiver.Task.Status == enum.Fail {
 		receiver.Data = receiver.Task.Data
+		if receiver.Data.Count() == 0 {
+			flog.Infof("")
+		}
 	}
 }
 
@@ -177,10 +172,10 @@ func (receiver *DomainObject) Report(status enum.TaskStatus, data collections.Di
 	// 客户端动态计算下一个执行周期
 	receiver.CalculateNextAtByUnix(nextTimespan)
 	taskGroupRepository.Save(*receiver)
+}
 
-	//if receiver.Task.IsFinish() {
-	//	_ = container.Resolve[core.IEvent]("TaskFinish").Publish(receiver)
-	//} else {
-	//	taskGroupRepository.Save(*receiver)
-	//}
+// ReportFail 任务报告，未找到任务
+func (receiver *DomainObject) ReportFail(taskGroupRepository Repository) {
+	receiver.Task.UpdateTask(enum.Fail, receiver.Task.Data, receiver.Task.Progress, receiver.Task.RunSpeed)
+	taskGroupRepository.Save(*receiver)
 }

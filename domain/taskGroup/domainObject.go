@@ -141,12 +141,19 @@ func (receiver *DomainObject) CalculateNextAtByUnix(timespan int64) {
 
 // CalculateNextAtByCron 重新计算下一个执行周期
 func (receiver *DomainObject) CalculateNextAtByCron() {
+	// 成功才要计算下一个周期
 	if time.Now().After(receiver.NextAt) {
-		cornSchedule, err := standardParser.Parse(receiver.Cron)
-		if err != nil {
-			_ = flog.Errorf("Name:%s，Cron格式错误:%s", receiver.Name, receiver.Cron)
+		switch receiver.Task.Status {
+		case enum.Success:
+			cornSchedule, err := standardParser.Parse(receiver.Cron)
+			if err != nil {
+				_ = flog.Errorf("Name:%s，Cron格式错误:%s", receiver.Name, receiver.Cron)
+			}
+			receiver.NextAt = cornSchedule.Next(time.Now())
+		case enum.Fail:
+			// 失败，则为下一秒在执行
+			receiver.NextAt = time.Now().Add(1 * time.Second)
 		}
-		receiver.NextAt = cornSchedule.Next(time.Now())
 	}
 }
 

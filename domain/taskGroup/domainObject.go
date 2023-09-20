@@ -50,7 +50,7 @@ func (receiver *DomainObject) UpdateVer(name string, caption string, ver int, st
 		if enable {
 			cornSchedule, err := standardParser.Parse(receiver.Cron)
 			if err != nil {
-				_ = flog.Errorf("Name:%s，Cron格式错误:%s", receiver.Name, receiver.Cron)
+				_ = flog.Errorf("任务组:%s（%d），Cron格式错误:%s", receiver.Name, receiver.Id, receiver.Cron)
 				receiver.NeedSave = false
 				return
 			} else {
@@ -151,7 +151,7 @@ func (receiver *DomainObject) CalculateNextAtByCron() {
 		case enum.Success:
 			cornSchedule, err := standardParser.Parse(receiver.Cron)
 			if err != nil {
-				_ = flog.Errorf("Name:%s，Cron格式错误:%s", receiver.Name, receiver.Cron)
+				_ = flog.Errorf("任务组:%s（%d），Cron格式错误:%s", receiver.Name, receiver.Id, receiver.Cron)
 			}
 			receiver.NextAt = cornSchedule.Next(time.Now())
 		case enum.Fail:

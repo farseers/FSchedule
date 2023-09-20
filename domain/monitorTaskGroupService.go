@@ -28,7 +28,7 @@ func MonitorTaskGroupPush(taskGroupDO *taskGroup.DomainObject) {
 		taskGroupMonitor := taskGroupList.GetValue(taskGroupDO.Name)
 		*taskGroupMonitor.DomainObject = *taskGroupDO
 		if taskGroupMonitor.isWorking {
-			flog.Debugf("任务组更新通知：%s Ver:%d", taskGroupDO.Name, taskGroupDO.Ver)
+			//flog.Debugf("任务组更新通知：%s Ver:%d", taskGroupDO.Name, taskGroupDO.Ver)
 			taskGroupMonitor.updateNotice()
 		}
 	}
@@ -126,11 +126,11 @@ func (receiver *TaskGroupMonitor) waitStart() {
 			continue
 		}
 
-		flog.Debugf("任务组：%s 等待开始时间", receiver.Name)
+		//flog.Debugf("任务组：%s 等待开始时间", receiver.Name)
 		timer := timingWheel.AddTimePrecision(receiver.StartAt)
 		select {
 		case <-timer.C: // 开始时间到了，可以开始计算任务执行赶时间
-			flog.Debugf("任务组：%s 等待执行时间", receiver.Name)
+			//flog.Debugf("任务组：%s 等待执行时间", receiver.Name)
 			receiver.waitScheduler()
 			return
 		case <-receiver.updated:

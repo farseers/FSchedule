@@ -18,7 +18,7 @@ type Repository interface {
 	// SaveTask 保存任务信息
 	SaveTask(taskEO TaskEO)
 	// GetTask 获取任务信息
-	GetTask(id int64, taskId int64) TaskEO
+	GetTask(taskGroupId int64, taskId int64) TaskEO
 	// ToTaskSpeedList 当前任务组下所有任务的执行速度
 	ToTaskSpeedList(taskGroupId int64) []int64
 	// ToFinishList 获取指定任务组执行成功的任务列表

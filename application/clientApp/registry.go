@@ -9,6 +9,8 @@ import (
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs/exception"
 	"github.com/farseer-go/mapper"
+	"github.com/farseer-go/webapi"
+	"strings"
 )
 
 type RegistryDTO struct {
@@ -32,6 +34,10 @@ type RegistryJobDTO struct {
 // @post /registry
 func Registry(dto RegistryDTO, clientRepository client.Repository, taskGroupRepository taskGroup.Repository, scheduleRepository schedule.Repository) {
 	do := mapper.Single[client.DomainObject](dto)
+	// 如果客户端没有指定IP时，由服务端获取
+	if do.Ip == "" {
+		do.Ip = strings.Split(webapi.GetHttpContext().URI.RemoteAddr, ":")[0]
+	}
 	do.Jobs = collections.NewList[client.JobVO]()
 	if do.IsNil() {
 		exception.ThrowWebException(403, "客户端ID、Name、IP、Port未完整传入")

@@ -8,7 +8,7 @@ GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o fschedule-server -ldflags="-w 
 # 打包
 docker build -t fschedule:latest --network=host .
 # 发到内网
-docker login dockerhub.fsgit.cc/test -u admin -p admin
-docker tag fschedule:latest dockerhub.fsgit.cc/test:fschedule-dev
-docker push dockerhub.fsgit.cc/test:fschedule-dev
-docker rmi dockerhub.fsgit.cc/test:fschedule-dev
+docker tag fschedule:latest hub.fsgit.cc/fschedule:dev
+docker push hub.fsgit.cc/fschedule:dev
+docker rmi hub.fsgit.cc/fschedule:dev
+docker rmi fschedule:latest

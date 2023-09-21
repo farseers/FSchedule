@@ -30,9 +30,14 @@ type RegistryJobDTO struct {
 	IsEnable bool   // 任务是否启用
 }
 
+type RegistryResponse struct {
+	ClientIp   string // 客户端IP
+	ClientPort int    // 客户端端口
+}
+
 // Registry 客户端注册
 // @post /registry
-func Registry(dto RegistryDTO, clientRepository client.Repository, taskGroupRepository taskGroup.Repository, scheduleRepository schedule.Repository) {
+func Registry(dto RegistryDTO, clientRepository client.Repository, taskGroupRepository taskGroup.Repository, scheduleRepository schedule.Repository) RegistryResponse {
 	do := mapper.Single[client.DomainObject](dto)
 	// 如果客户端没有指定IP时，由服务端获取
 	if do.Ip == "" {
@@ -63,6 +68,13 @@ func Registry(dto RegistryDTO, clientRepository client.Repository, taskGroupRepo
 
 	// 保存客户端信息
 	do.Registry()
-	do.CheckOnline()
+	if err := do.CheckOnline(); err != nil {
+		exception.ThrowWebException(403, err.Error())
+	}
 	clientRepository.Save(&do)
+
+	return RegistryResponse{
+		ClientIp:   do.Ip,
+		ClientPort: do.Port,
+	}
 }

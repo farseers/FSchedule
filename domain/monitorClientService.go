@@ -76,7 +76,7 @@ func (receiver *ClientMonitor) checkOnline() {
 		select {
 		case <-timingWheel.Add(checkTime).C:
 			if !receiver.client.IsOffline() {
-				receiver.client.CheckOnline()
+				_ = receiver.client.CheckOnline()
 				receiver.ClientRepository.Save(receiver.client)
 			}
 		case <-receiver.ctx.Done():

@@ -54,9 +54,10 @@ func (receiver *DomainObject) Logout() {
 }
 
 // CheckOnline 检查客户端是否存活
-func (receiver *DomainObject) CheckOnline() {
+func (receiver *DomainObject) CheckOnline() error {
 	status, err := container.Resolve[IClientCheck]().Check(receiver)
 	receiver.updateStatus(status, err)
+	return err
 }
 
 // Schedule 调度

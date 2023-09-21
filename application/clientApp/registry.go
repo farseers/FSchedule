@@ -10,7 +10,6 @@ import (
 	"github.com/farseer-go/fs/exception"
 	"github.com/farseer-go/mapper"
 	"github.com/farseer-go/webapi"
-	"strings"
 )
 
 type RegistryDTO struct {
@@ -41,7 +40,7 @@ func Registry(dto RegistryDTO, clientRepository client.Repository, taskGroupRepo
 	do := mapper.Single[client.DomainObject](dto)
 	// 如果客户端没有指定IP时，由服务端获取
 	if do.Ip == "" {
-		do.Ip = strings.Split(webapi.GetHttpContext().URI.RemoteAddr, ":")[0]
+		do.Ip = webapi.GetHttpContext().URI.GetRealIp()
 	}
 	do.Jobs = collections.NewList[client.JobVO]()
 	if do.IsNil() {

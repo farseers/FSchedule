@@ -8,8 +8,8 @@ import (
 )
 
 var route = []webapi.Route{
-	{"POST", "/api/logout", clientApp.Logout, "", []string{"clientId", ""}},
-	{"POST", "/api/registry", clientApp.Registry, "", []string{"dto", "", "", ""}},
-	{"POST", "/api/logReport", taskGroupApp.LogReport, "", []string{"dto", "", ""}},
-	{"POST", "/api/taskReport", taskGroupApp.TaskReport, "", []string{"", "", ""}},
+	{"POST", "/api/logout", clientApp.Logout, "", nil, []string{"clientId", ""}},
+	{"POST", "/api/registry", clientApp.Registry, "", nil, []string{"dto", "", "", ""}},
+	{"POST", "/api/logReport", taskGroupApp.LogReport, "", nil, []string{"dto", "", ""}},
+	{"POST", "/api/taskReport", taskGroupApp.TaskReport, "", nil, []string{"", "", ""}},
 }

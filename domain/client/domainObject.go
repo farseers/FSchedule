@@ -30,6 +30,11 @@ func (receiver *DomainObject) IsNil() bool {
 	return receiver.Id == 0 || receiver.Name == "" || receiver.Ip == "" || receiver.Port == 0
 }
 
+// IsOnline 是否刚注册进来
+func (receiver *DomainObject) IsOnline() bool {
+	return receiver.Status == enum.Online
+}
+
 // IsOffline 判断客户端是否下线
 func (receiver *DomainObject) IsOffline() bool {
 	return receiver.Status == enum.Offline

@@ -67,9 +67,6 @@ func Registry(dto RegistryDTO, clientRepository client.Repository, taskGroupRepo
 
 	// 保存客户端信息
 	do.Registry()
-	if err := do.CheckOnline(); err != nil {
-		exception.ThrowWebException(403, err.Error())
-	}
 	clientRepository.Save(&do)
 
 	return RegistryResponse{

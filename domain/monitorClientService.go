@@ -69,8 +69,13 @@ func (receiver *ClientMonitor) checkOnline() {
 			return
 		}
 		checkTime := 60 * time.Second
+		// 不可调度状态，则10秒后检查
 		if receiver.client.IsNotSchedule() || time.Since(receiver.client.ActivateAt).Seconds() >= 60 {
 			checkTime = 10 * time.Second
+		}
+		// 新注册，则在3秒后立即检查
+		if receiver.client.IsOnline() {
+			checkTime = 3 * time.Second
 		}
 
 		select {

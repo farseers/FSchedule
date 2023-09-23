@@ -9,6 +9,7 @@ COPY ./farseer.yaml .
 #COPY ./wwwroot ./wwwroot
 
 #设置时区
-RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai    /etc/localtime
+ENV TZ=Asia/Shanghai
+RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
 
 ENTRYPOINT ["./fschedule-server"]

@@ -41,6 +41,9 @@ func Registry(dto RegistryDTO, clientRepository client.Repository, taskGroupRepo
 	// 如果客户端没有指定IP时，由服务端获取
 	if do.Ip == "" {
 		do.Ip = webapi.GetHttpContext().URI.GetRealIp()
+		//for k, v := range webapi.GetHttpContext().Header.ToMap() {
+		//	flog.Printf("k=%s,v=%+v\n", k, v)
+		//}
 	}
 	do.Jobs = collections.NewList[client.JobVO]()
 	if do.IsNil() {

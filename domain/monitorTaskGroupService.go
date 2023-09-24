@@ -252,7 +252,7 @@ func TaskGroupCount() int {
 			if v.curClient != nil {
 				curClientId = v.curClient.Id
 			}
-			flog.Debugf("任务组：%s（%d），状态：%s，客户端%s个，当前客户端：%s", flog.Blue(v.Name), v.Id, v.Task.Status.String(), flog.Red(v.clients.Count()), flog.Green(curClientId))
+			flog.Debugf("任务组：%s（%d），\t状态：%s，客户端%s个，当前客户端：%s", flog.Blue(v.Name), v.Id, v.Task.Status.String(), flog.Red(v.clients.Count()), flog.Green(curClientId))
 		}
 	}
 	return taskGroupList.Count()

@@ -10,7 +10,10 @@ FSchedule:
   DataSyncTime: 60
   ReservedTaskCount: 1000
 Log:
-  LogLevel: "info"
+  Default:
+    LogLevel: "info"                  # 只记录级别>=info的日志内容
+    Format: "text"                    # 默认使用json格式输出
+    TimeFormat: "yyyy-MM-dd hh:mm:ss" # 打印的时间格式，默认为：yyyy-MM-dd hh:mm:ss.ffffff
   Component:
     webapi: false
     task: false

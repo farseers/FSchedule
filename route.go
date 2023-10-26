@@ -5,11 +5,12 @@ import (
 	"FSchedule/application/clientApp"
 	"FSchedule/application/taskGroupApp"
 	"github.com/farseer-go/webapi"
+	"github.com/farseer-go/webapi/context"
 )
 
 var route = []webapi.Route{
-	{"POST", "/api/logout", clientApp.Logout, "", nil, []string{"clientId", ""}},
-	{"POST", "/api/registry", clientApp.Registry, "", nil, []string{"dto", "", "", ""}},
-	{"POST", "/api/logReport", taskGroupApp.LogReport, "", nil, []string{"dto", "", ""}},
-	{"POST", "/api/taskReport", taskGroupApp.TaskReport, "", nil, []string{"", "", ""}},
+	{"POST", "/api/logout", clientApp.Logout, "", []context.IFilter{}, []string{"clientId", ""}},
+	{"POST", "/api/registry", clientApp.Registry, "", []context.IFilter{}, []string{"dto", "", "", ""}},
+	{"POST", "/api/logReport", taskGroupApp.LogReport, "", []context.IFilter{}, []string{"dto", "", ""}},
+	{"POST", "/api/taskReport", taskGroupApp.TaskReport, "", []context.IFilter{}, []string{"dto", "", ""}},
 }

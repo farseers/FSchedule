@@ -29,14 +29,14 @@ type DomainObject struct {
 	NeedSave    bool                                   // 是否需要保存
 }
 
-func New(name string, caption string, ver int, strCron string, startAt int64, enable bool) *DomainObject {
+func New(name string, caption string, ver int, strCron string, data collections.Dictionary[string, string], startAt int64, enable bool) *DomainObject {
 	do := &DomainObject{}
-	do.UpdateVer(name, caption, ver, strCron, startAt, enable)
+	do.UpdateVer(name, caption, ver, strCron, data, startAt, enable)
 	return do
 }
 
 // UpdateVer 更新新的版本
-func (receiver *DomainObject) UpdateVer(name string, caption string, ver int, strCron string, startAt int64, enable bool) {
+func (receiver *DomainObject) UpdateVer(name string, caption string, ver int, strCron string, data collections.Dictionary[string, string], startAt int64, enable bool) {
 	// 只更新高一个版本号的数据
 	if receiver.Ver+1 == ver {
 		receiver.Name = name
@@ -46,6 +46,7 @@ func (receiver *DomainObject) UpdateVer(name string, caption string, ver int, st
 		receiver.StartAt = time.Unix(startAt, 0)
 		receiver.NeedSave = true
 		receiver.IsEnable = enable
+		receiver.Data = data
 
 		if enable {
 			cornSchedule, err := standardParser.Parse(receiver.Cron)

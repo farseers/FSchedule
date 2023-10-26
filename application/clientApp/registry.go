@@ -21,12 +21,13 @@ type RegistryDTO struct {
 }
 
 type RegistryJobDTO struct {
-	Name     string // 任务名称
-	Ver      int    // 任务版本
-	Caption  string // 任务标题
-	Cron     string // 任务执行表达式
-	StartAt  int64  // 任务开始时间
-	IsEnable bool   // 任务是否启用
+	Name     string                                 // 任务名称
+	Ver      int                                    // 任务版本
+	Caption  string                                 // 任务标题
+	Cron     string                                 // 任务执行表达式
+	StartAt  int64                                  // 任务开始时间
+	IsEnable bool                                   // 任务是否启用
+	Data     collections.Dictionary[string, string] // 第一次注册时使用
 }
 
 type RegistryResponse struct {
@@ -41,9 +42,6 @@ func Registry(dto RegistryDTO, clientRepository client.Repository, taskGroupRepo
 	// 如果客户端没有指定IP时，由服务端获取
 	if do.Ip == "" {
 		do.Ip = webapi.GetHttpContext().URI.GetRealIp()
-		//for k, v := range webapi.GetHttpContext().Header.ToMap() {
-		//	flog.Printf("k=%s,v=%+v\n", k, v)
-		//}
 	}
 	do.Jobs = collections.NewList[client.JobVO]()
 	if do.IsNil() {
@@ -55,11 +53,11 @@ func Registry(dto RegistryDTO, clientRepository client.Repository, taskGroupRepo
 		lstTaskGroup := taskGroupRepository.ToListByName(jobDTO.Name)
 		// 当没有找到任务组时，注册一个新的任务组
 		if lstTaskGroup.Count() == 0 {
-			taskGroupDO := taskGroup.New(jobDTO.Name, jobDTO.Caption, jobDTO.Ver, jobDTO.Cron, jobDTO.StartAt, jobDTO.IsEnable)
+			taskGroupDO := taskGroup.New(jobDTO.Name, jobDTO.Caption, jobDTO.Ver, jobDTO.Cron, jobDTO.Data, jobDTO.StartAt, jobDTO.IsEnable)
 			taskGroupRepository.Save(*taskGroupDO)
 		} else { // 找到任务组，则更新现有任务组版本（如果有变动）
 			lstTaskGroup.Foreach(func(taskGroupDO *taskGroup.DomainObject) {
-				taskGroupDO.UpdateVer(jobDTO.Name, jobDTO.Caption, jobDTO.Ver, jobDTO.Cron, jobDTO.StartAt, jobDTO.IsEnable)
+				taskGroupDO.UpdateVer(jobDTO.Name, jobDTO.Caption, jobDTO.Ver, jobDTO.Cron, taskGroupDO.Data, jobDTO.StartAt, jobDTO.IsEnable)
 				if taskGroupDO.NeedSave {
 					taskGroupRepository.Save(*taskGroupDO)
 				}

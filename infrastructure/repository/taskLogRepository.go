@@ -27,7 +27,7 @@ func (repository *TaskLogRepository) GetList(taskGroupId int64, logLevel eumLogL
 }
 
 func (repository *TaskLogRepository) AddBatch(lstPO collections.List[model.TaskLogPO]) {
-	err := context.MysqlContextIns.TaskLog.InsertList(lstPO, 50)
+	_, err := context.MysqlContextIns.TaskLog.InsertList(lstPO, 50)
 	if err != nil {
 		exception.ThrowRefuseException("批量添加报错：" + err.Error())
 	}

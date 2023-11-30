@@ -3,7 +3,7 @@ cd ../farseer-go && sh git-update.sh
 # 更新FSchedule
 cd ../FSchedule && git pull
 # 生成路由
-fsctl -r
+#fsctl -r
 # 将忽略文件复制到上下文根目录中
 #\cp .dockerignore ../
 # 编译

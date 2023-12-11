@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-var standardParser = cron.NewParser(cron.Second | cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow | cron.Descriptor)
+var StandardParser = cron.NewParser(cron.Second | cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow | cron.Descriptor)
 
 type DomainObject struct {
 	Id          int64                                  // 主键ID
@@ -26,7 +26,7 @@ type DomainObject struct {
 	IsEnable    bool                                   // 是否开启
 	RunSpeedAvg int64                                  // 运行平均耗时
 	RunCount    int                                    // 运行次数
-	NeedSave    bool                                   // 是否需要保存
+	NeedSave    bool                                   // 是否需要保存（API接口使用）
 }
 
 func New(name string, caption string, ver int, strCron string, data collections.Dictionary[string, string], startAt int64, enable bool) *DomainObject {
@@ -49,7 +49,7 @@ func (receiver *DomainObject) UpdateVer(name string, caption string, ver int, st
 		receiver.Data = data
 
 		if enable {
-			cornSchedule, err := standardParser.Parse(receiver.Cron)
+			cornSchedule, err := StandardParser.Parse(receiver.Cron)
 			if err != nil {
 				_ = flog.Errorf("任务组:%s（%d），Cron格式错误:%s", receiver.Name, receiver.Id, receiver.Cron)
 				receiver.NeedSave = false
@@ -65,6 +65,19 @@ func (receiver *DomainObject) UpdateVer(name string, caption string, ver int, st
 	if enable && receiver.Task.IsNull() {
 		receiver.CreateTask()
 		receiver.NeedSave = true
+	}
+}
+
+func (receiver *DomainObject) Update() {
+	// 已下发的任务，不能修改
+	switch receiver.Task.Status {
+	case enum.None, enum.Fail, enum.Success, enum.ScheduleFail:
+		cornSchedule, err := StandardParser.Parse(receiver.Cron)
+		if err != nil {
+			_ = flog.Errorf("任务组:%s（%d），Cron格式错误:%s", receiver.Name, receiver.Id, receiver.Cron)
+		}
+		receiver.NextAt = cornSchedule.Next(time.Now())
+		receiver.Task.Data = receiver.Data
 	}
 }
 
@@ -142,7 +155,7 @@ func (receiver *DomainObject) CalculateNextAtByCron() {
 	if time.Now().After(receiver.NextAt) {
 		switch receiver.Task.Status {
 		case enum.Success:
-			cornSchedule, err := standardParser.Parse(receiver.Cron)
+			cornSchedule, err := StandardParser.Parse(receiver.Cron)
 			if err != nil {
 				_ = flog.Errorf("任务组:%s（%d），Cron格式错误:%s", receiver.Name, receiver.Id, receiver.Cron)
 			}

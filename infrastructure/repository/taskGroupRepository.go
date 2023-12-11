@@ -9,8 +9,10 @@ import (
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs/container"
 	"github.com/farseer-go/fs/core"
+	"github.com/farseer-go/fs/parse"
 	"github.com/farseer-go/mapper"
 	"github.com/farseer-go/redis"
+	"strings"
 	"time"
 )
 
@@ -94,76 +96,68 @@ func (receiver *taskGroupRepository) Sync() {
 	}
 }
 
-func (receiver *taskGroupRepository) ToListByClientId(clientId int64) collections.List[taskGroup.DomainObject] {
+func (receiver *taskGroupRepository) ToListForPage(name string, enable int, taskStatus enum.TaskStatus, clientId int64, pageSize int, pageIndex int) collections.PageList[taskGroup.DomainObject] {
 	lst := receiver.CacheManage.Get()
-	return lst.Where(func(item taskGroup.DomainObject) bool {
-		return item.Task.Client.Id == clientId && item.Task.StartAt.UnixMicro() < time.Now().UnixMicro()
-	}).ToList()
+	if name != "" {
+		lst = lst.Where(func(item taskGroup.DomainObject) bool {
+			return strings.Contains(item.Name, name)
+		}).ToList()
+	}
+	if enable > -1 {
+		lst = lst.Where(func(item taskGroup.DomainObject) bool {
+			return item.IsEnable == parse.ToBool(enable)
+		}).ToList()
+	}
+	if taskStatus > -1 {
+		lst = lst.Where(func(item taskGroup.DomainObject) bool {
+			return item.Task.Status == taskStatus
+		}).ToList()
+	}
+
+	if clientId > 0 {
+		lst = lst.Where(func(item taskGroup.DomainObject) bool {
+			return item.Task.Client.Id == clientId
+		}).ToList()
+	}
+	return lst.ToPageList(pageSize, pageIndex)
+}
+
+func (receiver *taskGroupRepository) IsExists(taskGroupId int64) bool {
+	return receiver.CacheManage.ExistsItem(taskGroupId)
+}
+
+func (receiver *taskGroupRepository) UpdateByEdit(do taskGroup.DomainObject) {
+	if item, exists := receiver.CacheManage.GetItem(do.Id); exists {
+		item.Name = do.Name
+		item.Ver = do.Ver
+		item.Caption = do.Caption
+		item.Data = do.Data
+		item.StartAt = do.StartAt
+		item.NextAt = do.NextAt
+		item.Cron = do.Cron
+		item.IsEnable = do.IsEnable
+		receiver.Save(do)
+	}
+}
+
+func (receiver *taskGroupRepository) Delete(taskGroupId int64) {
+	_, _ = context.MysqlContextIns.TaskGroup.Where("id = ?", taskGroupId).Delete()
+	receiver.CacheManage.Remove(taskGroupId)
 }
 
 func (receiver *taskGroupRepository) GetTaskGroupCount() int64 {
 	return int64(receiver.CacheManage.Count())
 }
 
-func (receiver *taskGroupRepository) Delete(id int64) {
-	context.MysqlContextIns.TaskGroup.Where("id = ?", id).Delete()
-	receiver.CacheManage.Remove(id)
-}
-
-func (receiver *taskGroupRepository) ToUnRunCount() int {
+func (receiver *taskGroupRepository) GetUnRunCount() int {
 	return receiver.CacheManage.Get().Where(func(item taskGroup.DomainObject) bool {
-		return item.Task.Status == enum.None || item.Task.Status == enum.Scheduling || item.Task.CreateAt.UnixMicro() < time.Now().UnixMicro()
+		return item.IsEnable && (item.Task.Status == enum.None || item.Task.Status == enum.Scheduling) && item.Task.CreateAt.UnixMicro() < time.Now().UnixMicro()
 	}).Count()
 }
 
-func (receiver *taskGroupRepository) ToSchedulerWorkingList() collections.List[taskGroup.DomainObject] {
-	return receiver.CacheManage.Get().Where(func(item taskGroup.DomainObject) bool {
+func (receiver *taskGroupRepository) ToSchedulerWorkingList(pageSize int, pageIndex int) collections.PageList[taskGroup.DomainObject] {
+	lst := receiver.CacheManage.Get().Where(func(item taskGroup.DomainObject) bool {
 		return item.Task.Status == enum.Scheduling || item.Task.Status == enum.Working
 	}).ToList()
-}
-
-func (receiver *taskGroupRepository) GetTaskUnFinishList(jobsNames []string, top int) collections.List[taskGroup.DomainObject] {
-	return receiver.CacheManage.Get().Where(func(item taskGroup.DomainObject) bool {
-		return item.IsEnable && collections.NewList(jobsNames...).Contains(item.Name) && item.Task.Status != enum.Success && item.Task.Status != enum.Fail
-	}).OrderBy(func(item taskGroup.DomainObject) any {
-		return item.NextAt.UnixMicro()
-	}).Take(top).ToList()
-}
-
-// SaveToDb 保存到数据库
-func (receiver *taskGroupRepository) SaveToDb(do taskGroup.DomainObject) {
-	po := mapper.Single[model.TaskGroupPO](&do)
-	context.MysqlContextIns.TaskGroup.Where("id = ?", do.Id).Update(po)
-}
-
-// ToIdList 从数据库中读取数据
-func (receiver *taskGroupRepository) ToIdList() []int64 {
-	lst := context.MysqlContextIns.TaskGroup.Select("id").ToList()
-	var lstId []int64
-	lst.Select(&lstId, func(item model.TaskGroupPO) any {
-		return item.Id
-	})
-	return lstId
-}
-
-func (receiver *taskGroupRepository) GetEnableTaskList(status enum.TaskStatus, pageSize int, pageIndex int) collections.PageList[taskGroup.TaskEO] {
-	lstTaskGroup := receiver.CacheManage.Get().Where(func(item taskGroup.DomainObject) bool {
-		return item.IsEnable
-	}).ToList()
-
-	if status != enum.None {
-		lstTaskGroup = lstTaskGroup.Where(func(item taskGroup.DomainObject) bool {
-			return item.Task.Status == status
-		}).ToList()
-	}
-
-	lstTaskGroup = lstTaskGroup.OrderBy(func(item taskGroup.DomainObject) any {
-		return item.Name
-	}).ToList()
-
-	var lst collections.List[taskGroup.TaskEO]
-	lstTaskGroup.Select(&lst, func(item taskGroup.DomainObject) any {
-		return item.Task
-	})
 	return lst.ToPageList(pageSize, pageIndex)
 }

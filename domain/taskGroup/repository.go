@@ -1,6 +1,7 @@
 package taskGroup
 
 import (
+	"FSchedule/domain/enum"
 	"github.com/farseer-go/collections"
 )
 
@@ -27,4 +28,13 @@ type Repository interface {
 	ClearFinish(id int64, taskId int)
 	// Sync 同步任务组数据
 	Sync()
+
+	// *******************仪表盘使用*********************
+	ToListForPage(name string, enable int, taskStatus enum.TaskStatus, clientId int64, pageSize int, pageIndex int) collections.PageList[DomainObject]
+	IsExists(taskGroupId int64) bool                                                       // 任务组是否存在
+	UpdateByEdit(do DomainObject)                                                          // 修改
+	Delete(taskGroupId int64)                                                              // 删除
+	GetTaskGroupCount() int64                                                              // 任务组数量
+	GetUnRunCount() int                                                                    // 到时间未运行的任务组数量
+	ToSchedulerWorkingList(pageSize int, pageIndex int) collections.PageList[DomainObject] // 调度中的任务组
 }

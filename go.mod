@@ -15,6 +15,7 @@ require (
 	github.com/farseer-go/tasks v0.9.0
 	github.com/farseer-go/utils v0.9.0
 	github.com/farseer-go/webapi v0.9.0
+	github.com/farseer-go/elasticSearch v0.9.0
 	github.com/robfig/cron/v3 v3.0.1
 )
 

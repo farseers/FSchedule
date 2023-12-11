@@ -10,5 +10,8 @@ func main() {
 	webapi.RegisterRoutes(route...)
 	webapi.UseApiResponse()
 	webapi.UsePprof()
+	webapi.UseApiDoc()
+	webapi.UseValidate()
+	webapi.UseCors()
 	webapi.Run()
 }

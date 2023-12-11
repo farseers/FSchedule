@@ -155,15 +155,15 @@ func (receiver *taskGroupRepository) GetUnRunCount() int {
 	}).Count()
 }
 
+func (receiver *taskGroupRepository) GetUnRunList(pageSize int, pageIndex int) collections.PageList[taskGroup.DomainObject] {
+	return receiver.CacheManage.Get().Where(func(item taskGroup.DomainObject) bool {
+		return item.IsEnable && (item.Task.Status == enum.None || item.Task.Status == enum.Scheduling) && item.Task.CreateAt.UnixMicro() < time.Now().UnixMicro()
+	}).ToPageList(pageSize, pageIndex)
+}
+
 func (receiver *taskGroupRepository) ToSchedulerWorkingList(pageSize int, pageIndex int) collections.PageList[taskGroup.DomainObject] {
 	lst := receiver.CacheManage.Get().Where(func(item taskGroup.DomainObject) bool {
 		return item.Task.Status == enum.Scheduling || item.Task.Status == enum.Working
 	}).ToList()
 	return lst.ToPageList(pageSize, pageIndex)
-}
-
-func (receiver *taskGroupRepository) GetUnRunList(pageSize int, pageIndex int) collections.PageList[taskGroup.DomainObject] {
-	return receiver.CacheManage.Get().Where(func(item taskGroup.DomainObject) bool {
-		return item.IsEnable && (item.Task.Status == enum.None || item.Task.Status == enum.Scheduling) && item.Task.CreateAt.UnixMicro() < time.Now().UnixMicro()
-	}).ToList().ToPageList(pageSize, pageIndex)
 }

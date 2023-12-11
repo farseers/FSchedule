@@ -1,6 +1,5 @@
-// Package clientApp
 // @area /api/
-package clientApp
+package api
 
 import (
 	"FSchedule/domain/client"

@@ -1,6 +1,5 @@
-// Package taskGroupApp
 // @area /api/
-package taskGroupApp
+package api
 
 import (
 	"FSchedule/domain/client"

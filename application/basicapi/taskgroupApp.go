@@ -1,4 +1,4 @@
-// @area /basicapi/
+// @area /basicapi/taskGroup/
 package basicapi
 
 import (
@@ -11,7 +11,7 @@ import (
 )
 
 // 任务组列表
-// @get taskGroup/list
+// @get list
 func TaskGroupList(name string, enable int, taskStatus enum.TaskStatus, clientId int64, pageSize int, pageIndex int, taskGroupRepository taskGroup.Repository) collections.PageList[taskGroup.DomainObject] {
 	if pageSize < 1 {
 		pageSize = 20
@@ -23,13 +23,13 @@ func TaskGroupList(name string, enable int, taskStatus enum.TaskStatus, clientId
 }
 
 // 任务组详情
-// @get taskGroup/info-{taskGroupId}
+// @get info-{taskGroupId}
 func TaskGroupInfo(taskGroupId int64, taskGroupRepository taskGroup.Repository) taskGroup.DomainObject {
 	return taskGroupRepository.ToEntity(taskGroupId)
 }
 
 // 任务组修改
-// @get taskGroup/update
+// @get update
 func TaskGroupUpdate(req request.TaskGroupUpdateRequest, taskGroupRepository taskGroup.Repository) {
 	// 检查cron
 	_, err := taskGroup.StandardParser.Parse(req.Cron)
@@ -43,25 +43,25 @@ func TaskGroupUpdate(req request.TaskGroupUpdateRequest, taskGroupRepository tas
 }
 
 // 任务组删除
-// @post taskGroup/delete
+// @post delete
 func TaskGroupDelete(taskGroupId int64, taskGroupRepository taskGroup.Repository) {
 	taskGroupRepository.Delete(taskGroupId)
 }
 
 // 任务组数量
-// @get taskGroup/count
+// @get count
 func TaskGroupCount(taskGroupRepository taskGroup.Repository) int64 {
 	return taskGroupRepository.GetTaskGroupCount()
 }
 
 // 任务组到期未运行数量
-// @get taskGroup/unRunCount
+// @get unRunCount
 func TaskGroupUnRunCount(taskGroupRepository taskGroup.Repository) int {
 	return taskGroupRepository.GetUnRunCount()
 }
 
 // 任务组到期未运行任务组列表
-// @get taskGroup/unRunList
+// @get unRunList
 func TaskGroupUnRunList(pageSize int, pageIndex int, taskGroupRepository taskGroup.Repository) collections.PageList[taskGroup.DomainObject] {
 	if pageSize < 1 {
 		pageSize = 20
@@ -73,7 +73,7 @@ func TaskGroupUnRunList(pageSize int, pageIndex int, taskGroupRepository taskGro
 }
 
 // 调度中或执行中的任务组
-// @get taskGroup/schedulerWorkingList
+// @get schedulerWorkingList
 func TaskGroupSchedulerList(pageSize int, pageIndex int, taskGroupRepository taskGroup.Repository) collections.PageList[taskGroup.DomainObject] {
 	if pageSize < 1 {
 		pageSize = 20

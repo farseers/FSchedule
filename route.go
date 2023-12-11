@@ -14,6 +14,8 @@ var route = []webapi.Route{
     {"POST", "/api/registry", api.Registry, "", []context.IFilter{}, []string{"dto", "", "", ""}},
     {"POST", "/api/taskReport", api.TaskReport, "", []context.IFilter{}, []string{"dto", "", ""}},
     {"GET", "/basicapi/log/list", basicapi.LogList, "", []context.IFilter{}, []string{"taskGroupId", "logLevel", "pageSize", "pageIndex", ""}},
+    {"GET", "/basicapi/task/list", basicapi.TaskList, "", []context.IFilter{}, []string{"taskGroupId", "taskStatus", "pageSize", "pageIndex", ""}},
+    {"GET", "/basicapi/task/todayFailCount", basicapi.TodayFailCount, "", []context.IFilter{}, []string{""}},
     {"GET", "/basicapi/taskGroup/list", basicapi.TaskGroupList, "", []context.IFilter{}, []string{"name", "enable", "taskStatus", "clientId", "pageSize", "pageIndex", ""}},
     {"GET", "/basicapi/taskGroup/info-{taskGroupId}", basicapi.TaskGroupInfo, "", []context.IFilter{}, []string{"taskGroupId", ""}},
     {"GET", "/basicapi/taskGroup/update", basicapi.TaskGroupUpdate, "", []context.IFilter{}, []string{"req", ""}},

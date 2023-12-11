@@ -15,7 +15,7 @@ func ClearHisTaskJob(context *tasks.TaskContext) {
 	//curIndex := 0
 	result := 0
 	taskGroupRepository.ToList().Foreach(func(taskGroupDO *taskGroup.DomainObject) {
-		lstTask := taskGroupRepository.ToFinishList(taskGroupDO.Id, reservedTaskCount)
+		lstTask := taskGroupRepository.ToTaskFinishList(taskGroupDO.Id, reservedTaskCount)
 		if lstTask.Count() == 0 {
 			return
 		}
@@ -26,6 +26,6 @@ func ClearHisTaskJob(context *tasks.TaskContext) {
 		}).(int)
 
 		// 清除历史记录
-		taskGroupRepository.ClearFinish(taskGroupDO.Id, taskId)
+		taskGroupRepository.TaskClearFinish(taskGroupDO.Id, taskId)
 	})
 }

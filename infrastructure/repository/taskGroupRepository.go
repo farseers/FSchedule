@@ -141,6 +141,7 @@ func (receiver *taskGroupRepository) UpdateByEdit(do taskGroup.DomainObject) {
 }
 
 func (receiver *taskGroupRepository) Delete(taskGroupId int64) {
+	(&taskRepository{}).DeleteTask(taskGroupId)
 	_, _ = context.MysqlContextIns.TaskGroup.Where("id = ?", taskGroupId).Delete()
 	receiver.CacheManage.Remove(taskGroupId)
 }

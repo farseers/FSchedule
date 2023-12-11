@@ -161,3 +161,9 @@ func (receiver *taskGroupRepository) ToSchedulerWorkingList(pageSize int, pageIn
 	}).ToList()
 	return lst.ToPageList(pageSize, pageIndex)
 }
+
+func (receiver *taskGroupRepository) GetUnRunList(pageSize int, pageIndex int) collections.PageList[taskGroup.DomainObject] {
+	return receiver.CacheManage.Get().Where(func(item taskGroup.DomainObject) bool {
+		return item.IsEnable && (item.Task.Status == enum.None || item.Task.Status == enum.Scheduling) && item.Task.CreateAt.UnixMicro() < time.Now().UnixMicro()
+	}).ToList().ToPageList(pageSize, pageIndex)
+}

@@ -60,8 +60,26 @@ func TaskGroupUnRunCount(taskGroupRepository taskGroup.Repository) int {
 	return taskGroupRepository.GetUnRunCount()
 }
 
+// 任务组到期未运行任务组列表
+// @get taskGroup/unRunList
+func TaskGroupUnRunList(pageSize int, pageIndex int, taskGroupRepository taskGroup.Repository) collections.PageList[taskGroup.DomainObject] {
+	if pageSize < 1 {
+		pageSize = 20
+	}
+	if pageIndex < 1 {
+		pageIndex = 1
+	}
+	return taskGroupRepository.GetUnRunList(pageSize, pageIndex)
+}
+
 // 调度中或执行中的任务组
 // @get taskGroup/schedulerWorkingList
 func TaskGroupSchedulerList(pageSize int, pageIndex int, taskGroupRepository taskGroup.Repository) collections.PageList[taskGroup.DomainObject] {
+	if pageSize < 1 {
+		pageSize = 20
+	}
+	if pageIndex < 1 {
+		pageIndex = 1
+	}
 	return taskGroupRepository.ToSchedulerWorkingList(pageSize, pageIndex)
 }

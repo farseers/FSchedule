@@ -35,6 +35,7 @@ type Repository interface {
 	UpdateByEdit(do DomainObject)                                                          // 修改
 	Delete(taskGroupId int64)                                                              // 删除
 	GetTaskGroupCount() int64                                                              // 任务组数量
-	GetUnRunCount() int                                                                    // 到时间未运行的任务组数量
+	GetUnRunCount() int                                                                    // 超时未运行的任务组数量
 	ToSchedulerWorkingList(pageSize int, pageIndex int) collections.PageList[DomainObject] // 调度中的任务组
+	GetUnRunList(pageSize int, pageIndex int) collections.PageList[DomainObject]           // 超时未运行的任务组
 }

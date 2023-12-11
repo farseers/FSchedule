@@ -20,7 +20,14 @@ func (repository *TaskLogRepository) Add(taskLogDO taskLog.DomainObject) {
 }
 
 func (repository *TaskLogRepository) GetList(taskGroupId int64, logLevel eumLogLevel.Enum, pageSize int, pageIndex int) collections.PageList[taskLog.DomainObject] {
-	pageList := context.MysqlContextIns.TaskLog.Where("task_group_id", taskGroupId).Where("log_level", logLevel).ToPageList(pageSize, pageIndex)
+	ts := context.MysqlContextIns.TaskLog.Desc("create_at")
+	if taskGroupId > 0 {
+		ts = ts.Where("task_group_id = ?", taskGroupId)
+	}
+	if logLevel > -1 {
+		ts = ts.Where("log_level = ?", logLevel)
+	}
+	pageList := ts.ToPageList(pageSize, pageIndex)
 	var pageListDO collections.PageList[taskLog.DomainObject]
 	pageList.MapToPageList(&pageListDO)
 	return pageListDO

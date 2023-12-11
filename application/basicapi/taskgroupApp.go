@@ -25,11 +25,14 @@ func TaskGroupList(name string, enable int, taskStatus enum.TaskStatus, clientId
 // 任务组详情
 // @get info-{taskGroupId}
 func TaskGroupInfo(taskGroupId int64, taskGroupRepository taskGroup.Repository) taskGroup.DomainObject {
+	// 判断任务组是否存在
+	exception.ThrowWebExceptionBool(!taskGroupRepository.IsExists(taskGroupId), 403, "任务组不存在")
+
 	return taskGroupRepository.ToEntity(taskGroupId)
 }
 
 // 任务组修改
-// @get update
+// @post update
 func TaskGroupUpdate(req request.TaskGroupUpdateRequest, taskGroupRepository taskGroup.Repository) {
 	// 检查cron
 	_, err := taskGroup.StandardParser.Parse(req.Cron)
@@ -45,6 +48,9 @@ func TaskGroupUpdate(req request.TaskGroupUpdateRequest, taskGroupRepository tas
 // 任务组删除
 // @post delete
 func TaskGroupDelete(taskGroupId int64, taskGroupRepository taskGroup.Repository) {
+	// 判断任务组是否存在
+	exception.ThrowWebExceptionBool(!taskGroupRepository.IsExists(taskGroupId), 403, "任务组不存在")
+
 	taskGroupRepository.Delete(taskGroupId)
 }
 

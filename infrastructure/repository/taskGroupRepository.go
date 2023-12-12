@@ -25,10 +25,8 @@ func registerTaskGroupRepository() {
 	taskGroupCache := redis.SetProfiles[taskGroup.DomainObject]("FSchedule_TaskGroup", "Id", "default")
 	// 多级缓存
 	taskGroupCache.SetListSource(func() collections.List[taskGroup.DomainObject] {
-		var lst collections.List[taskGroup.DomainObject]
 		list := context.MysqlContextIns.TaskGroup.ToList()
-		list.MapToList(&lst)
-		return lst
+		return mapper.ToList[taskGroup.DomainObject](list)
 	})
 
 	taskGroupCache.SetItemSource(func(cacheId any) (taskGroup.DomainObject, bool) {

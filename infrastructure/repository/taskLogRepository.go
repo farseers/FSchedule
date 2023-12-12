@@ -28,9 +28,7 @@ func (repository *TaskLogRepository) GetList(taskGroupId int64, logLevel eumLogL
 		ts = ts.Where("log_level = ?", logLevel)
 	}
 	pageList := ts.ToPageList(pageSize, pageIndex)
-	var pageListDO collections.PageList[taskLog.DomainObject]
-	pageList.MapToPageList(&pageListDO)
-	return pageListDO
+	return mapper.ToPageList[taskLog.DomainObject](pageList)
 }
 
 func (repository *TaskLogRepository) AddBatch(lstPO collections.List[model.TaskLogPO]) {

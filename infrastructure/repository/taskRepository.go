@@ -83,10 +83,7 @@ func (receiver *taskRepository) ToTaskListByGroupId(taskGroupId int64, taskStatu
 		ts = ts.Where("status = ?", taskStatus)
 	}
 	lstPO := ts.ToPageList(pageSize, pageIndex)
-
-	var lst collections.PageList[taskGroup.TaskEO]
-	lstPO.MapToPageList(&lst)
-	return lst
+	return mapper.ToPageList[taskGroup.TaskEO](lstPO)
 }
 
 func (receiver *taskRepository) TodayFailCount() int64 {

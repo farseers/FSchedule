@@ -79,6 +79,7 @@ func (receiver *DomainObject) Update() {
 		}
 		receiver.NextAt = dateTime.New(cornSchedule.Next(time.Now()))
 		receiver.Task.Data = receiver.Data
+	case enum.Scheduling, enum.Working:
 	}
 }
 
@@ -166,6 +167,10 @@ func (receiver *DomainObject) CalculateNextAtByCron() {
 		case enum.Fail:
 			// 失败，则为下一秒在执行
 			receiver.NextAt = now.AddSeconds(1)
+		case enum.None:
+		case enum.Scheduling:
+		case enum.ScheduleFail:
+		case enum.Working:
 		}
 	}
 }

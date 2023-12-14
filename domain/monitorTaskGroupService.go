@@ -8,6 +8,7 @@ import (
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs/container"
 	"github.com/farseer-go/fs/core"
+	"github.com/farseer-go/fs/dateTime"
 	"github.com/farseer-go/fs/flog"
 	"github.com/farseer-go/fs/timingWheel"
 	"time"
@@ -128,7 +129,7 @@ func (receiver *TaskGroupMonitor) waitStart() {
 		}
 
 		//flog.Debugf("任务组：%s 等待开始时间", receiver.Name)
-		timer := timingWheel.AddTimePrecision(receiver.StartAt)
+		timer := timingWheel.AddTimePrecision(receiver.StartAt.ToTime())
 		select {
 		case <-timer.C: // 开始时间到了，可以开始计算任务执行赶时间
 			//flog.Debugf("任务组：%s 等待执行时间", receiver.Name)
@@ -144,11 +145,11 @@ func (receiver *TaskGroupMonitor) waitStart() {
 func (receiver *TaskGroupMonitor) waitScheduler() {
 	// 由于创建锁的时候，需要网络IO开销，所以这里提前100ms进入
 	select {
-	case <-timingWheel.AddTime(receiver.Task.StartAt.Add(-100 * time.Millisecond)).C: // 执行时间到了，准开始调度
+	case <-timingWheel.AddTime(receiver.Task.StartAt.AddMillisecond(-100).ToTime()).C: // 执行时间到了，准开始调度
 		// 提前了100ms进到这里。
 		receiver.Task.Scheduling()
-		if m := time.Since(receiver.Task.StartAt).Microseconds(); m > 0 {
-			flog.Debugf("任务组：%s（%d） %d 发布调度事件，延迟：%d us", receiver.Name, receiver.Id, receiver.Task.Id, time.Since(receiver.Task.StartAt).Microseconds())
+		if m := dateTime.Since(receiver.Task.StartAt).Microseconds(); m > 0 {
+			flog.Debugf("任务组：%s（%d） %d 发布调度事件，延迟：%d us", receiver.Name, receiver.Id, receiver.Task.Id, dateTime.Since(receiver.Task.StartAt).Microseconds())
 		}
 		_ = receiver.SchedulerEventBus.Publish(receiver)
 	case <-receiver.updated:

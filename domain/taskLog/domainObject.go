@@ -3,6 +3,7 @@ package taskLog
 import (
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs/core/eumLogLevel"
+	"github.com/farseer-go/fs/dateTime"
 	"time"
 )
 
@@ -16,7 +17,7 @@ type DomainObject struct {
 	Data        collections.Dictionary[string, string] // 本次执行任务时的Data数据
 	LogLevel    eumLogLevel.Enum                       // 日志级别
 	Content     string                                 // 日志内容
-	CreateAt    time.Time                              // 日志时间
+	CreateAt    dateTime.DateTime                      // 日志时间
 }
 
 func NewDO(mame, caption string, ver int, taskId int64, taskGroupId int64, data collections.Dictionary[string, string], logLevel eumLogLevel.Enum, content string, createAt int64) DomainObject {
@@ -30,7 +31,7 @@ func NewDO(mame, caption string, ver int, taskId int64, taskGroupId int64, data 
 		Data:        data,
 		LogLevel:    logLevel,
 		Content:     content,
-		CreateAt:    time.UnixMilli(createAt),
+		CreateAt:    dateTime.New(time.UnixMilli(createAt)),
 	}
 	return do
 }

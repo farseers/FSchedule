@@ -4,6 +4,7 @@ import (
 	"FSchedule/domain/enum"
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs/container"
+	"github.com/farseer-go/fs/dateTime"
 	"github.com/farseer-go/fs/flog"
 	"time"
 )
@@ -13,8 +14,8 @@ type DomainObject struct {
 	Name        string                  // 客户端名称
 	Ip          string                  // 客户端IP
 	Port        int                     // 客户端端口
-	ActivateAt  time.Time               // 活动时间
-	ScheduleAt  time.Time               // 任务调度时间
+	ActivateAt  dateTime.DateTime       // 活动时间
+	ScheduleAt  dateTime.DateTime       // 任务调度时间
 	Status      enum.ClientStatus       // 客户端状态
 	QueueCount  int                     // 排队中的任务数量
 	WorkCount   int                     // 正在处理的任务数量
@@ -47,7 +48,7 @@ func (receiver *DomainObject) IsNotSchedule() bool {
 
 // Registry 注册客户端
 func (receiver *DomainObject) Registry() {
-	receiver.ActivateAt = time.Now()
+	receiver.ActivateAt = dateTime.Now()
 	receiver.Status = enum.Online
 	receiver.NeedNotice = true
 }
@@ -75,7 +76,7 @@ func (receiver *DomainObject) Schedule(task *TaskEO) bool {
 		milliseconds = 0
 	}
 	if receiver.Status == enum.Scheduler {
-		receiver.ScheduleAt = time.Now()
+		receiver.ScheduleAt = dateTime.Now()
 
 		flog.Infof("任务组：%s %d 调度成功 延迟：%s ms", task.Name, task.Id, flog.Red(milliseconds))
 		return true
@@ -92,7 +93,7 @@ func (receiver *DomainObject) updateStatus(status ResourceVO, err error) {
 		// 先设置为无法调度
 		receiver.UnSchedule()
 	} else {
-		receiver.ActivateAt = time.Now()
+		receiver.ActivateAt = dateTime.Now()
 		receiver.ErrorCount = 0
 		receiver.CpuUsage = status.CpuUsage
 		receiver.MemoryUsage = status.MemoryUsage
@@ -116,7 +117,8 @@ func (receiver *DomainObject) UnSchedule() {
 		receiver.Status = enum.UnSchedule
 
 		// 大于3次、活动时间超过30秒，则判定为离线
-		if receiver.ErrorCount >= 3 && time.Now().Sub(receiver.ActivateAt).Seconds() >= 30 {
+		now := dateTime.Now()
+		if receiver.ErrorCount >= 3 && now.Sub(receiver.ActivateAt).Seconds() >= 30 {
 			receiver.Logout()
 		}
 	}

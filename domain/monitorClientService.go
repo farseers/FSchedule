@@ -8,6 +8,7 @@ import (
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs"
 	"github.com/farseer-go/fs/container"
+	"github.com/farseer-go/fs/dateTime"
 	"github.com/farseer-go/fs/flog"
 	"github.com/farseer-go/fs/timingWheel"
 	"time"
@@ -70,7 +71,7 @@ func (receiver *ClientMonitor) checkOnline() {
 		}
 		checkTime := 60 * time.Second
 		// 不可调度状态，则10秒后检查
-		if receiver.client.IsNotSchedule() || time.Since(receiver.client.ActivateAt).Seconds() >= 60 {
+		if receiver.client.IsNotSchedule() || dateTime.Since(receiver.client.ActivateAt).Seconds() >= 60 {
 			checkTime = 10 * time.Second
 		}
 		// 新注册，则在3秒后立即检查

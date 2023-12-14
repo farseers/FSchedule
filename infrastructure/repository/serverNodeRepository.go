@@ -4,8 +4,8 @@ import (
 	"FSchedule/domain/serverNode"
 	"FSchedule/infrastructure/repository/context"
 	"github.com/farseer-go/collections"
+	"github.com/farseer-go/fs/dateTime"
 	"strconv"
-	"time"
 )
 
 const serverCacheKey = "FSchedule_ServerNode"
@@ -17,7 +17,7 @@ func (receiver *serverNodeRepository) Save(do *serverNode.DomainObject) {
 	if do.Id == 0 {
 		return
 	}
-	do.ActivateAt = time.Now()
+	do.ActivateAt = dateTime.Now()
 	_ = context.RedisContextIns.HashSetEntity(serverCacheKey, strconv.FormatInt(do.Id, 10), &do)
 }
 

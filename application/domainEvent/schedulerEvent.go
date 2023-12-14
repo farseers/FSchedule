@@ -7,6 +7,7 @@ import (
 	"FSchedule/domain/taskGroup"
 	"github.com/farseer-go/fs/container"
 	"github.com/farseer-go/fs/core"
+	"github.com/farseer-go/fs/dateTime"
 	"github.com/farseer-go/fs/flog"
 	"github.com/farseer-go/mapper"
 	"time"
@@ -25,7 +26,7 @@ func SchedulerEvent(message any, _ core.EventArgs) {
 
 	for {
 		if !do.CanScheduler() {
-			flog.Debugf("任务组：%s（%d） 无法调度，条件不满足，延迟：%d us", do.Name, do.Id, time.Since(do.Task.StartAt).Microseconds())
+			flog.Debugf("任务组：%s（%d） 无法调度，条件不满足，延迟：%d us", do.Name, do.Id, dateTime.Since(do.Task.StartAt).Microseconds())
 			do.ScheduleFail()
 			return
 		}
@@ -34,7 +35,7 @@ func SchedulerEvent(message any, _ core.EventArgs) {
 		clientSchedule := do.PollingClient()
 		// 没有可调度的客户端
 		if clientSchedule == nil || clientSchedule.IsNil() {
-			flog.Debugf("任务组：%s（%d） 没有可调度的客户端，延迟：%d us", do.Name, do.Id, time.Since(do.Task.StartAt).Microseconds())
+			flog.Debugf("任务组：%s（%d） 没有可调度的客户端，延迟：%d us", do.Name, do.Id, dateTime.Since(do.Task.StartAt).Microseconds())
 			do.ScheduleFail()
 			taskGroupRepository.Save(*do.DomainObject)
 			return

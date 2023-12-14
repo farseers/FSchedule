@@ -59,8 +59,8 @@ func (receiver *taskRepository) syncTask(taskGroupId int64) {
 		flog.Infof("同步数据库:%d/%d，task:%d", i+1, lst.Count(), do.Id)
 		// 保存成功后，已完成的任务，且最后运行时间大于1分钟的，移除列表
 		// 最后运行时间超过1小时的移除。（如果有读取，还是会从数据库重新读的）
-		if (do.IsFinish() && time.Now().Sub(do.RunAt).Seconds() >= float64(30)) ||
-			(time.Now().Sub(do.RunAt).Hours() >= float64(1)) {
+		if (do.IsFinish() && dateTime.Now().Sub(do.RunAt).Seconds() >= float64(30)) ||
+			(dateTime.Now().Sub(do.RunAt).Hours() >= float64(1)) {
 			po := mapper.Single[model.TaskPO](&do)
 			if context.MysqlContextIns.Task.UpdateOrInsert(po, "Id") == nil {
 				cacheManager.Remove(po.Id)

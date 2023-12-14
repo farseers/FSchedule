@@ -3,7 +3,7 @@ package taskGroup
 import (
 	"FSchedule/domain/enum"
 	"github.com/farseer-go/collections"
-	"time"
+	"github.com/farseer-go/fs/dateTime"
 )
 
 // TaskEO 任务记录
@@ -13,15 +13,15 @@ type TaskEO struct {
 	Name        string                                 // 实现Job的特性名称（客户端识别哪个实现类）
 	Ver         int                                    // 版本
 	Caption     string                                 // 任务组标题
-	StartAt     time.Time                              // 开始时间
-	RunAt       time.Time                              // 实际执行时间
+	StartAt     dateTime.DateTime                      // 开始时间
+	RunAt       dateTime.DateTime                      // 实际执行时间
 	RunSpeed    int64                                  // 运行耗时
 	Client      ClientVO                               // 客户端
 	Progress    int                                    // 进度0-100
 	Status      enum.TaskStatus                        // 状态
-	SchedulerAt time.Time                              // 调度时间
+	SchedulerAt dateTime.DateTime                      // 调度时间
 	Data        collections.Dictionary[string, string] // 本次执行任务时的Data数据
-	CreateAt    time.Time                              // 任务创建时间
+	CreateAt    dateTime.DateTime                      // 任务创建时间
 }
 
 func NewTaskDO() *TaskEO {
@@ -31,7 +31,7 @@ func NewTaskDO() *TaskEO {
 // SetClient 调度时设置客户端
 func (receiver *TaskEO) SetClient(client ClientVO) {
 	receiver.Status = enum.Working
-	receiver.SchedulerAt = time.Now()
+	receiver.SchedulerAt = dateTime.Now()
 	receiver.Client = client
 }
 
@@ -76,5 +76,5 @@ func (receiver *TaskEO) UpdateTask(status enum.TaskStatus, data collections.Dict
 	receiver.Data = data
 	receiver.Progress = progress
 	receiver.RunSpeed = speed
-	receiver.RunAt = time.Now()
+	receiver.RunAt = dateTime.Now()
 }

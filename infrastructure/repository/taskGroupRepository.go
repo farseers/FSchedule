@@ -9,6 +9,7 @@ import (
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs/container"
 	"github.com/farseer-go/fs/core"
+	"github.com/farseer-go/fs/dateTime"
 	"github.com/farseer-go/fs/parse"
 	"github.com/farseer-go/mapper"
 	"github.com/farseer-go/redis"
@@ -62,9 +63,9 @@ func (receiver *taskGroupRepository) Save(do taskGroup.DomainObject) {
 	do.NeedSave = false
 	// 说明是新注册的任务
 	if do.Id == 0 {
-		do.ActivateAt = time.Now()
-		do.LastRunAt = time.Now()
-		do.NextAt = time.Now()
+		do.ActivateAt = dateTime.Now()
+		do.LastRunAt = dateTime.Now()
+		do.NextAt = dateTime.Now()
 		po := mapper.Single[model.TaskGroupPO](&do)
 		_ = context.MysqlContextIns.TaskGroup.Insert(&po)
 		do.Id = po.Id

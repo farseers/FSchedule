@@ -3,6 +3,7 @@ package taskGroup
 import (
 	"FSchedule/domain/enum"
 	"github.com/farseer-go/collections"
+	"github.com/farseer-go/fs/dateTime"
 	"github.com/farseer-go/fs/flog"
 	"github.com/farseer-go/fs/snowflake"
 	"github.com/robfig/cron/v3"
@@ -18,11 +19,11 @@ type DomainObject struct {
 	Task        TaskEO                                 // 最新的任务
 	Caption     string                                 // 任务组标题
 	Data        collections.Dictionary[string, string] // 本次执行任务时的Data数据
-	StartAt     time.Time                              // 开始时间
-	NextAt      time.Time                              // 下次执行时间
+	StartAt     dateTime.DateTime                      // 开始时间
+	NextAt      dateTime.DateTime                      // 下次执行时间
 	Cron        string                                 // 时间定时器表达式
-	ActivateAt  time.Time                              // 活动时间
-	LastRunAt   time.Time                              // 最后一次完成时间
+	ActivateAt  dateTime.DateTime                      // 活动时间
+	LastRunAt   dateTime.DateTime                      // 最后一次完成时间
 	IsEnable    bool                                   // 是否开启
 	RunSpeedAvg int64                                  // 运行平均耗时
 	RunCount    int                                    // 运行次数
@@ -43,7 +44,7 @@ func (receiver *DomainObject) UpdateVer(name string, caption string, ver int, st
 		receiver.Caption = caption
 		receiver.Ver = ver
 		receiver.Cron = strCron
-		receiver.StartAt = time.Unix(startAt, 0)
+		receiver.StartAt = dateTime.NewUnix(startAt)
 		receiver.NeedSave = true
 		receiver.IsEnable = enable
 		receiver.Data = data
@@ -55,9 +56,9 @@ func (receiver *DomainObject) UpdateVer(name string, caption string, ver int, st
 				receiver.NeedSave = false
 				return
 			} else {
-				receiver.NextAt = cornSchedule.Next(time.Now())
-				receiver.ActivateAt = time.Now()
-				receiver.LastRunAt = time.Now()
+				receiver.NextAt = dateTime.New(cornSchedule.Next(time.Now()))
+				receiver.ActivateAt = dateTime.Now()
+				receiver.LastRunAt = dateTime.Now()
 			}
 		}
 	}
@@ -76,7 +77,7 @@ func (receiver *DomainObject) Update() {
 		if err != nil {
 			_ = flog.Errorf("任务组:%s（%d），Cron格式错误:%s", receiver.Name, receiver.Id, receiver.Cron)
 		}
-		receiver.NextAt = cornSchedule.Next(time.Now())
+		receiver.NextAt = dateTime.New(cornSchedule.Next(time.Now()))
 		receiver.Task.Data = receiver.Data
 	}
 }
@@ -85,8 +86,8 @@ func (receiver *DomainObject) Update() {
 func (receiver *DomainObject) CreateTask() {
 	if receiver.Task.IsFinish() {
 		receiver.RunCount++
-		receiver.LastRunAt = time.Now()
-		receiver.ActivateAt = time.Now()
+		receiver.LastRunAt = dateTime.Now()
+		receiver.ActivateAt = dateTime.Now()
 	}
 	receiver.Task = TaskEO{
 		Id:          snowflake.GenerateId(),
@@ -95,12 +96,12 @@ func (receiver *DomainObject) CreateTask() {
 		Name:        receiver.Name,
 		TaskGroupId: receiver.Id,
 		StartAt:     receiver.NextAt,
-		RunAt:       time.Now(),
+		RunAt:       dateTime.Now(),
 		RunSpeed:    0,
 		Progress:    0,
 		Status:      enum.None,
-		CreateAt:    time.Now(),
-		SchedulerAt: time.Now(),
+		CreateAt:    dateTime.Now(),
+		SchedulerAt: dateTime.Now(),
 		Data:        receiver.Data,
 	}
 }
@@ -109,8 +110,8 @@ func (receiver *DomainObject) CreateTask() {
 func (receiver *DomainObject) SetClient(client ClientVO) {
 	receiver.Task.Client = client
 	receiver.Task.Status = enum.Working
-	receiver.Task.SchedulerAt = time.Now()
-	receiver.Task.RunAt = time.Now()
+	receiver.Task.SchedulerAt = dateTime.Now()
+	receiver.Task.RunAt = dateTime.Now()
 	// 重新赋值是为了担心数据被手动改了
 	receiver.Task.Data = receiver.Data
 	receiver.Task.Name = receiver.Name
@@ -134,35 +135,37 @@ func (receiver *DomainObject) ClientOffline() {
 
 // CanScheduler 是否可以调度
 func (receiver *DomainObject) CanScheduler() bool {
+	now := dateTime.Now()
 	return !receiver.Task.IsNull() &&
 		(receiver.Task.Status == enum.None ||
 			receiver.Task.Status == enum.ScheduleFail ||
 			receiver.Task.Status == enum.Scheduling) &&
 		receiver.IsEnable &&
-		time.Now().After(receiver.StartAt)
+		now.After(receiver.StartAt)
 }
 
 // CalculateNextAtByUnix 重新计算下一个执行周期
 func (receiver *DomainObject) CalculateNextAtByUnix(timespan int64) {
 	if timespan > 0 {
-		receiver.NextAt = time.UnixMilli(timespan)
+		receiver.NextAt = dateTime.NewUnixMilli(timespan)
 	}
 }
 
 // CalculateNextAtByCron 重新计算下一个执行周期
 func (receiver *DomainObject) CalculateNextAtByCron() {
+	now := dateTime.Now()
 	// 成功才要计算下一个周期
-	if time.Now().After(receiver.NextAt) {
+	if now.After(receiver.NextAt) {
 		switch receiver.Task.Status {
 		case enum.Success:
 			cornSchedule, err := StandardParser.Parse(receiver.Cron)
 			if err != nil {
 				_ = flog.Errorf("任务组:%s（%d），Cron格式错误:%s", receiver.Name, receiver.Id, receiver.Cron)
 			}
-			receiver.NextAt = cornSchedule.Next(time.Now())
+			receiver.NextAt = dateTime.New(cornSchedule.Next(time.Now()))
 		case enum.Fail:
 			// 失败，则为下一秒在执行
-			receiver.NextAt = time.Now().Add(1 * time.Second)
+			receiver.NextAt = now.AddSeconds(1)
 		}
 	}
 }
@@ -179,8 +182,8 @@ func (receiver *DomainObject) SyncData() {
 
 // Report 任务报告
 func (receiver *DomainObject) Report(status enum.TaskStatus, data collections.Dictionary[string, string], progress int, runSpeed int64, nextTimespan int64, taskGroupRepository Repository) {
-	receiver.ActivateAt = time.Now()
-	receiver.LastRunAt = time.Now()
+	receiver.ActivateAt = dateTime.Now()
+	receiver.LastRunAt = dateTime.Now()
 	receiver.Task.UpdateTask(status, data, progress, runSpeed)
 	receiver.SyncData()
 	// 客户端动态计算下一个执行周期

@@ -70,7 +70,7 @@ func (receiver *taskRepository) syncTask(taskGroupId int64) {
 }
 
 func (receiver *taskRepository) DeleteTask(taskGroupId int64) {
-	context.MysqlContextIns.Task.Where("task_group_id = ?", taskGroupId).Delete()
+	_, _ = context.MysqlContextIns.Task.Where("task_group_id = ?", taskGroupId).Delete()
 	getCacheManager(taskGroupId).Clear()
 }
 
@@ -102,7 +102,7 @@ func (receiver *taskRepository) ToTaskSpeedList(taskGroupId int64) []int64 {
 
 // TaskClearFinish 清除成功的任务记录（1天前）
 func (receiver *taskRepository) TaskClearFinish(taskGroupId int64, taskId int) {
-	context.MysqlContextIns.Task.Where("task_group_id = ? and (status = ? or status = ?) and create_at < ? and Id < ?", taskGroupId, enum.Success, enum.Fail, time.Now().Add(-24*time.Hour), taskId).Delete()
+	_, _ = context.MysqlContextIns.Task.Where("task_group_id = ? and (status = ? or status = ?) and create_at < ? and Id < ?", taskGroupId, enum.Success, enum.Fail, time.Now().Add(-24*time.Hour), taskId).Delete()
 }
 
 func (receiver *taskRepository) ToTaskFinishList(taskGroupId int64, top int) collections.List[taskGroup.TaskEO] {

@@ -87,7 +87,8 @@ func (receiver *taskRepository) ToTaskListByGroupId(taskGroupId int64, taskStatu
 }
 
 func (receiver *taskRepository) TodayFailCount() int64 {
-	return context.MysqlContextIns.Task.Where("status = ? and create_at >= ?", enum.Fail, dateTime.Now().Date().ToTime()).Count()
+	now := dateTime.Now()
+	return context.MysqlContextIns.Task.Where("status = ? and create_at >= ?", enum.Fail, now.Date()).Count()
 }
 
 func (receiver *taskRepository) ToTaskSpeedList(taskGroupId int64) []int64 {

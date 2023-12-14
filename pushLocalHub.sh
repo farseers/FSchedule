@@ -5,10 +5,9 @@ cd ../FSchedule && git pull
 # 将忽略文件复制到上下文根目录中
 #\cp .dockerignore ../
 # 编译
-docker build -t fschedule:latest --network=host -f ./Dockerfile ../
+docker build -t hub.fsgit.cc/fschedule:dev --network=host -f ./Dockerfile ../
 # 发到内网
-docker tag fschedule:latest hub.fsgit.cc/fschedule:dev && docker push hub.fsgit.cc/fschedule:dev
-docker rmi hub.fsgit.cc/fschedule:dev && docker rmi fschedule:latest
+docker push hub.fsgit.cc/fschedule:dev && docker rmi hub.fsgit.cc/fschedule:dev
 
 # docker
 docker service rm fschedule

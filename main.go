@@ -13,5 +13,6 @@ func main() {
 	webapi.UseApiDoc()
 	webapi.UseValidate()
 	webapi.UseCors()
+	webapi.PrintRoute()
 	webapi.Run()
 }

@@ -9,7 +9,7 @@ import (
 	"github.com/farseer-go/mapper"
 )
 
-// TaskLogQueueConsumer 将日志指写入
+// TaskLogQueueConsumer 同步日志到数据库
 func TaskLogQueueConsumer(subscribeName string, message collections.ListAny, remainingCount int) {
 	// 转成BuildLogVO数组
 	lstPO := mapper.ToList[model.TaskLogPO](message.ToArray())

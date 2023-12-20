@@ -51,7 +51,7 @@ func (module Module) PostInitialize() {
 	redis.RegisterEvent("default", "ClusterLeader", domainEvent.ClusterLeaderSubscribe)
 
 	// 队列任务日志
-	queue.Subscribe("TaskLogQueue", "", 1000, localQueue.TaskLogQueueConsumer)
+	queue.Subscribe("TaskLogQueue", "同步日志到数据库", 1000, localQueue.TaskLogQueueConsumer)
 
 	// 注册客户端http
 	http.InitHttp()

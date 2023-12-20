@@ -88,6 +88,22 @@ func (receiver *taskGroupRepository) Sync() {
 	for i := 0; i < lst.Count(); i++ {
 		do := lst.Index(i)
 		po := mapper.Single[model.TaskGroupPO](&do)
+
+		if po.StartAt.Year() < 2000 {
+			po.StartAt = time.Now()
+		}
+
+		if po.ActivateAt.Year() < 2000 {
+			po.ActivateAt = time.Now()
+		}
+
+		if po.LastRunAt.Year() < 2000 {
+			po.LastRunAt = time.Now()
+		}
+
+		if po.NextAt.Year() < 2000 {
+			po.NextAt = time.Now()
+		}
 		_ = context.MysqlContextIns.TaskGroup.UpdateOrInsert(po, "id")
 
 		// 同步任务

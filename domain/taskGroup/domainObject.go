@@ -67,6 +67,22 @@ func (receiver *DomainObject) UpdateVer(name string, caption string, ver int, st
 		receiver.CreateTask()
 		receiver.NeedSave = true
 	}
+
+	if receiver.StartAt.Year() < 2000 {
+		receiver.StartAt = dateTime.Now()
+	}
+
+	if receiver.ActivateAt.Year() < 2000 {
+		receiver.ActivateAt = dateTime.Now()
+	}
+
+	if receiver.LastRunAt.Year() < 2000 {
+		receiver.LastRunAt = dateTime.Now()
+	}
+
+	if receiver.NextAt.Year() < 2000 {
+		receiver.NextAt = dateTime.Now()
+	}
 }
 
 func (receiver *DomainObject) Update() {

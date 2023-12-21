@@ -21,3 +21,5 @@ docker service create --name fschedule --replicas 1 -d --network=net \
 -l "traefik.http.routers.fschedule.tls=true" \
 -l "traefik.http.services.fschedule.loadbalancer.server.port=8886" \
 hub.fsgit.cc/fschedule:dev
+
+docker rmi $(docker images -f "dangling=true" -q)

@@ -2,7 +2,7 @@ package request
 
 import (
 	"github.com/farseer-go/collections"
-	"time"
+	"github.com/farseer-go/fs/dateTime"
 )
 
 type TaskGroupUpdateRequest struct {
@@ -11,8 +11,8 @@ type TaskGroupUpdateRequest struct {
 	Ver      int                                    // 版本
 	Caption  string                                 // 任务组标题
 	Data     collections.Dictionary[string, string] // 本次执行任务时的Data数据
-	StartAt  time.Time                              // 开始时间
-	NextAt   time.Time                              // 下次执行时间
+	StartAt  dateTime.DateTime                      // 开始时间
+	NextAt   dateTime.DateTime                      // 下次执行时间
 	Cron     string                                 // 时间定时器表达式
 	IsEnable bool                                   // 是否开启
 }

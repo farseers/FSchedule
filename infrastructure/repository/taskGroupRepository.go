@@ -171,13 +171,13 @@ func (receiver *taskGroupRepository) GetTaskGroupCount() int64 {
 
 func (receiver *taskGroupRepository) GetUnRunCount() int {
 	return receiver.CacheManage.Get().Where(func(item taskGroup.DomainObject) bool {
-		return item.IsEnable && (item.Task.Status == enum.None || item.Task.Status == enum.Scheduling) && item.Task.CreateAt.UnixMicro() < time.Now().UnixMicro()
+		return item.IsEnable && (item.Task.Status == enum.None || item.Task.Status == enum.Scheduling) && item.NextAt.Before(dateTime.Now())
 	}).Count()
 }
 
 func (receiver *taskGroupRepository) GetUnRunList(pageSize int, pageIndex int) collections.PageList[taskGroup.DomainObject] {
 	return receiver.CacheManage.Get().Where(func(item taskGroup.DomainObject) bool {
-		return item.IsEnable && (item.Task.Status == enum.None || item.Task.Status == enum.Scheduling) && item.Task.CreateAt.UnixMicro() < time.Now().UnixMicro()
+		return item.IsEnable && (item.Task.Status == enum.None || item.Task.Status == enum.Scheduling) && item.NextAt.Before(dateTime.Now())
 	}).ToPageList(pageSize, pageIndex)
 }
 

@@ -137,7 +137,7 @@ func (receiver *taskGroupRepository) ToListForPage(name string, enable int, task
 
 	// 排序
 	return lst.OrderBy(func(item taskGroup.DomainObject) any {
-		return item.Name
+		return item.Name + item.Caption + parse.ToString(item.Id)
 	}).ToPageList(pageSize, pageIndex)
 }
 

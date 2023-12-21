@@ -77,4 +77,8 @@ func (receiver *TaskEO) UpdateTask(status enum.TaskStatus, data collections.Dict
 	receiver.Progress = progress
 	receiver.RunSpeed = speed
 	receiver.RunAt = dateTime.Now()
+	// 客户端没有设置进度，且执行成功时，自动设为100
+	if progress == 0 && status == enum.Success {
+		receiver.Progress = 100
+	}
 }

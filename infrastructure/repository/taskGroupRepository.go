@@ -115,7 +115,7 @@ func (receiver *taskGroupRepository) ToListForPage(name string, enable int, task
 	lst := receiver.CacheManage.Get()
 	if name != "" {
 		lst = lst.Where(func(item taskGroup.DomainObject) bool {
-			return strings.Contains(item.Name, name)
+			return strings.Contains(strings.ToLower(item.Name), strings.ToLower(name))
 		}).ToList()
 	}
 	if enable > -1 {
@@ -134,7 +134,11 @@ func (receiver *taskGroupRepository) ToListForPage(name string, enable int, task
 			return item.Task.Client.Id == clientId
 		}).ToList()
 	}
-	return lst.ToPageList(pageSize, pageIndex)
+
+	// 排序
+	return lst.OrderBy(func(item taskGroup.DomainObject) any {
+		return item.Name + item.Caption + parse.ToString(item.Id)
+	}).ToPageList(pageSize, pageIndex)
 }
 
 func (receiver *taskGroupRepository) IsExists(taskGroupId int64) bool {
@@ -167,13 +171,13 @@ func (receiver *taskGroupRepository) GetTaskGroupCount() int64 {
 
 func (receiver *taskGroupRepository) GetUnRunCount() int {
 	return receiver.CacheManage.Get().Where(func(item taskGroup.DomainObject) bool {
-		return item.IsEnable && (item.Task.Status == enum.None || item.Task.Status == enum.Scheduling) && item.Task.CreateAt.UnixMicro() < time.Now().UnixMicro()
+		return item.IsEnable && (item.Task.Status == enum.None || item.Task.Status == enum.Scheduling) && item.NextAt.Before(dateTime.Now())
 	}).Count()
 }
 
 func (receiver *taskGroupRepository) GetUnRunList(pageSize int, pageIndex int) collections.PageList[taskGroup.DomainObject] {
 	return receiver.CacheManage.Get().Where(func(item taskGroup.DomainObject) bool {
-		return item.IsEnable && (item.Task.Status == enum.None || item.Task.Status == enum.Scheduling) && item.Task.CreateAt.UnixMicro() < time.Now().UnixMicro()
+		return item.IsEnable && (item.Task.Status == enum.None || item.Task.Status == enum.Scheduling) && item.NextAt.Before(dateTime.Now())
 	}).ToPageList(pageSize, pageIndex)
 }
 

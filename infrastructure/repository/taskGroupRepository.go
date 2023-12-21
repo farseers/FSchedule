@@ -134,7 +134,11 @@ func (receiver *taskGroupRepository) ToListForPage(name string, enable int, task
 			return item.Task.Client.Id == clientId
 		}).ToList()
 	}
-	return lst.ToPageList(pageSize, pageIndex)
+
+	// 排序
+	return lst.OrderBy(func(item taskGroup.DomainObject) any {
+		return item.Name
+	}).ToPageList(pageSize, pageIndex)
 }
 
 func (receiver *taskGroupRepository) IsExists(taskGroupId int64) bool {

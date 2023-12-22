@@ -91,7 +91,7 @@ func TaskGroupSchedulerList(pageSize int, pageIndex int, taskGroupRepository tas
 }
 
 // 设置任务组状态
-// @get setEnable
+// @post setEnable
 func SetEnable(taskGroupId int64, enable bool, taskGroupRepository taskGroup.Repository) {
 	taskGroupDO := taskGroupRepository.ToEntity(taskGroupId)
 	taskGroupDO.SetEnable(enable)

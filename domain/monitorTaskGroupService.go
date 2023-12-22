@@ -41,9 +41,9 @@ func ClientUpdate(clientDO *client.DomainObject) {
 	for i := 0; i < clientDO.Jobs.Count(); i++ {
 		// 找到客户端支持的任务组
 		jobName := clientDO.Jobs.Index(i).Name
-		for _, v := range taskGroupList.ToMap() {
-			if v.Name == jobName {
-				v.updateClient(clientDO)
+		for _, taskGroupMonitor := range taskGroupList.ToMap() {
+			if taskGroupMonitor.Name == jobName {
+				taskGroupMonitor.updateClient(clientDO)
 			}
 		}
 	}

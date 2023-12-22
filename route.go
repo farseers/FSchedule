@@ -26,4 +26,5 @@ var route = []webapi.Route{
     {"GET", "/basicapi/taskGroup/unRunCount", basicapi.TaskGroupUnRunCount, "", []context.IFilter{}, []string{""}},
     {"GET", "/basicapi/taskGroup/unRunList", basicapi.TaskGroupUnRunList, "", []context.IFilter{}, []string{"pageSize", "pageIndex", ""}},
     {"GET", "/basicapi/taskGroup/schedulerWorkingList", basicapi.TaskGroupSchedulerList, "", []context.IFilter{}, []string{"pageSize", "pageIndex", ""}},
+    {"GET", "/basicapi/taskGroup/setEnable", basicapi.SetEnable, "", []context.IFilter{}, []string{"taskGroupId", "enable", ""}},
 }

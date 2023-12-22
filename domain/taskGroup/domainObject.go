@@ -217,3 +217,8 @@ func (receiver *DomainObject) ReportFail(taskGroupRepository Repository) {
 	receiver.Task.UpdateTask(enum.Fail, receiver.Task.Data, receiver.Task.Progress, receiver.Task.RunSpeed)
 	taskGroupRepository.Save(*receiver)
 }
+
+// 设置状态
+func (receiver *DomainObject) SetEnable(enable bool) {
+	receiver.IsEnable = enable
+}

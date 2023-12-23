@@ -45,4 +45,9 @@ func (module Module) PostInitialize() {
 			_ = container.Resolve[core.IEvent]("ClusterLeader").Publish(fs.AppId)
 		})
 	})
+
+	// 10秒更新一次服务端信息
+	fs.AddInitCallback("每小时检查客户端是否永久离线", func() {
+		tasks.Run("RemoveClientJob", 1*time.Hour, job.RemoveClientJob, fs.Context)
+	})
 }

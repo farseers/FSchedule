@@ -48,6 +48,6 @@ func (module Module) PostInitialize() {
 
 	// 10秒更新一次服务端信息
 	fs.AddInitCallback("每小时检查客户端是否永久离线", func() {
-		tasks.Run("RemoveClientJob", 1*time.Hour, job.RemoveClientJob, fs.Context)
+		tasks.RunNow("RemoveClientJob", 1*time.Hour, job.RemoveClientJob, fs.Context)
 	})
 }

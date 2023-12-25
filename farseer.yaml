@@ -10,9 +10,9 @@ FSchedule:
   DataSyncTime: 60
   ReservedTaskCount: 1000
 LinkTrace:
-  Enable: false      # 记录链路日志到ES
-  PrintLog: true    # 记录打印到控制台（即使Enable=false也会打印）
-  ES: "Server=http://192.168.1.8:9200,Username=es,Password=123456,ReplicasCount=1,ShardsCount=1,RefreshInterval=5,IndexFormat=yyyy_MM"
+  Enable: true
+  PrintLog: true
+  CH: "DataType=clickhouse,PoolMaxSize=50,PoolMinSize=1,ConnectionString=clickhouse://root:steden@192.168.1.8:9000/linkTrace?dial_timeout=10s&read_timeout=20s"
 Log:
   Default:
     LogLevel: "info"                  # 只记录级别>=info的日志内容

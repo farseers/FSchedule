@@ -11,6 +11,7 @@ import (
 	"github.com/farseer-go/fs/dateTime"
 	"github.com/farseer-go/fs/flog"
 	"github.com/farseer-go/fs/timingWheel"
+	"github.com/farseer-go/fs/trace"
 	"time"
 )
 
@@ -48,7 +49,6 @@ func MonitorClientPush(clientDO *client.DomainObject) {
 	}
 
 	existsClientDO := clientList.GetValue(clientDO.Id)
-
 	if existsClientDO != nil {
 		// 修改地址对应的值
 		*existsClientDO.client = *clientDO
@@ -82,8 +82,14 @@ func (receiver *ClientMonitor) checkOnline() {
 		select {
 		case <-timingWheel.Add(checkTime).C:
 			if !receiver.client.IsOffline() {
-				_ = receiver.client.CheckOnline()
+				// 链路追踪
+				traceContext := container.Resolve[trace.IManager]().EntryTask("检查客户端在线状态")
+
+				err := receiver.client.CheckOnline()
+				traceContext.Error(err)
 				receiver.ClientRepository.Save(receiver.client)
+
+				traceContext.End()
 			}
 		case <-receiver.ctx.Done():
 			return

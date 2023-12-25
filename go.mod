@@ -9,6 +9,7 @@ require (
 	github.com/farseer-go/eventBus v0.11.0
 	github.com/farseer-go/fs v0.11.0
 	github.com/farseer-go/linkTrace v0.11.0
+	github.com/farseer-go/linkTrace/driver/clickhouse v0.11.0
 	github.com/farseer-go/mapper v0.11.0
 	github.com/farseer-go/queue v0.11.0
 	github.com/farseer-go/redis v0.11.0

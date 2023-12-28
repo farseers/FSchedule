@@ -274,3 +274,11 @@ func TaskGroupEnableCount() int {
 //	n, _ := strconv.ParseUint(string(b), 10, 64)
 //	return n
 //}
+
+// 获取任务组接受调度的客户端列表
+func GetClientList(taskGroupId int64) collections.List[*client.DomainObject] {
+	if taskGroupList.ContainsKey(taskGroupId) {
+		return taskGroupList.GetValue(taskGroupId).clients.Values()
+	}
+	return collections.NewList[*client.DomainObject]()
+}

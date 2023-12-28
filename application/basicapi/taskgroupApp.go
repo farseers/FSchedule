@@ -3,6 +3,8 @@ package basicapi
 
 import (
 	"FSchedule/application/basicapi/request"
+	"FSchedule/application/basicapi/response"
+	"FSchedule/domain"
 	"FSchedule/domain/enum"
 	"FSchedule/domain/taskGroup"
 	"github.com/farseer-go/collections"
@@ -12,23 +14,38 @@ import (
 
 // 任务组列表
 // @get list
-func TaskGroupList(name string, enable int, taskStatus enum.TaskStatus, clientId int64, pageSize int, pageIndex int, taskGroupRepository taskGroup.Repository) collections.PageList[taskGroup.DomainObject] {
+func TaskGroupList(name string, enable int, taskStatus enum.TaskStatus, clientId int64, pageSize int, pageIndex int, taskGroupRepository taskGroup.Repository) collections.PageList[response.TaskGroupResponse] {
 	if pageSize < 1 {
 		pageSize = 20
 	}
 	if pageIndex < 1 {
 		pageIndex = 1
 	}
-	return taskGroupRepository.ToListForPage(name, enable, taskStatus, clientId, pageSize, pageIndex)
+	lst := taskGroupRepository.ToListForPage(name, enable, taskStatus, clientId, pageSize, pageIndex)
+	lstTaskGroupResponse := mapper.ToPageList[response.TaskGroupResponse](lst)
+	// 获取每个任务组当前注册的客户端
+	lstTaskGroupResponse.List.Foreach(func(item *response.TaskGroupResponse) {
+		item.Clients = collections.NewList[response.ClientResponse]()
+		for _, c := range domain.GetClientList(item.Id).ToArray() {
+			item.Clients.Add(mapper.Single[response.ClientResponse](*c))
+		}
+	})
+	return lstTaskGroupResponse
 }
 
 // 任务组详情
 // @get info-{taskGroupId}
-func TaskGroupInfo(taskGroupId int64, taskGroupRepository taskGroup.Repository) taskGroup.DomainObject {
+func TaskGroupInfo(taskGroupId int64, taskGroupRepository taskGroup.Repository) response.TaskGroupResponse {
 	// 判断任务组是否存在
 	exception.ThrowWebExceptionBool(!taskGroupRepository.IsExists(taskGroupId), 403, "任务组不存在")
 
-	return taskGroupRepository.ToEntity(taskGroupId)
+	info := taskGroupRepository.ToEntity(taskGroupId)
+	item := mapper.Single[response.TaskGroupResponse](info)
+	item.Clients = collections.NewList[response.ClientResponse]()
+	for _, c := range domain.GetClientList(item.Id).ToArray() {
+		item.Clients.Add(mapper.Single[response.ClientResponse](*c))
+	}
+	return item
 }
 
 // 任务组修改

@@ -9,6 +9,7 @@ import (
 	"github.com/farseer-go/fs/core"
 	"github.com/farseer-go/fs/dateTime"
 	"github.com/farseer-go/fs/flog"
+	"github.com/farseer-go/fs/trace"
 	"github.com/farseer-go/mapper"
 	"time"
 )
@@ -23,6 +24,10 @@ func SchedulerEvent(message any, _ core.EventArgs) {
 	}
 	taskGroupRepository := container.Resolve[taskGroup.Repository]()
 	clientRepository := container.Resolve[client.Repository]()
+
+	// 链路追踪
+	traceContext := container.Resolve[trace.IManager]().EntryTaskGroup("任务调度", do.Name, do.Id, do.Task.Id)
+	defer traceContext.End()
 
 	for {
 		if !do.CanScheduler() {

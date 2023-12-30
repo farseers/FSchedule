@@ -10,6 +10,7 @@ import (
 	"github.com/farseer-go/fs/container"
 	"github.com/farseer-go/fs/core"
 	"github.com/farseer-go/fs/dateTime"
+	"github.com/farseer-go/fs/flog"
 	"github.com/farseer-go/fs/parse"
 	"github.com/farseer-go/mapper"
 	"github.com/farseer-go/redis"
@@ -90,18 +91,22 @@ func (receiver *taskGroupRepository) Sync() {
 		po := mapper.Single[model.TaskGroupPO](&do)
 
 		if po.StartAt.Year() < 2000 {
+			flog.Warningf("任务组：%s（%d） StartAt字段时间不正确 %s", do.Name, do.Id, po.StartAt.String())
 			po.StartAt = time.Now()
 		}
 
 		if po.ActivateAt.Year() < 2000 {
+			flog.Warningf("任务组：%s（%d） ActivateAt字段时间不正确 %s", do.Name, do.Id, po.ActivateAt.String())
 			po.ActivateAt = time.Now()
 		}
 
 		if po.LastRunAt.Year() < 2000 {
+			flog.Warningf("任务组：%s（%d） LastRunAt字段时间不正确 %s", do.Name, do.Id, po.LastRunAt.String())
 			po.LastRunAt = time.Now()
 		}
 
 		if po.NextAt.Year() < 2000 {
+			flog.Warningf("任务组：%s（%d） NextAt字段时间不正确 %s", do.Name, do.Id, po.NextAt.String())
 			po.NextAt = time.Now()
 		}
 		_ = context.MysqlContextIns.TaskGroup.UpdateOrInsert(po, "id")

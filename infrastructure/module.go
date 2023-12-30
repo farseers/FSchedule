@@ -13,7 +13,7 @@ import (
 	"github.com/farseer-go/fs/container"
 	"github.com/farseer-go/fs/modules"
 	"github.com/farseer-go/fs/timingWheel"
-	linkTrace_clickhouse "github.com/farseer-go/linkTrace/driver/clickhouse"
+	"github.com/farseer-go/linkTrace"
 	"github.com/farseer-go/queue"
 	"github.com/farseer-go/redis"
 )
@@ -22,7 +22,7 @@ type Module struct {
 }
 
 func (module Module) DependsModule() []modules.FarseerModule {
-	return []modules.FarseerModule{data.Module{}, redis.Module{}, eventBus.Module{}, queue.Module{}, linkTrace_clickhouse.Module{}}
+	return []modules.FarseerModule{data.Module{}, redis.Module{}, eventBus.Module{}, queue.Module{}, linkTrace.Module{}}
 }
 
 func (module Module) PostInitialize() {

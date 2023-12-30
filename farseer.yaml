@@ -9,10 +9,12 @@ FSchedule:
     Token: ""
   DataSyncTime: 60
   ReservedTaskCount: 1000
+Fops:
+  #Server: "https://fops.fsgit.com"
+  Server: "http://127.0.0.1:8889"
 LinkTrace:
   Enable: true
   PrintLog: true
-  CH: "DataType=clickhouse,PoolMaxSize=50,PoolMinSize=1,ConnectionString=clickhouse://root:steden@192.168.1.8:9000/linkTrace?dial_timeout=10s&read_timeout=20s"
 Log:
   Default:
     LogLevel: "info"                  # 只记录级别>=info的日志内容

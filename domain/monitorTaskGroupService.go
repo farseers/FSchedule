@@ -149,7 +149,7 @@ func (receiver *TaskGroupMonitor) waitScheduler() {
 		// 提前了100ms进到这里。
 		receiver.Task.Scheduling()
 		if m := dateTime.Since(receiver.Task.StartAt).Microseconds(); m > 0 {
-			flog.Debugf("任务组：%s（%d） %d 发布调度事件，延迟：%d us", receiver.Name, receiver.Id, receiver.Task.Id, dateTime.Since(receiver.Task.StartAt).Microseconds())
+			flog.Debugf("任务组：%s（%d） %d 发布调度事件，延迟：%s", receiver.Name, receiver.Id, receiver.Task.Id, dateTime.Since(receiver.Task.StartAt).String())
 		}
 		_ = receiver.SchedulerEventBus.Publish(receiver)
 	case <-receiver.updated:

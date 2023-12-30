@@ -17,7 +17,7 @@ import (
 // SchedulerEvent 任务调度
 func SchedulerEvent(message any, _ core.EventArgs) {
 	do := message.(*domain.TaskGroupMonitor)
-	//flog.Debugf("任务组：%s %d 进入调度事件，延迟：%d us", do.Name, do.Task.Id, time.Since(do.Task.StartAt).Microseconds())
+	//flog.Debugf("任务组：%s %d 进入调度事件，延迟：%s", do.Name, do.Task.Id, time.Since(do.Task.StartAt).String())
 	// 只订阅调度状态的事件
 	if do.Task.Status != enum.Scheduling {
 		return
@@ -31,7 +31,7 @@ func SchedulerEvent(message any, _ core.EventArgs) {
 
 	for {
 		if !do.CanScheduler() {
-			flog.Debugf("任务组：%s（%d） 无法调度，条件不满足，延迟：%d us", do.Name, do.Id, dateTime.Since(do.Task.StartAt).Microseconds())
+			flog.Debugf("任务组：%s（%d） 无法调度，条件不满足，延迟：%s", do.Name, do.Id, dateTime.Since(do.Task.StartAt).String())
 			do.ScheduleFail()
 			return
 		}
@@ -40,7 +40,7 @@ func SchedulerEvent(message any, _ core.EventArgs) {
 		clientSchedule := do.PollingClient()
 		// 没有可调度的客户端
 		if clientSchedule == nil || clientSchedule.IsNil() {
-			flog.Debugf("任务组：%s（%d） 没有可调度的客户端，延迟：%d us", do.Name, do.Id, dateTime.Since(do.Task.StartAt).Microseconds())
+			flog.Debugf("任务组：%s（%d） 没有可调度的客户端，延迟：%s", do.Name, do.Id, dateTime.Since(do.Task.StartAt).String())
 			do.ScheduleFail()
 			taskGroupRepository.Save(*do.DomainObject)
 			return
@@ -51,7 +51,7 @@ func SchedulerEvent(message any, _ core.EventArgs) {
 
 		// 请求客户端
 		clientTask := mapper.Single[client.TaskEO](do.Task)
-		//flog.Debugf("任务组：%s %d 分配完客户端，立即调度，延迟：%d us", do.Name, do.Task.Id, time.Since(do.Task.StartAt).Microseconds())
+		//flog.Debugf("任务组：%s %d 分配完客户端，立即调度，延迟：%s", do.Name, do.Task.Id, time.Since(do.Task.StartAt).String())
 		if clientSchedule.Schedule(&clientTask) {
 			// 调度成功
 			clientRepository.Save(clientSchedule)

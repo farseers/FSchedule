@@ -195,9 +195,6 @@ func (receiver *DomainObject) CalculateNextAtByCron() {
 func (receiver *DomainObject) SyncData() {
 	if receiver.Task.Status == enum.Success || receiver.Task.Status == enum.Fail {
 		receiver.Data = receiver.Task.Data
-		if receiver.Data.Count() == 0 {
-			flog.Infof("")
-		}
 	}
 }
 

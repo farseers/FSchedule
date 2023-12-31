@@ -22,7 +22,7 @@ func ClusterLeaderSubscribe(message any, _ core.EventArgs) {
 	flog.Infof("选举%s为Master节点", flog.Red(leaderId))
 
 	// 当前节点是leader
-	if leaderId == fs.AppId {
+	if leaderId == core.AppId {
 		// 更新集群leader信息
 		serverNodeRepository := container.Resolve[serverNode.Repository]()
 		lst := serverNodeRepository.ToList()

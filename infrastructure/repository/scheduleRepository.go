@@ -2,7 +2,6 @@ package repository
 
 import (
 	"FSchedule/infrastructure/repository/context"
-	"github.com/farseer-go/fs"
 	"github.com/farseer-go/fs/core"
 	"github.com/farseer-go/fs/parse"
 	"strconv"
@@ -13,7 +12,7 @@ type scheduleRepository struct {
 }
 
 func (receiver *scheduleRepository) ScheduleLock(taskGroupId int64, taskId int64) core.ILock {
-	return context.RedisContextIns.LockNew("FSchedule_ScheduleLock:"+parse.ToString(taskGroupId)+"_"+parse.ToString(taskId), strconv.FormatInt(fs.AppId, 10), 5*time.Second)
+	return context.RedisContextIns.LockNew("FSchedule_ScheduleLock:"+parse.ToString(taskGroupId)+"_"+parse.ToString(taskId), strconv.FormatInt(core.AppId, 10), 5*time.Second)
 }
 
 func (receiver *scheduleRepository) Election(fn func()) {

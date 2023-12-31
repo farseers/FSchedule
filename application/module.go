@@ -42,7 +42,7 @@ func (module Module) PostInitialize() {
 		// 抢占锁，谁抢到，谁就是master
 		container.Resolve[schedule.Repository]().Election(func() {
 			// 推送当前选举结果
-			_ = container.Resolve[core.IEvent]("ClusterLeader").Publish(fs.AppId)
+			_ = container.Resolve[core.IEvent]("ClusterLeader").Publish(core.AppId)
 		})
 	})
 

@@ -1,8 +1,8 @@
 package serverNode
 
 import (
-	"github.com/farseer-go/fs"
 	"github.com/farseer-go/fs/configure"
+	"github.com/farseer-go/fs/core"
 	"github.com/farseer-go/fs/dateTime"
 	"github.com/farseer-go/fs/parse"
 	"strings"
@@ -26,9 +26,9 @@ func New() *DomainObject {
 	}
 	addr, _ = strings.CutPrefix(addr, ":")
 	return &DomainObject{
-		Id:         fs.AppId,
-		Name:       fs.HostName,
-		Ip:         fs.AppIp,
+		Id:         core.AppId,
+		Name:       core.HostName,
+		Ip:         core.AppIp,
 		Port:       parse.Convert(addr, 0),
 		ActivateAt: dateTime.Now(),
 	}

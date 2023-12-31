@@ -10,7 +10,7 @@ FSchedule:
   DataSyncTime: 60
   ReservedTaskCount: 1000
 Fops:
-  Server: "https://fops.fsgit.com"
+  Server: "https://fops.fsgit.cc"
   #Server: "http://127.0.0.1:8889"
 LinkTrace:
   Enable: true

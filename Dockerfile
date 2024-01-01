@@ -2,9 +2,6 @@
 FROM golang:1.20.11-alpine AS build
 # 设置github代理
 ENV GOPROXY https://goproxy.cn,direct
-# farseer项目
-WORKDIR /src/farseer-go
-COPY ./farseer-go .
 # 进入到项目目录中
 WORKDIR /src/FSchedule
 # 复制go.mod文件
@@ -17,6 +14,11 @@ COPY ./FSchedule .
 #RUN rm -rf go.work
 # 更新go.sum
 RUN go mod tidy
+# farseer项目
+WORKDIR /src/farseer-go
+COPY ./farseer-go .
+# 进入到项目目录中
+WORKDIR /src/FSchedule
 # 编译
 RUN GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o /app/fschedule-server -ldflags="-w -s" .
 

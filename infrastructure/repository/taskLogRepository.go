@@ -37,3 +37,7 @@ func (repository *TaskLogRepository) AddBatch(lstPO collections.List[model.TaskL
 		exception.ThrowRefuseException("批量添加报错：" + err.Error())
 	}
 }
+
+func (repository *TaskLogRepository) DeleteLog(taskGroupId int64) {
+	_, _ = context.MysqlContextIns.TaskLog.Where("task_group_id = ?", taskGroupId).Delete()
+}

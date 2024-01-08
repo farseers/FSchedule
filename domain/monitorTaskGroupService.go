@@ -22,10 +22,12 @@ var taskGroupList = collections.NewDictionary[string, *TaskGroupMonitor]()
 func MonitorTaskGroupPush(taskGroupDO *taskGroup.DomainObject) {
 	// 新的任务组不再当前列表，说明被其它节点处理了。
 	if !taskGroupList.ContainsKey(taskGroupDO.Name) {
-		monitor := newMonitor(taskGroupDO)
-		taskGroupList.Add(taskGroupDO.Name, monitor)
+		if taskGroupDO.IsEnable {
+			monitor := newMonitor(taskGroupDO)
+			taskGroupList.Add(taskGroupDO.Name, monitor)
 
-		go monitor.Start()
+			go monitor.Start()
+		}
 	} else {
 		taskGroupMonitor := taskGroupList.GetValue(taskGroupDO.Name)
 		// 之前是运行状态，改为停止状态，则需要退出调度线程
@@ -38,6 +40,7 @@ func MonitorTaskGroupPush(taskGroupDO *taskGroup.DomainObject) {
 		if needKill {
 			// 强制退出线程
 			taskGroupMonitor.cancelFunc()
+			taskGroupList.Remove(taskGroupDO.Name)
 		}
 	}
 }

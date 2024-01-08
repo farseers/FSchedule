@@ -5,6 +5,7 @@ import (
 	"FSchedule/domain/enum"
 	"FSchedule/domain/schedule"
 	"FSchedule/domain/taskGroup"
+	"context"
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs/container"
 	"github.com/farseer-go/fs/core"
@@ -27,10 +28,16 @@ func MonitorTaskGroupPush(taskGroupDO *taskGroup.DomainObject) {
 		go monitor.Start()
 	} else {
 		taskGroupMonitor := taskGroupList.GetValue(taskGroupDO.Name)
+		// 之前是运行状态，改为停止状态，则需要退出调度线程
+		needKill := taskGroupMonitor.IsEnable && !taskGroupDO.IsEnable
 		*taskGroupMonitor.DomainObject = *taskGroupDO
 		if taskGroupMonitor.isWorking {
 			//flog.Debugf("任务组更新通知：%s Ver:%d", taskGroupDO.Name, taskGroupDO.Ver)
 			taskGroupMonitor.updateNotice()
+		}
+		if needKill {
+			// 强制退出线程
+			taskGroupMonitor.cancelFunc()
 		}
 	}
 }
@@ -61,14 +68,19 @@ type TaskGroupMonitor struct {
 	isWorking            bool                                                // 是否进入工作状态
 	isReadWork           bool                                                // 是否进入抢锁中（false：任务组enable=false、没有客户端）
 	*taskGroup.DomainObject
+	ctx        context.Context
+	cancelFunc context.CancelFunc
 }
 
 // newMonitor 新建任务组监听器
 func newMonitor(do *taskGroup.DomainObject) *TaskGroupMonitor {
+	ctx, cancelFunc := context.WithCancel(context.Background())
 	return container.ResolveIns(&TaskGroupMonitor{
 		DomainObject: do,
 		updated:      make(chan struct{}, 1000),
 		clients:      collections.NewDictionary[int64, *client.DomainObject](),
+		ctx:          ctx,
+		cancelFunc:   cancelFunc,
 	})
 }
 
@@ -76,8 +88,13 @@ func newMonitor(do *taskGroup.DomainObject) *TaskGroupMonitor {
 func (receiver *TaskGroupMonitor) Start() {
 	// 任务组状态不可用、没有可用客户端，不需要调度
 	for !receiver.IsEnable || receiver.CanScheduleClient() == 0 {
-		<-receiver.updated
-		continue
+		select {
+		case <-receiver.ctx.Done(): // 任务组停止，或删除时退出
+			flog.Infof("任务组：%s ver:%s 退出等待线程", flog.Blue(receiver.Name), flog.Yellow(receiver.Ver))
+			return
+		case <-receiver.updated:
+			continue
+		}
 	}
 
 	// 抢占锁，谁抢到，谁负责这个任务组的调度
@@ -88,6 +105,13 @@ func (receiver *TaskGroupMonitor) Start() {
 		for {
 			// 清空更新队列
 			receiver.updated = make(chan struct{}, 1000)
+
+			select {
+			case <-receiver.ctx.Done(): // 任务组停止，或删除时退出
+				flog.Infof("任务组：%s ver:%s 退出调度线程", flog.Blue(receiver.Name), flog.Yellow(receiver.Ver))
+				return
+			default:
+			}
 
 			switch receiver.Task.Status {
 			case enum.None, enum.ScheduleFail: // 如果调度失败状态，需要重新调度

@@ -6,7 +6,6 @@ import (
 	"FSchedule/domain/serverNode"
 	"context"
 	"github.com/farseer-go/collections"
-	"github.com/farseer-go/fs"
 	"github.com/farseer-go/fs/container"
 	"github.com/farseer-go/fs/dateTime"
 	"github.com/farseer-go/fs/flog"
@@ -32,7 +31,7 @@ type ClientMonitor struct {
 func MonitorClientPush(clientDO *client.DomainObject) {
 	// 新客户端
 	if !clientDO.IsOffline() && !clientList.ContainsKey(clientDO.Id) {
-		ctx, cancelFunc := context.WithCancel(fs.Context)
+		ctx, cancelFunc := context.WithCancel(context.Background())
 		clientMonitor := container.ResolveIns(&ClientMonitor{
 			client:     clientDO,
 			ctx:        ctx,

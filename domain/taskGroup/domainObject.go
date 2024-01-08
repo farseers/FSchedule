@@ -94,6 +94,7 @@ func (receiver *DomainObject) Update() {
 		}
 		receiver.NextAt = dateTime.New(cornSchedule.Next(time.Now()))
 		receiver.Task.Data = receiver.Data
+		receiver.Task.StartAt = receiver.NextAt
 	case enum.Scheduling, enum.Working:
 	}
 }

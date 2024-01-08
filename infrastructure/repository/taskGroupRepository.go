@@ -150,19 +150,6 @@ func (receiver *taskGroupRepository) IsExists(taskGroupName string) bool {
 	return receiver.CacheManage.ExistsItem(taskGroupName)
 }
 
-func (receiver *taskGroupRepository) UpdateByEdit(do taskGroup.DomainObject) {
-	if item, exists := receiver.CacheManage.GetItem(do.Name); exists {
-		item.Ver = do.Ver
-		item.Caption = do.Caption
-		item.Data = do.Data
-		item.StartAt = do.StartAt
-		item.NextAt = do.NextAt
-		item.Cron = do.Cron
-		item.IsEnable = do.IsEnable
-		receiver.Save(do)
-	}
-}
-
 func (receiver *taskGroupRepository) Delete(taskGroupName string) {
 	// 删除任务
 	(&taskRepository{}).DeleteTask(taskGroupName)

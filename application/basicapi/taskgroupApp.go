@@ -34,7 +34,7 @@ func TaskGroupList(taskGroupName string, enable int, taskStatus enum.TaskStatus,
 }
 
 // 任务组详情
-// @get info-{taskGroupId}
+// @get info-{taskGroupName}
 func TaskGroupInfo(taskGroupName string, taskGroupRepository taskGroup.Repository) response.TaskGroupResponse {
 	// 判断任务组是否存在
 	exception.ThrowWebExceptionBool(!taskGroupRepository.IsExists(taskGroupName), 403, "任务组不存在")
@@ -54,12 +54,17 @@ func TaskGroupUpdate(req request.TaskGroupUpdateRequest, taskGroupRepository tas
 	// 检查cron
 	_, err := taskGroup.StandardParser.Parse(req.Cron)
 	exception.ThrowWebExceptionError(403, err)
+
 	// 判断任务组是否存在
-	exception.ThrowWebExceptionBool(!taskGroupRepository.IsExists(req.Name), 403, "任务组不存在")
+	taskGroupDO := taskGroupRepository.ToEntity(req.Name)
+	exception.ThrowWebExceptionBool(taskGroupDO.IsNil(), 403, "任务组不存在")
+
+	err = mapper.Auto(req, &taskGroupDO)
+	exception.ThrowWebExceptionError(403, err)
+
 	// 更新
-	taskGroupDO := mapper.Single[taskGroup.DomainObject](req)
 	taskGroupDO.Update()
-	taskGroupRepository.UpdateByEdit(taskGroupDO)
+	taskGroupRepository.Save(taskGroupDO)
 }
 
 // 任务组删除

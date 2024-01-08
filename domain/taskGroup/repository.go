@@ -27,7 +27,6 @@ type Repository interface {
 	// *******************仪表盘使用*********************
 	ToListForPage(name string, enable int, taskStatus enum.TaskStatus, clientId int64, pageSize int, pageIndex int) collections.PageList[DomainObject]
 	IsExists(taskGroupName string) bool                                                    // 任务组是否存在
-	UpdateByEdit(do DomainObject)                                                          // 修改
 	Delete(taskGroupName string)                                                           // 删除
 	GetTaskGroupCount() int64                                                              // 任务组数量
 	GetUnRunCount() int                                                                    // 超时未运行的任务组数量

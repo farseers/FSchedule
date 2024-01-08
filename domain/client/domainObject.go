@@ -19,8 +19,8 @@ type DomainObject struct {
 	Status      enum.ClientStatus       // 客户端状态
 	QueueCount  int                     // 排队中的任务数量
 	WorkCount   int                     // 正在处理的任务数量
-	CpuUsage    float32                 // CPU百分比
-	MemoryUsage float32                 // 内存百分比
+	CpuUsage    float64                 // CPU百分比
+	MemoryUsage float64                 // 内存百分比
 	ErrorCount  int                     // 错误次数
 	Jobs        collections.List[JobVO] // 客户端支持的任务
 	NeedNotice  bool                    //	是否需要通知任务组

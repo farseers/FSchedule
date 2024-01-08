@@ -7,7 +7,6 @@ import (
 )
 
 type TaskGroupResponse struct {
-	Id          int64                                  // 主键ID
 	Name        string                                 // 实现Job的特性名称（客户端识别哪个实现类）
 	Ver         int                                    // 版本
 	Task        taskGroup.TaskEO                       // 最新的任务

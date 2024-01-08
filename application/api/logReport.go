@@ -13,26 +13,25 @@ type logReportDTO struct {
 }
 
 type LogContent struct {
-	TaskId      int64  // 主键
-	TaskGroupId int64  // 任务组ID
-	Ver         int    // 版本
-	Name        string // 实现Job的特性名称（客户端识别哪个实现类）
-	LogLevel    eumLogLevel.Enum
-	CreateAt    int64
-	Content     string
+	TaskId   int64  // 主键
+	Ver      int    // 版本
+	Name     string // 实现Job的特性名称（客户端识别哪个实现类）
+	LogLevel eumLogLevel.Enum
+	CreateAt int64
+	Content  string
 }
 
 // LogReport 日志上报
 // @post /logReport
 func LogReport(dto logReportDTO, taskGroupRepository taskGroup.Repository, taskLogRepository taskLog.Repository) {
 	for _, log := range dto.Logs {
-		taskDO := taskGroupRepository.GetTask(log.TaskGroupId, log.TaskId)
+		taskDO := taskGroupRepository.GetTask(log.Name, log.TaskId)
 
 		if log.LogLevel == eumLogLevel.Error || log.LogLevel == eumLogLevel.Warning {
-			flog.Infof("【客户端日志上报】 %s（%d） %s [%s] %s", log.Name, log.TaskGroupId, taskDO.Caption, log.LogLevel.ToString(), log.Content)
+			flog.Infof("【客户端日志上报】 %s %s [%s] %s", log.Name, taskDO.Caption, log.LogLevel.ToString(), log.Content)
 		}
 
-		taskLogDO := taskLog.NewDO(log.Name, taskDO.Caption, log.Ver, log.TaskId, log.TaskGroupId, taskDO.Data, log.LogLevel, log.Content, log.CreateAt)
+		taskLogDO := taskLog.NewDO(log.Name, taskDO.Caption, log.Ver, log.TaskId, taskDO.Data, log.LogLevel, log.Content, log.CreateAt)
 		taskLogRepository.Add(taskLogDO)
 	}
 }

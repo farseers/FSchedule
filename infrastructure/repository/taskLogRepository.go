@@ -19,14 +19,11 @@ func (repository *TaskLogRepository) Add(taskLogDO taskLog.DomainObject) {
 	queue.Push("TaskLogQueue", po)
 }
 
-func (repository *TaskLogRepository) GetList(taskGroupId int64, logLevel eumLogLevel.Enum, pageSize int, pageIndex int) collections.PageList[taskLog.DomainObject] {
-	ts := context.MysqlContextIns.TaskLog.Desc("create_at")
-	if taskGroupId > 0 {
-		ts = ts.Where("task_group_id = ?", taskGroupId)
-	}
-	if logLevel > -1 {
-		ts = ts.Where("log_level = ?", logLevel)
-	}
+func (repository *TaskLogRepository) GetList(taskGroupName string, logLevel eumLogLevel.Enum, pageSize int, pageIndex int) collections.PageList[taskLog.DomainObject] {
+	ts := context.MysqlContextIns.TaskLog.Desc("create_at").
+		WhereIf(taskGroupName != "", "name = ?", taskGroupName).
+		WhereIf(logLevel > -1, "log_level = ?", logLevel)
+
 	pageList := ts.ToPageList(pageSize, pageIndex)
 	return mapper.ToPageList[taskLog.DomainObject](pageList)
 }
@@ -38,6 +35,6 @@ func (repository *TaskLogRepository) AddBatch(lstPO collections.List[model.TaskL
 	}
 }
 
-func (repository *TaskLogRepository) DeleteLog(taskGroupId int64) {
-	_, _ = context.MysqlContextIns.TaskLog.Where("task_group_id = ?", taskGroupId).Delete()
+func (repository *TaskLogRepository) DeleteLog(taskGroupName string) {
+	_, _ = context.MysqlContextIns.TaskLog.Where("name = ?", taskGroupName).Delete()
 }

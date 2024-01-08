@@ -24,7 +24,7 @@ type taskGroupRepository struct {
 }
 
 func registerTaskGroupRepository() {
-	taskGroupCache := redis.SetProfiles[taskGroup.DomainObject]("FSchedule_TaskGroup", "Id", "default")
+	taskGroupCache := redis.SetProfiles[taskGroup.DomainObject]("FSchedule_TaskGroup", "Name", "default")
 	// 多级缓存
 	taskGroupCache.SetListSource(func() collections.List[taskGroup.DomainObject] {
 		list := context.MysqlContextIns.TaskGroup.ToList()
@@ -32,8 +32,8 @@ func registerTaskGroupRepository() {
 	})
 
 	taskGroupCache.SetItemSource(func(cacheId any) (taskGroup.DomainObject, bool) {
-		po := context.MysqlContextIns.TaskGroup.Where("Id = ?", cacheId).ToEntity()
-		if po.Name != "" && po.Id > 0 {
+		po := context.MysqlContextIns.TaskGroup.Where("Name = ?", cacheId).ToEntity()
+		if po.Name != "" {
 			return mapper.Single[taskGroup.DomainObject](&po), true
 		}
 		return taskGroup.DomainObject{}, false
@@ -49,28 +49,28 @@ func (receiver *taskGroupRepository) ToList() collections.List[taskGroup.DomainO
 	return receiver.CacheManage.Get()
 }
 
-func (receiver *taskGroupRepository) ToListByName(name string) collections.List[taskGroup.DomainObject] {
+func (receiver *taskGroupRepository) ToListByName(taskGroupName string) collections.List[taskGroup.DomainObject] {
 	return receiver.CacheManage.Get().Where(func(item taskGroup.DomainObject) bool {
-		return item.Name == name
+		return item.Name == taskGroupName
 	}).ToList()
 }
 
-func (receiver *taskGroupRepository) ToEntity(id int64) taskGroup.DomainObject {
-	item, _ := receiver.CacheManage.GetItem(id)
+func (receiver *taskGroupRepository) ToEntity(taskGroupName string) taskGroup.DomainObject {
+	item, _ := receiver.CacheManage.GetItem(taskGroupName)
 	return item
 }
 
 func (receiver *taskGroupRepository) Save(do taskGroup.DomainObject) {
 	do.NeedSave = false
 	// 说明是新注册的任务
-	if do.Id == 0 {
+	if do.Name == "" {
 		do.ActivateAt = dateTime.Now()
 		do.LastRunAt = dateTime.Now()
 		do.NextAt = dateTime.Now()
 		po := mapper.Single[model.TaskGroupPO](&do)
 		_ = context.MysqlContextIns.TaskGroup.Insert(&po)
-		do.Id = po.Id
-		do.Task.TaskGroupId = po.Id
+		do.Name = po.Name
+		do.Task.Name = po.Name
 	}
 	receiver.CacheManage.SaveItem(do)
 
@@ -91,36 +91,36 @@ func (receiver *taskGroupRepository) Sync() {
 		po := mapper.Single[model.TaskGroupPO](&do)
 
 		if po.StartAt.Year() < 2000 {
-			flog.Warningf("任务组：%s（%d） StartAt字段时间不正确 %s", do.Name, do.Id, po.StartAt.String())
+			flog.Warningf("任务组：%s StartAt字段时间不正确 %s", do.Name, po.StartAt.String())
 			po.StartAt = time.Now()
 		}
 
 		if po.ActivateAt.Year() < 2000 {
-			flog.Warningf("任务组：%s（%d） ActivateAt字段时间不正确 %s", do.Name, do.Id, po.ActivateAt.String())
+			flog.Warningf("任务组：%s ActivateAt字段时间不正确 %s", do.Name, po.ActivateAt.String())
 			po.ActivateAt = time.Now()
 		}
 
 		if po.LastRunAt.Year() < 2000 {
-			flog.Warningf("任务组：%s（%d） LastRunAt字段时间不正确 %s", do.Name, do.Id, po.LastRunAt.String())
+			flog.Warningf("任务组：%s LastRunAt字段时间不正确 %s", do.Name, po.LastRunAt.String())
 			po.LastRunAt = time.Now()
 		}
 
 		if po.NextAt.Year() < 2000 {
-			flog.Warningf("任务组：%s（%d） NextAt字段时间不正确 %s", do.Name, do.Id, po.NextAt.String())
+			flog.Warningf("任务组：%s NextAt字段时间不正确 %s", do.Name, po.NextAt.String())
 			po.NextAt = time.Now()
 		}
 		_ = context.MysqlContextIns.TaskGroup.UpdateOrInsert(po, "id")
 
 		// 同步任务
-		receiver.taskRepository.syncTask(po.Id)
+		receiver.taskRepository.syncTask(po.Name)
 	}
 }
 
-func (receiver *taskGroupRepository) ToListForPage(name string, enable int, taskStatus enum.TaskStatus, clientId int64, pageSize int, pageIndex int) collections.PageList[taskGroup.DomainObject] {
+func (receiver *taskGroupRepository) ToListForPage(taskGroupName string, enable int, taskStatus enum.TaskStatus, clientId int64, pageSize int, pageIndex int) collections.PageList[taskGroup.DomainObject] {
 	lst := receiver.CacheManage.Get()
-	if name != "" {
+	if taskGroupName != "" {
 		lst = lst.Where(func(item taskGroup.DomainObject) bool {
-			return strings.Contains(strings.ToLower(item.Name), strings.ToLower(name))
+			return strings.Contains(strings.ToLower(item.Name), strings.ToLower(taskGroupName))
 		}).ToList()
 	}
 	if enable > -1 {
@@ -142,17 +142,16 @@ func (receiver *taskGroupRepository) ToListForPage(name string, enable int, task
 
 	// 排序
 	return lst.OrderBy(func(item taskGroup.DomainObject) any {
-		return item.Name + item.Caption + parse.ToString(item.Id)
+		return item.Name + item.Caption
 	}).ToPageList(pageSize, pageIndex)
 }
 
-func (receiver *taskGroupRepository) IsExists(taskGroupId int64) bool {
-	return receiver.CacheManage.ExistsItem(taskGroupId)
+func (receiver *taskGroupRepository) IsExists(taskGroupName string) bool {
+	return receiver.CacheManage.ExistsItem(taskGroupName)
 }
 
 func (receiver *taskGroupRepository) UpdateByEdit(do taskGroup.DomainObject) {
-	if item, exists := receiver.CacheManage.GetItem(do.Id); exists {
-		item.Name = do.Name
+	if item, exists := receiver.CacheManage.GetItem(do.Name); exists {
 		item.Ver = do.Ver
 		item.Caption = do.Caption
 		item.Data = do.Data
@@ -164,15 +163,15 @@ func (receiver *taskGroupRepository) UpdateByEdit(do taskGroup.DomainObject) {
 	}
 }
 
-func (receiver *taskGroupRepository) Delete(taskGroupId int64) {
+func (receiver *taskGroupRepository) Delete(taskGroupName string) {
 	// 删除任务
-	(&taskRepository{}).DeleteTask(taskGroupId)
+	(&taskRepository{}).DeleteTask(taskGroupName)
 	// 删除日志
-	(&TaskLogRepository{}).DeleteLog(taskGroupId)
+	(&TaskLogRepository{}).DeleteLog(taskGroupName)
 	// 删除任务组
-	_, _ = context.MysqlContextIns.TaskGroup.Where("id = ?", taskGroupId).Delete()
+	_, _ = context.MysqlContextIns.TaskGroup.Where("name = ?", taskGroupName).Delete()
 	// 删除缓存
-	receiver.CacheManage.Remove(taskGroupId)
+	receiver.CacheManage.Remove(taskGroupName)
 }
 
 func (receiver *taskGroupRepository) GetTaskGroupCount() int64 {

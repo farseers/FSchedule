@@ -8,5 +8,6 @@ import (
 type Repository interface {
 	// Add 添加日志
 	Add(taskLogDO DomainObject)
-	GetList(taskGroupId int64, logLevel eumLogLevel.Enum, pageSize int, pageIndex int) collections.PageList[DomainObject] // 日志列表
+	// 获取日志列表
+	GetList(taskGroupName string, logLevel eumLogLevel.Enum, pageSize int, pageIndex int) collections.PageList[DomainObject] // 日志列表
 }

@@ -6,8 +6,7 @@ import (
 )
 
 type TaskGroupPO struct {
-	Id          int64                                  `gorm:"primaryKey;autoIncrement;comment:主键"`
-	Name        string                                 `gorm:"size:64;not null;comment:任务组名称"`
+	Name        string                                 `gorm:"primaryKey;size:64;not null;comment:任务组名称"`
 	Ver         int                                    `gorm:"type:int;not null;comment:版本"`
 	Caption     string                                 `gorm:"size:32;not null;comment:任务组标题"`
 	StartAt     time.Time                              `gorm:"type:timestamp;size:6;not null;comment:开始时间"`

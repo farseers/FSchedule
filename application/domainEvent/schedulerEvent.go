@@ -26,12 +26,12 @@ func SchedulerEvent(message any, _ core.EventArgs) {
 	clientRepository := container.Resolve[client.Repository]()
 
 	// 链路追踪
-	traceContext := container.Resolve[trace.IManager]().EntryTaskGroup("任务调度", do.Name, do.Id, do.Task.Id)
+	traceContext := container.Resolve[trace.IManager]().EntryTaskGroup("任务调度", do.Name, do.Task.Id)
 	defer traceContext.End()
 
 	for {
 		if !do.CanScheduler() {
-			flog.Debugf("任务组：%s（%d） 无法调度，条件不满足，延迟：%s", do.Name, do.Id, dateTime.Since(do.Task.StartAt).String())
+			flog.Debugf("任务组：%s 无法调度，条件不满足，延迟：%s", do.Name, dateTime.Since(do.Task.StartAt).String())
 			do.ScheduleFail()
 			return
 		}
@@ -40,7 +40,7 @@ func SchedulerEvent(message any, _ core.EventArgs) {
 		clientSchedule := do.PollingClient()
 		// 没有可调度的客户端
 		if clientSchedule == nil || clientSchedule.IsNil() {
-			flog.Debugf("任务组：%s（%d） 没有可调度的客户端，延迟：%s", do.Name, do.Id, dateTime.Since(do.Task.StartAt).String())
+			flog.Debugf("任务组：%s 没有可调度的客户端，延迟：%s", do.Name, dateTime.Since(do.Task.StartAt).String())
 			do.ScheduleFail()
 			taskGroupRepository.Save(*do.DomainObject)
 			return

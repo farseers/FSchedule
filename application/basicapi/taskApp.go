@@ -9,14 +9,14 @@ import (
 
 // 任务列表
 // @get list
-func TaskList(taskGroupId int64, taskStatus enum.TaskStatus, pageSize int, pageIndex int, taskGroupRepository taskGroup.Repository) collections.PageList[taskGroup.TaskEO] {
+func TaskList(taskGroupName string, taskStatus enum.TaskStatus, pageSize int, pageIndex int, taskGroupRepository taskGroup.Repository) collections.PageList[taskGroup.TaskEO] {
 	if pageSize < 1 {
 		pageSize = 20
 	}
 	if pageIndex < 1 {
 		pageIndex = 1
 	}
-	return taskGroupRepository.ToTaskListByGroupId(taskGroupId, taskStatus, pageSize, pageIndex)
+	return taskGroupRepository.ToTaskListByGroupId(taskGroupName, taskStatus, pageSize, pageIndex)
 }
 
 // 今天失败数量

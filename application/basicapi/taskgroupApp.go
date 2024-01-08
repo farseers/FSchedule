@@ -14,19 +14,19 @@ import (
 
 // 任务组列表
 // @get list
-func TaskGroupList(name string, enable int, taskStatus enum.TaskStatus, clientId int64, pageSize int, pageIndex int, taskGroupRepository taskGroup.Repository) collections.PageList[response.TaskGroupResponse] {
+func TaskGroupList(taskGroupName string, enable int, taskStatus enum.TaskStatus, clientId int64, pageSize int, pageIndex int, taskGroupRepository taskGroup.Repository) collections.PageList[response.TaskGroupResponse] {
 	if pageSize < 1 {
 		pageSize = 20
 	}
 	if pageIndex < 1 {
 		pageIndex = 1
 	}
-	lst := taskGroupRepository.ToListForPage(name, enable, taskStatus, clientId, pageSize, pageIndex)
+	lst := taskGroupRepository.ToListForPage(taskGroupName, enable, taskStatus, clientId, pageSize, pageIndex)
 	lstTaskGroupResponse := mapper.ToPageList[response.TaskGroupResponse](lst)
 	// 获取每个任务组当前注册的客户端
 	lstTaskGroupResponse.List.Foreach(func(item *response.TaskGroupResponse) {
 		item.Clients = collections.NewList[response.ClientResponse]()
-		for _, c := range domain.GetClientList(item.Id).ToArray() {
+		for _, c := range domain.GetClientList(item.Name).ToArray() {
 			item.Clients.Add(mapper.Single[response.ClientResponse](*c))
 		}
 	})
@@ -35,14 +35,14 @@ func TaskGroupList(name string, enable int, taskStatus enum.TaskStatus, clientId
 
 // 任务组详情
 // @get info-{taskGroupId}
-func TaskGroupInfo(taskGroupId int64, taskGroupRepository taskGroup.Repository) response.TaskGroupResponse {
+func TaskGroupInfo(taskGroupName string, taskGroupRepository taskGroup.Repository) response.TaskGroupResponse {
 	// 判断任务组是否存在
-	exception.ThrowWebExceptionBool(!taskGroupRepository.IsExists(taskGroupId), 403, "任务组不存在")
+	exception.ThrowWebExceptionBool(!taskGroupRepository.IsExists(taskGroupName), 403, "任务组不存在")
 
-	info := taskGroupRepository.ToEntity(taskGroupId)
+	info := taskGroupRepository.ToEntity(taskGroupName)
 	item := mapper.Single[response.TaskGroupResponse](info)
 	item.Clients = collections.NewList[response.ClientResponse]()
-	for _, c := range domain.GetClientList(item.Id).ToArray() {
+	for _, c := range domain.GetClientList(item.Name).ToArray() {
 		item.Clients.Add(mapper.Single[response.ClientResponse](*c))
 	}
 	return item
@@ -55,7 +55,7 @@ func TaskGroupUpdate(req request.TaskGroupUpdateRequest, taskGroupRepository tas
 	_, err := taskGroup.StandardParser.Parse(req.Cron)
 	exception.ThrowWebExceptionError(403, err)
 	// 判断任务组是否存在
-	exception.ThrowWebExceptionBool(!taskGroupRepository.IsExists(req.Id), 403, "任务组不存在")
+	exception.ThrowWebExceptionBool(!taskGroupRepository.IsExists(req.Name), 403, "任务组不存在")
 	// 更新
 	taskGroupDO := mapper.Single[taskGroup.DomainObject](req)
 	taskGroupDO.Update()
@@ -64,11 +64,11 @@ func TaskGroupUpdate(req request.TaskGroupUpdateRequest, taskGroupRepository tas
 
 // 任务组删除
 // @post delete
-func TaskGroupDelete(taskGroupId int64, taskGroupRepository taskGroup.Repository) {
+func TaskGroupDelete(taskGroupName string, taskGroupRepository taskGroup.Repository) {
 	// 判断任务组是否存在
-	exception.ThrowWebExceptionBool(!taskGroupRepository.IsExists(taskGroupId), 403, "任务组不存在")
+	exception.ThrowWebExceptionBool(!taskGroupRepository.IsExists(taskGroupName), 403, "任务组不存在")
 
-	taskGroupRepository.Delete(taskGroupId)
+	taskGroupRepository.Delete(taskGroupName)
 }
 
 // 任务组数量
@@ -109,8 +109,8 @@ func TaskGroupSchedulerList(pageSize int, pageIndex int, taskGroupRepository tas
 
 // 设置任务组状态
 // @post setEnable
-func SetEnable(taskGroupId int64, enable bool, taskGroupRepository taskGroup.Repository) {
-	taskGroupDO := taskGroupRepository.ToEntity(taskGroupId)
+func SetEnable(taskGroupName string, enable bool, taskGroupRepository taskGroup.Repository) {
+	taskGroupDO := taskGroupRepository.ToEntity(taskGroupName)
 	taskGroupDO.SetEnable(enable)
 	taskGroupRepository.Save(taskGroupDO)
 }

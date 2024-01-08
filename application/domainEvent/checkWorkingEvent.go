@@ -22,7 +22,7 @@ func CheckWorkingEvent(message any, _ core.EventArgs) {
 	}
 
 	// 链路追踪
-	traceContext := container.Resolve[trace.IManager]().EntryTaskGroup("检查进行中的任务", do.Name, do.Id, do.Task.Id)
+	traceContext := container.Resolve[trace.IManager]().EntryTaskGroup("检查进行中的任务", do.Name, do.Task.Id)
 	defer traceContext.End()
 
 	// 得到当前处理的客户端
@@ -41,7 +41,7 @@ func CheckWorkingEvent(message any, _ core.EventArgs) {
 		clientDO.UnSchedule()
 		clientRepository.Save(clientDO)
 	} else {
-		if dto.Id == 0 || dto.Name == "" || dto.TaskGroupId == 0 {
+		if dto.Id == 0 || dto.Name == "" {
 			do.ReportFail(taskGroupRepository)
 		} else {
 			do.Report(dto.Status, dto.Data, dto.Progress, dto.RunSpeed, dto.NextTimespan, taskGroupRepository)

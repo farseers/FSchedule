@@ -16,7 +16,9 @@ import (
 )
 
 // 客户端列表
-var clientList = collections.NewDictionary[int64, *ClientMonitor]()
+type ClientId = int64
+
+var clientList = collections.NewDictionary[ClientId, *ClientMonitor]()
 
 // ClientMonitor 等待任务执行
 type ClientMonitor struct {

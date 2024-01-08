@@ -16,7 +16,7 @@ func TaskFinishEvent(message any, _ core.EventArgs) {
 	}
 
 	// 链路追踪
-	traceContext := container.Resolve[trace.IManager]().EntryTaskGroup("任务完成事件", do.Name, do.Id, do.Task.Id)
+	traceContext := container.Resolve[trace.IManager]().EntryTaskGroup("任务完成事件", do.Name, do.Task.Id)
 	defer traceContext.End()
 
 	taskGroupRepository := container.Resolve[taskGroup.Repository]()
@@ -26,6 +26,6 @@ func TaskFinishEvent(message any, _ core.EventArgs) {
 	do.CalculateNextAtByCron()
 	// 任务初始化
 	do.CreateTask()
-	flog.Debugf("任务组：%s（%d） %d 任务完成，下次执行时间：%s", do.Name, do.Id, do.Task.Id, do.Task.StartAt.ToString("yyyy-MM-dd HH:mm:ss"))
+	flog.Debugf("任务组：%s %d 任务完成，下次执行时间：%s", do.Name, do.Task.Id, do.Task.StartAt.ToString("yyyy-MM-dd HH:mm:ss"))
 	taskGroupRepository.SaveAndTask(*do)
 }

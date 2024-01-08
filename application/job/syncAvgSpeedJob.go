@@ -10,11 +10,11 @@ import (
 func SyncAvgSpeedJob(context *tasks.TaskContext) {
 	repository := container.Resolve[taskGroup.Repository]()
 	repository.ToList().Foreach(func(taskGroupDO *taskGroup.DomainObject) {
-		var speedList = repository.ToTaskSpeedList(taskGroupDO.Id)
+		var speedList = repository.ToTaskSpeedList(taskGroupDO.Name)
 		var runSpeedAvg = taskGroup.NewTaskSpeed(speedList).GetAvgSpeed()
 
 		if runSpeedAvg > 0 {
-			var do = repository.ToEntity(taskGroupDO.Id)
+			var do = repository.ToEntity(taskGroupDO.Name)
 			if !do.IsNil() {
 				do.RunSpeedAvg = runSpeedAvg
 				repository.Save(do)

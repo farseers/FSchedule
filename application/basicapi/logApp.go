@@ -9,6 +9,6 @@ import (
 
 // 日志列表
 // @get log/list
-func LogList(taskGroupId int64, logLevel eumLogLevel.Enum, pageSize int, pageIndex int, taskLogRepository taskLog.Repository) collections.PageList[taskLog.DomainObject] {
-	return taskLogRepository.GetList(taskGroupId, logLevel, pageSize, pageIndex)
+func LogList(taskGroupName string, logLevel eumLogLevel.Enum, pageSize int, pageIndex int, taskLogRepository taskLog.Repository) collections.PageList[taskLog.DomainObject] {
+	return taskLogRepository.GetList(taskGroupName, logLevel, pageSize, pageIndex)
 }

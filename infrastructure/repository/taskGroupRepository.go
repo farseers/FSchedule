@@ -172,8 +172,13 @@ func (receiver *taskGroupRepository) GetUnRunCount() int {
 }
 
 func (receiver *taskGroupRepository) GetUnRunList(pageSize int, pageIndex int) collections.PageList[taskGroup.DomainObject] {
-	return receiver.CacheManage.Get().Where(func(item taskGroup.DomainObject) bool {
+	lst := receiver.CacheManage.Get().Where(func(item taskGroup.DomainObject) bool {
 		return item.IsEnable && (item.Task.Status == enum.None || item.Task.Status == enum.Scheduling) && item.NextAt.Before(dateTime.Now())
+	})
+
+	// 排序
+	return lst.OrderBy(func(item taskGroup.DomainObject) any {
+		return item.Name + item.Caption
 	}).ToPageList(pageSize, pageIndex)
 }
 
@@ -181,5 +186,9 @@ func (receiver *taskGroupRepository) ToSchedulerWorkingList(pageSize int, pageIn
 	lst := receiver.CacheManage.Get().Where(func(item taskGroup.DomainObject) bool {
 		return item.Task.Status == enum.Scheduling || item.Task.Status == enum.Working
 	}).ToList()
-	return lst.ToPageList(pageSize, pageIndex)
+
+	// 排序
+	return lst.OrderBy(func(item taskGroup.DomainObject) any {
+		return item.Name + item.Caption
+	}).ToPageList(pageSize, pageIndex)
 }

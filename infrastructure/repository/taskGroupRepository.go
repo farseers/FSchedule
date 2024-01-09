@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"FSchedule/domain"
+	"FSchedule/domain/client"
 	"FSchedule/domain/enum"
 	"FSchedule/domain/taskGroup"
 	"FSchedule/infrastructure/repository/context"
@@ -141,8 +143,14 @@ func (receiver *taskGroupRepository) ToListForPage(clientName, taskGroupName str
 	}
 
 	if clientName != "" {
+
 		lst = lst.Where(func(item taskGroup.DomainObject) bool {
-			return item.Task.Client.Name == clientName
+			// 先得到当前任务组存在的客户端
+			lstClient := domain.GetClientList(item.Name)
+			// 再判断是否存在指定的客户端名称
+			return lstClient.Where(func(cli *client.DomainObject) bool {
+				return cli.Name == clientName
+			}).Any()
 		}).ToList()
 	}
 

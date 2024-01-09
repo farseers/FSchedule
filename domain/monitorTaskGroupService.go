@@ -22,12 +22,24 @@ var taskGroupList = collections.NewDictionary[string, *TaskGroupMonitor]()
 func MonitorTaskGroupPush(taskGroupDO *taskGroup.DomainObject) {
 	// 新的任务组不再当前列表，说明被其它节点处理了。
 	if !taskGroupList.ContainsKey(taskGroupDO.Name) {
-		if taskGroupDO.IsEnable {
-			monitor := newMonitor(taskGroupDO)
-			taskGroupList.Add(taskGroupDO.Name, monitor)
-
-			go monitor.Start()
+		if !taskGroupDO.IsEnable {
+			return
 		}
+		// 加入到任务组监控列表
+		monitor := newMonitor(taskGroupDO)
+		taskGroupList.Add(taskGroupDO.Name, monitor)
+
+		// 找到当前任务组支持的客户端列表，主动通知，更快速接入
+		// 用在将任务组.IsEnable由false改成true时
+		clientList.Values().Foreach(func(clientMonitor **ClientMonitor) {
+			(*clientMonitor).client.Jobs.Foreach(func(job *client.JobVO) {
+				if job.Name == taskGroupDO.Name {
+					monitor.updateClient((*clientMonitor).client)
+				}
+			})
+		})
+		// 开启协程
+		go monitor.Start()
 	} else {
 		taskGroupMonitor := taskGroupList.GetValue(taskGroupDO.Name)
 		// 之前是运行状态，改为停止状态，则需要退出调度线程

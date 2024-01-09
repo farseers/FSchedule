@@ -120,7 +120,7 @@ func (receiver *taskGroupRepository) ToListForPage(taskGroupName string, enable 
 	lst := receiver.CacheManage.Get()
 	if taskGroupName != "" {
 		lst = lst.Where(func(item taskGroup.DomainObject) bool {
-			return strings.Contains(strings.ToLower(item.Name), strings.ToLower(taskGroupName))
+			return strings.Contains(strings.ToLower(item.Name), strings.ToLower(taskGroupName)) || strings.Contains(strings.ToLower(item.Caption), strings.ToLower(taskGroupName))
 		}).ToList()
 	}
 	if enable > -1 {

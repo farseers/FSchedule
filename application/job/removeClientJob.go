@@ -12,7 +12,7 @@ func RemoveClientJob(context *tasks.TaskContext) {
 	clientRepository := container.Resolve[client.Repository]()
 	// 检查所有客户端
 	clientRepository.ToList().Foreach(func(clientDO *client.DomainObject) {
-		if clientDO.IsOffline() && dateTime.Since(clientDO.ActivateAt).Hours() >= 1 {
+		if clientDO.IsOffline() && dateTime.Since(clientDO.ActivateAt).Minutes() >= 10 {
 			clientRepository.RemoveClient(clientDO.Id)
 		}
 	})

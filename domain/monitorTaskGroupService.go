@@ -116,6 +116,11 @@ func (receiver *TaskGroupMonitor) Start() {
 			default:
 			}
 
+			// 当corn格式错误时，会强制设为false，等待手动启动
+			if !receiver.IsEnable {
+				<-receiver.updated
+			}
+
 			switch receiver.Task.Status {
 			case enum.None, enum.ScheduleFail: // 如果调度失败状态，需要重新调度
 				// 等待时间达了之后，开始调度

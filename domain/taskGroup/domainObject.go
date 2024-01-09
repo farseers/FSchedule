@@ -167,7 +167,7 @@ func (receiver *DomainObject) CalculateNextAtByUnix(timespan int64) {
 }
 
 // CalculateNextAtByCron 重新计算下一个执行周期
-func (receiver *DomainObject) CalculateNextAtByCron() {
+func (receiver *DomainObject) CalculateNextAtByCron() bool {
 	now := dateTime.Now()
 	// 成功才要计算下一个周期
 	if now.After(receiver.NextAt) {
@@ -175,9 +175,12 @@ func (receiver *DomainObject) CalculateNextAtByCron() {
 		case enum.Success:
 			cornSchedule, err := StandardParser.Parse(receiver.Cron)
 			if err != nil {
-				_ = flog.Errorf("任务组:%s，Cron格式错误:%s", receiver.Name, receiver.Cron)
+				_ = flog.Errorf("任务组:%s，Cron格式错误:%s，已将任务暂停。", receiver.Name, receiver.Cron)
+				receiver.IsEnable = false
+				return false
+			} else {
+				receiver.NextAt = dateTime.New(cornSchedule.Next(time.Now()))
 			}
-			receiver.NextAt = dateTime.New(cornSchedule.Next(time.Now()))
 		case enum.Fail:
 			// 失败，则为下一秒在执行
 			receiver.NextAt = now.AddSeconds(1)
@@ -187,6 +190,7 @@ func (receiver *DomainObject) CalculateNextAtByCron() {
 		case enum.Working:
 		}
 	}
+	return true
 }
 
 // SyncData 同步Data

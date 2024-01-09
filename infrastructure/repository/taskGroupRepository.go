@@ -116,7 +116,7 @@ func (receiver *taskGroupRepository) Sync() {
 	}
 }
 
-func (receiver *taskGroupRepository) ToListForPage(taskGroupName string, enable int, taskStatus enum.TaskStatus, clientId int64, pageSize int, pageIndex int) collections.PageList[taskGroup.DomainObject] {
+func (receiver *taskGroupRepository) ToListForPage(clientName, taskGroupName string, enable int, taskStatus enum.TaskStatus, clientId int64, pageSize int, pageIndex int) collections.PageList[taskGroup.DomainObject] {
 	lst := receiver.CacheManage.Get()
 	if taskGroupName != "" {
 		lst = lst.Where(func(item taskGroup.DomainObject) bool {
@@ -137,6 +137,12 @@ func (receiver *taskGroupRepository) ToListForPage(taskGroupName string, enable 
 	if clientId > 0 {
 		lst = lst.Where(func(item taskGroup.DomainObject) bool {
 			return item.Task.Client.Id == clientId
+		}).ToList()
+	}
+
+	if clientName != "" {
+		lst = lst.Where(func(item taskGroup.DomainObject) bool {
+			return item.Task.Client.Name == clientName
 		}).ToList()
 	}
 

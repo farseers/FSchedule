@@ -14,14 +14,14 @@ import (
 
 // 任务组列表
 // @get list
-func TaskGroupList(taskGroupName string, enable int, taskStatus enum.TaskStatus, clientId int64, pageSize int, pageIndex int, taskGroupRepository taskGroup.Repository) collections.PageList[response.TaskGroupResponse] {
+func TaskGroupList(clientName, taskGroupName string, enable int, taskStatus enum.TaskStatus, clientId int64, pageSize int, pageIndex int, taskGroupRepository taskGroup.Repository) collections.PageList[response.TaskGroupResponse] {
 	if pageSize < 1 {
 		pageSize = 20
 	}
 	if pageIndex < 1 {
 		pageIndex = 1
 	}
-	lst := taskGroupRepository.ToListForPage(taskGroupName, enable, taskStatus, clientId, pageSize, pageIndex)
+	lst := taskGroupRepository.ToListForPage(clientName, taskGroupName, enable, taskStatus, clientId, pageSize, pageIndex)
 	lstTaskGroupResponse := mapper.ToPageList[response.TaskGroupResponse](lst)
 	// 获取每个任务组当前注册的客户端
 	lstTaskGroupResponse.List.Foreach(func(item *response.TaskGroupResponse) {

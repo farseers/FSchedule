@@ -51,9 +51,11 @@ func TaskGroupInfo(taskGroupName string, taskGroupRepository taskGroup.Repositor
 // 任务组修改
 // @post update
 func TaskGroupUpdate(req request.TaskGroupUpdateRequest, taskGroupRepository taskGroup.Repository) {
-	// 检查cron
+	// 确认cron格式是否正确
 	_, err := taskGroup.StandardParser.Parse(req.Cron)
-	exception.ThrowWebExceptionError(403, err)
+	if err != nil {
+		exception.ThrowWebExceptionf(403, "任务组:%s %s，Cron格式[%s]错误:%s", req.Name, req.Caption, req.Cron, err.Error())
+	}
 
 	// 判断任务组是否存在
 	taskGroupDO := taskGroupRepository.ToEntity(req.Name)

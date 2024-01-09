@@ -49,6 +49,12 @@ func Registry(dto RegistryDTO, clientRepository client.Repository, taskGroupRepo
 
 	// 更新任务组
 	for _, jobDTO := range dto.Jobs {
+		// 确认cron格式是否正确
+		_, err := taskGroup.StandardParser.Parse(jobDTO.Cron)
+		if err != nil {
+			exception.ThrowWebExceptionf(403, "任务组:%s %s，Cron格式[%s]错误:%s", jobDTO.Name, jobDTO.Caption, jobDTO.Cron, err.Error())
+		}
+
 		lstTaskGroup := taskGroupRepository.ToListByName(jobDTO.Name)
 		// 当没有找到任务组时，注册一个新的任务组
 		if lstTaskGroup.Count() == 0 {

@@ -12,6 +12,7 @@ import (
 
 type TaskPO struct {
 	Id          int64                                  `gorm:"primaryKey;autoIncrement;comment:主键;index:idx_name_status_create,priority:4"`
+	TraceId     string                                 `gorm:"not null;default:'';comment:上下文ID"`
 	Name        string                                 `gorm:"size:64;not null;comment:任务组名称;index:idx_name_create,priority:1;index:idx_name_status_create,priority:1;"`
 	Ver         int                                    `gorm:"type:int;not null;comment:版本"`
 	Caption     string                                 `gorm:"size:32;not null;comment:任务组标题"`

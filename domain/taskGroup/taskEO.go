@@ -4,11 +4,13 @@ import (
 	"FSchedule/domain/enum"
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs/dateTime"
+	"github.com/farseer-go/fs/trace"
 )
 
 // TaskEO 任务记录
 type TaskEO struct {
 	Id          int64                                  // 主键
+	TraceId     string                                 // 上下文ID
 	Name        string                                 // 实现Job的特性名称（客户端识别哪个实现类）
 	Ver         int                                    // 版本
 	Caption     string                                 // 任务组标题
@@ -79,5 +81,8 @@ func (receiver *TaskEO) UpdateTask(status enum.TaskStatus, data collections.Dict
 	// 客户端没有设置进度，且执行成功时，自动设为100
 	if progress == 0 && status == enum.Success {
 		receiver.Progress = 100
+	}
+	if traceContext := trace.CurTraceContext.Get(); traceContext != nil {
+		receiver.TraceId = traceContext.GetTraceId()
 	}
 }

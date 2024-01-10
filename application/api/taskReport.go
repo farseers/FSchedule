@@ -3,16 +3,21 @@ package api
 
 import (
 	"FSchedule/domain/client"
+	"FSchedule/domain/enum"
 	"FSchedule/domain/schedule"
 	"FSchedule/domain/taskGroup"
 	"github.com/farseer-go/fs/exception"
-	"github.com/farseer-go/fs/flog"
 )
 
 // TaskReport 客户端回调
 // @post /taskReport
 func TaskReport(dto client.TaskReportVO, taskGroupRepository taskGroup.Repository, scheduleRepository schedule.Repository) {
-	flog.Debugf("任务组：%s %d 执行结果：%s", dto.Name, dto.Id, flog.Red(dto.Status.String()))
+	switch dto.Status {
+	case enum.None, enum.Scheduling, enum.ScheduleFail:
+		exception.ThrowWebExceptionf(403, "任务组 %s %d 回调的状态设置不正确：%s", dto.Name, dto.Id, dto.Status.String())
+	case enum.Working, enum.Fail, enum.Success: // 正确的，继续执行
+	}
+
 	// 加锁
 	scheduleRepository.ScheduleLock(dto.Name, dto.Id).GetLockRun(func() {
 		taskGroupDO := taskGroupRepository.ToEntity(dto.Name)
@@ -25,12 +30,13 @@ func TaskReport(dto client.TaskReportVO, taskGroupRepository taskGroup.Repositor
 			if taskEO.IsNull() {
 				exception.ThrowWebExceptionf(403, "任务id={%d} 不存在", dto.Id)
 			}
-			// 更新任务
+			// 仅更新任务
 			taskEO.UpdateTask(dto.Status, dto.Data, dto.Progress, dto.RunSpeed)
 			taskGroupRepository.SaveTask(taskEO)
 			return
 		}
 
+		// 更新任务
 		taskGroupDO.Report(dto.Status, dto.Data, dto.Progress, dto.RunSpeed, dto.NextTimespan, taskGroupRepository)
 	})
 }

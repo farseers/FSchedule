@@ -40,11 +40,12 @@ func CheckWorkingEvent(message any, _ core.EventArgs) {
 	if err != nil {
 		clientDO.UnSchedule()
 		clientRepository.Save(clientDO)
+		return
+	}
+
+	if dto.IsNil() {
+		do.ReportFail(taskGroupRepository)
 	} else {
-		if dto.Id == 0 || dto.Name == "" {
-			do.ReportFail(taskGroupRepository)
-		} else {
-			do.Report(dto.Status, dto.Data, dto.Progress, dto.RunSpeed, dto.NextTimespan, taskGroupRepository)
-		}
+		do.Report(dto.Status, dto.Data, dto.Progress, dto.RunSpeed, dto.NextTimespan, taskGroupRepository)
 	}
 }

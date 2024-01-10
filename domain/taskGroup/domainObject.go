@@ -129,8 +129,8 @@ func (receiver *DomainObject) SetClient(client ClientVO) {
 	receiver.Task.SchedulerAt = dateTime.Now()
 	receiver.Task.RunAt = dateTime.Now()
 	// 重新赋值是为了担心数据被手动改了
-	receiver.Task.Data = receiver.Data
-	receiver.Task.Name = receiver.Name
+	//receiver.Task.Data = receiver.Data
+	//receiver.Task.Name = receiver.Name
 }
 
 // IsNil 不存在
@@ -213,7 +213,7 @@ func (receiver *DomainObject) Report(status enum.TaskStatus, data collections.Di
 
 // ReportFail 任务报告，未找到任务
 func (receiver *DomainObject) ReportFail(taskGroupRepository Repository) {
-	receiver.Task.UpdateTask(enum.Fail, receiver.Task.Data, receiver.Task.Progress, receiver.Task.RunSpeed)
+	receiver.Task.UpdateTaskStatus(enum.Fail)
 	taskGroupRepository.Save(*receiver)
 }
 

@@ -14,3 +14,7 @@ type TaskReportVO struct {
 	Status       enum.TaskStatus                        // 执行状态
 	RunSpeed     int64                                  // 执行速度
 }
+
+func (receiver *TaskReportVO) IsNil() bool {
+	return receiver.Id == 0 || receiver.Name == ""
+}

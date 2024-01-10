@@ -73,13 +73,18 @@ func (receiver *TaskEO) IsWorking() bool {
 
 // UpdateTask 更新任务
 func (receiver *TaskEO) UpdateTask(status enum.TaskStatus, data collections.Dictionary[string, string], progress int, speed int64) {
-	receiver.Status = status
 	receiver.Data = data
 	receiver.Progress = progress
 	receiver.RunSpeed = speed
+	receiver.UpdateTaskStatus(status)
+}
+
+// UpdateTask 更新任务
+func (receiver *TaskEO) UpdateTaskStatus(status enum.TaskStatus) {
+	receiver.Status = status
 	receiver.RunAt = dateTime.Now()
 	// 客户端没有设置进度，且执行成功时，自动设为100
-	if progress == 0 && status == enum.Success {
+	if status == enum.Success {
 		receiver.Progress = 100
 	}
 	if traceContext := trace.CurTraceContext.Get(); traceContext != nil {

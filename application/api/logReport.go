@@ -5,7 +5,6 @@ import (
 	"FSchedule/domain/taskGroup"
 	"FSchedule/domain/taskLog"
 	"github.com/farseer-go/fs/core/eumLogLevel"
-	"github.com/farseer-go/fs/flog"
 )
 
 type logReportDTO struct {
@@ -26,11 +25,6 @@ type LogContent struct {
 func LogReport(dto logReportDTO, taskGroupRepository taskGroup.Repository, taskLogRepository taskLog.Repository) {
 	for _, log := range dto.Logs {
 		taskDO := taskGroupRepository.GetTask(log.Name, log.TaskId)
-
-		if log.LogLevel == eumLogLevel.Error || log.LogLevel == eumLogLevel.Warning {
-			flog.Infof("【客户端日志上报】 %s %s [%s] %s", log.Name, taskDO.Caption, log.LogLevel.ToString(), log.Content)
-		}
-
 		taskLogDO := taskLog.NewDO(log.Name, taskDO.Caption, log.Ver, log.TaskId, taskDO.Data, log.LogLevel, log.Content, log.CreateAt)
 		taskLogRepository.Add(taskLogDO)
 	}

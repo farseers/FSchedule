@@ -27,7 +27,10 @@ func (receiver *clientRepository) Save(do *client.DomainObject) {
 func (receiver *clientRepository) ToList() collections.List[client.DomainObject] {
 	var clients []client.DomainObject
 	_ = context.RedisContextIns.HashToArray(clientCacheKey, &clients)
-	return collections.NewList(clients...)
+	lst := collections.NewList(clients...)
+	return lst.OrderBy(func(item client.DomainObject) any {
+		return int(item.Status)
+	}).ToList()
 }
 
 func (receiver *clientRepository) RemoveClient(id int64) {

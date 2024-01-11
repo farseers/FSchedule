@@ -39,7 +39,7 @@ func MonitorClientPush(clientDO *client.DomainObject) {
 		})
 		clientList.Add(clientDO.Id, clientMonitor)
 
-		flog.Infof("客户端（%d）开始监听：%s:%d", clientDO.Id, clientDO.Ip, clientDO.Port)
+		flog.Infof("客户端%s（%d）开始监听：%s:%d", clientDO.Name, clientDO.Id, clientDO.Ip, clientDO.Port)
 
 		// 异步检查客户端在线状态
 		if serverNode.IsLeaderNode {
@@ -57,7 +57,7 @@ func MonitorClientPush(clientDO *client.DomainObject) {
 
 		// 客户端离线
 		if clientDO.IsOffline() {
-			flog.Infof("客户端（%d）：%s:%d 下线", clientDO.Id, clientDO.Ip, clientDO.Port)
+			flog.Infof("客户端%s（%d）：%s:%d 下线", clientDO.Name, clientDO.Id, clientDO.Ip, clientDO.Port)
 			existsClientDO.cancelFunc()
 			clientList.Remove(clientDO.Id)
 		}

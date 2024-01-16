@@ -300,7 +300,9 @@ func TaskGroupCount() int {
 			lstLog.Add(fmt.Sprintf("任务组：%s，\t状态：%s，客户端%s个，当前客户端：%s", flog.Blue(v.Name), v.Task.Status.String(), flog.Red(v.clients.Count()), flog.Green(curClientId)))
 		}
 	}
-	flog.Println(lstLog.ToString("\n"))
+	if lstLog.Count() > 0 {
+		flog.Println(lstLog.ToString("\n"))
+	}
 	return taskGroupList.Count()
 }
 

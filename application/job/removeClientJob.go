@@ -7,7 +7,7 @@ import (
 	"github.com/farseer-go/tasks"
 )
 
-// RemoveClientJob 每小时检查客户端是否永久离线
+// RemoveClientJob 20分钟检查客户端是否永久离线
 func RemoveClientJob(context *tasks.TaskContext) {
 	clientRepository := container.Resolve[client.Repository]()
 	// 检查所有客户端

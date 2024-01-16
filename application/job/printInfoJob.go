@@ -6,12 +6,17 @@ import (
 	"fmt"
 	"github.com/farseer-go/fs/container"
 	"github.com/farseer-go/fs/flog"
+	"github.com/farseer-go/fs/trace"
 	"github.com/farseer-go/tasks"
 	"strings"
 )
 
 // PrintInfoJob 打印客户端、任务组信息
 func PrintInfoJob(context *tasks.TaskContext) {
+	if traceContext := trace.CurTraceContext.Get(); traceContext != nil {
+		traceContext.Ignore()
+	}
+
 	flog.Printf("%s个客户端（%s个正常），%s个任务组（%s个运行中）\n", flog.Red(domain.ClientCount()), flog.Green(domain.ClientNormalCount()), flog.Red(domain.TaskGroupCount()), flog.Green(domain.TaskGroupEnableCount()))
 	lst := container.Resolve[serverNode.Repository]().ToList()
 

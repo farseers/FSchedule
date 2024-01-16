@@ -301,7 +301,7 @@ func TaskGroupCount() int {
 		}
 	}
 	if lstLog.Count() > 0 {
-		flog.Println(lstLog.ToString("\n"))
+		fmt.Sprintln(lstLog.ToString("\n"))
 	}
 	return taskGroupList.Count()
 }

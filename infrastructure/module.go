@@ -36,19 +36,19 @@ func (module Module) PostInitialize() {
 	repository.InitRepository()
 
 	// 注册任务组更新通知事件
-	redis.RegisterEvent("default", "TaskGroupUpdate", domainEvent.TaskGroupUpdateSubscribe)
+	redis.RegisterEvent("default", "TaskGroupUpdate").RegisterSubscribe("任务组有更新", domainEvent.TaskGroupUpdateSubscribe)
 
 	// 任务状态有变更
-	eventBus.RegisterEvent("TaskScheduler", domainEvent.SchedulerEvent)
+	eventBus.RegisterEvent("TaskScheduler").RegisterSubscribe("任务调度", domainEvent.SchedulerEvent)
 	// 检查进行中的任务
-	eventBus.RegisterEvent("CheckWorking", domainEvent.CheckWorkingEvent)
+	eventBus.RegisterEvent("CheckWorking").RegisterSubscribe("检查进行中的任务", domainEvent.CheckWorkingEvent)
 	// 任务完成事件
-	eventBus.RegisterEvent("TaskFinish", domainEvent.TaskFinishEvent)
+	eventBus.RegisterEvent("TaskFinish").RegisterSubscribe("任务完成事件", domainEvent.TaskFinishEvent)
 
 	// 注册客户端更新通知事件
-	redis.RegisterEvent("default", "ClientUpdate", domainEvent.ClientUpdateSubscribe)
+	redis.RegisterEvent("default", "ClientUpdate").RegisterSubscribe("客户端有更新", domainEvent.ClientUpdateSubscribe)
 	// 注册选举事件
-	redis.RegisterEvent("default", "ClusterLeader", domainEvent.ClusterLeaderSubscribe)
+	redis.RegisterEvent("default", "ClusterLeader").RegisterSubscribe("选举事件", domainEvent.ClusterLeaderSubscribe)
 
 	// 队列任务日志
 	queue.Subscribe("TaskLogQueue", "同步日志到数据库", 1000, localQueue.TaskLogQueueConsumer)

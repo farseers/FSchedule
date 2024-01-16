@@ -7,7 +7,6 @@ import (
 	"FSchedule/domain/taskGroup"
 	"github.com/farseer-go/fs/container"
 	"github.com/farseer-go/fs/core"
-	"github.com/farseer-go/fs/trace"
 )
 
 // CheckWorkingEvent 检查进行中的任务
@@ -20,10 +19,6 @@ func CheckWorkingEvent(message any, _ core.EventArgs) {
 	if do.Task.Status != enum.Working {
 		return
 	}
-
-	// 链路追踪
-	traceContext := container.Resolve[trace.IManager]().EntryTaskGroup("检查进行中的任务", do.Name, do.Task.Id)
-	defer traceContext.End()
 
 	// 得到当前处理的客户端
 	clientDO := do.GetClient()

@@ -159,25 +159,23 @@ func (receiver *TaskGroupMonitor) waitStart() {
 			return
 		}
 
-		// 任务组状态不可用、没有可用客户端，不需要调度
+		// 任务组状态不可用，不需要调度
 		if !receiver.IsEnable {
 			flog.Debugf("任务组：%s "+flog.Yellow("停止状态，等待任务重新开启"), receiver.Name)
 			<-receiver.updated
 			continue
 		}
 
-		// 任务组状态不可用、没有可用客户端，不需要调度
+		// 没有可用客户端，不需要调度
 		if receiver.CanScheduleClient() == 0 {
 			flog.Debugf("任务组：%s "+flog.Yellow("等待客户端接入"), receiver.Name)
 			<-receiver.updated
 			continue
 		}
 
-		//flog.Debugf("任务组：%s 等待开始时间", receiver.Name)
 		timer := timingWheel.AddTimePrecision(receiver.StartAt.ToTime())
 		select {
 		case <-timer.C: // 开始时间到了，可以开始计算任务执行赶时间
-			//flog.Debugf("任务组：%s 等待执行时间", receiver.Name)
 			receiver.waitScheduler()
 			return
 		case <-receiver.updated:

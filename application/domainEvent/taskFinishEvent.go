@@ -5,7 +5,6 @@ import (
 	"github.com/farseer-go/fs/container"
 	"github.com/farseer-go/fs/core"
 	"github.com/farseer-go/fs/flog"
-	"github.com/farseer-go/fs/trace"
 )
 
 // TaskFinishEvent 任务完成事件
@@ -14,10 +13,6 @@ func TaskFinishEvent(message any, _ core.EventArgs) {
 	if !do.Task.IsFinish() {
 		return
 	}
-
-	// 链路追踪
-	traceContext := container.Resolve[trace.IManager]().EntryTaskGroup("任务完成事件", do.Name, do.Task.Id)
-	defer traceContext.End()
 
 	taskGroupRepository := container.Resolve[taskGroup.Repository]()
 	// 先保存任务内容

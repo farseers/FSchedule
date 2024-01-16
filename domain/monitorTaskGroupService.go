@@ -6,6 +6,7 @@ import (
 	"FSchedule/domain/schedule"
 	"FSchedule/domain/taskGroup"
 	"context"
+	"fmt"
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs/container"
 	"github.com/farseer-go/fs/core"
@@ -139,7 +140,7 @@ func (receiver *TaskGroupMonitor) Start() {
 				receiver.waitStart()
 			case enum.Scheduling:
 				// 等待更新即可
-				flog.Debugf("任务组：%s 等待更新", receiver.Name)
+				//flog.Debugf("任务组：%s 等待更新", receiver.Name)
 				<-receiver.updated
 			case enum.Working:
 				// 已成功调度到客户端，等待客户端执行完成
@@ -197,7 +198,7 @@ func (receiver *TaskGroupMonitor) waitScheduler() {
 		}
 		_ = receiver.SchedulerEventBus.Publish(receiver)
 	case <-receiver.updated:
-		flog.Debugf("任务组：%s %d 有更新", receiver.Name, receiver.Task.Id)
+		//flog.Debugf("任务组：%s %d 有更新", receiver.Name, receiver.Task.Id)
 	}
 }
 
@@ -209,9 +210,7 @@ func (receiver *TaskGroupMonitor) waitWorking() {
 		return
 	}
 
-	//flog.Debugf("任务组：%s 等待客户端执行完成", receiver.Name)
 	timer := timingWheel.Add(time.Duration(receiver.RunSpeedAvg+3000) * time.Millisecond)
-	// 这里用循环是为了，任何的更新，如果仍处于Working状态，则不需要跳到外面重新执行
 	select {
 	case <-timer.C: // 每隔60秒，主动向客户端询问任务状态
 		flog.Debugf("任务组：%s 主动向客户端询问任务状态", receiver.Name)
@@ -240,13 +239,13 @@ func (receiver *TaskGroupMonitor) updateClient(newData *client.DomainObject) {
 			}
 
 			receiver.updateNotice()
-			flog.Debugf("任务组：%s 移除客户端", receiver.Name)
+			flog.Debugf("任务组：%s 移除客户端：%s %d", receiver.Name, newData.Name, newData.Id)
 		}
 	} else {
 		if !receiver.clients.ContainsKey(newData.Id) {
 			receiver.clients.Add(newData.Id, newData)
 			receiver.updateNotice()
-			flog.Debugf("任务组：%s 添加客户端", receiver.Name)
+			flog.Debugf("任务组：%s 添加客户端：%s %d", receiver.Name, newData.Name, newData.Id)
 		}
 	}
 }
@@ -291,15 +290,17 @@ func (receiver *TaskGroupMonitor) updateNotice() {
 
 // TaskGroupCount 返回当前正在监控的任务组数量
 func TaskGroupCount() int {
+	lstLog := collections.NewList[string]()
 	for _, v := range taskGroupList.ToMap() {
 		if v.clients.Count() > 0 {
 			var curClientId int64
 			if v.curClient != nil {
 				curClientId = v.curClient.Id
 			}
-			flog.Debugf("任务组：%s，\t状态：%s，客户端%s个，当前客户端：%s", flog.Blue(v.Name), v.Task.Status.String(), flog.Red(v.clients.Count()), flog.Green(curClientId))
+			lstLog.Add(fmt.Sprintf("任务组：%s，\t状态：%s，客户端%s个，当前客户端：%s", flog.Blue(v.Name), v.Task.Status.String(), flog.Red(v.clients.Count()), flog.Green(curClientId)))
 		}
 	}
+	flog.Println(lstLog.ToString("\n"))
 	return taskGroupList.Count()
 }
 
@@ -309,15 +310,6 @@ func TaskGroupEnableCount() int {
 		return item.CanScheduleClient() > 0
 	}).Count()
 }
-
-//func GoID() uint64 {
-//	b := make([]byte, 64)
-//	b = b[:runtime.Stack(b, false)]
-//	b = bytes.TrimPrefix(b, []byte("goroutine "))
-//	b = b[:bytes.IndexByte(b, ' ')]
-//	n, _ := strconv.ParseUint(string(b), 10, 64)
-//	return n
-//}
 
 // 获取任务组接受调度的客户端列表
 func GetClientList(taskGroupName string) collections.List[*client.DomainObject] {

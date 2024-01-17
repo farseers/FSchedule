@@ -97,11 +97,6 @@ func (receiver *taskRepository) ToTaskListByGroupId(taskGroupName string, taskSt
 	return mapper.ToPageList[taskGroup.TaskEO](lstPO)
 }
 
-func (receiver *taskRepository) TodayFailCount() int64 {
-	now := dateTime.Now()
-	return context.MysqlContextIns.Task.Where("status = ? and create_at >= ?", enum.Fail, now.Date()).Count()
-}
-
 func (receiver *taskRepository) ToTaskSpeedList(taskGroupName string) []int64 {
 	lstPO := context.MysqlContextIns.Task.Where("name = ? and status = ?", taskGroupName, enum.Success).Desc("create_at").Select("RunSpeed").Limit(100).ToList()
 	var lstSpeed []int64
@@ -125,6 +120,11 @@ func (receiver *taskRepository) ToTaskFinishPageList(pageSize int, pageIndex int
 	page := context.MysqlContextIns.Task.Where("(status = ? or status = ?) and (create_at >= ?)", enum.Fail, enum.Success, time.Now().Add(-24*time.Hour)).
 		Desc("run_at").ToPageList(pageSize, pageIndex)
 	return receiver.toTaskPageListTaskEO(page)
+}
+
+func (receiver *taskRepository) TodayFailCount() int64 {
+	now := dateTime.Now()
+	return context.MysqlContextIns.Task.Where("status = ? and create_at >= ?", enum.Fail, now.Date()).Count()
 }
 
 func (receiver *taskRepository) toTaskPageListTaskEO(page collections.PageList[model.TaskPO]) collections.PageList[taskGroup.TaskEO] {

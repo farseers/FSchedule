@@ -7,13 +7,14 @@ import (
 	"errors"
 	"fmt"
 	"github.com/farseer-go/collections"
+	"github.com/farseer-go/data"
 	"time"
 )
 
 type TaskPO struct {
-	Id          int64                                  `gorm:"primaryKey;autoIncrement;comment:主键;index:idx_name_status_create,priority:4"`
+	Id          int64                                  `gorm:"primaryKey;autoIncrement;comment:主键;"`
 	TraceId     string                                 `gorm:"not null;default:'';comment:上下文ID"`
-	Name        string                                 `gorm:"size:64;not null;comment:任务组名称;index:idx_name_create,priority:1;index:idx_name_status_create,priority:1;"`
+	Name        string                                 `gorm:"size:64;not null;comment:任务组名称;"`
 	Ver         int                                    `gorm:"type:int;not null;comment:版本"`
 	Caption     string                                 `gorm:"size:32;not null;comment:任务组标题"`
 	StartAt     time.Time                              `gorm:"type:timestamp;size:6;not null;comment:开始时间"`
@@ -23,10 +24,19 @@ type TaskPO struct {
 	ClientIp    string                                 `gorm:"size:32;not null;comment:客户端IP"`
 	ClientName  string                                 `gorm:"size:64;not null;comment:客户端名称"`
 	Progress    int                                    `gorm:"type:int;not null;comment:进度0-100"`
-	Status      enum.TaskStatus                        `gorm:"type:tinyint;not null;comment:状态;index:idx_status_create,priority:1;index:idx_name_status_create,priority:2"`
+	Status      enum.TaskStatus                        `gorm:"type:tinyint;not null;comment:状态;"`
 	SchedulerAt time.Time                              `gorm:"type:timestamp;size:6;not null;comment:调度时间"`
 	Data        collections.Dictionary[string, string] `gorm:"type:string;size:2048;serializer:json;not null;comment:本次执行任务时的Data数据"`
-	CreateAt    time.Time                              `gorm:"type:timestamp;size:6;not null;comment:任务创建时间;index:idx_status_create,priority:2;index:idx_name_create,priority:2;index:idx_name_status_create,priority:3"`
+	CreateAt    time.Time                              `gorm:"type:timestamp;size:6;not null;comment:任务创建时间;"`
+}
+
+// 创建索引
+func (*TaskPO) CreateIndex() map[string]data.IdxField {
+	return map[string]data.IdxField{
+		"idx_name_status_create": {false, "name,status,create_at,id"},
+		"idx_name_create":        {false, "name,create_at"},
+		"idx_status_create":      {false, "status,create_at"},
+	}
 }
 
 // Value return json value, implement driver.Valuer interface

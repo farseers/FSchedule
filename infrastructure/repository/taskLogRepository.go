@@ -19,12 +19,13 @@ func (repository *TaskLogRepository) Add(taskLogDO taskLog.DomainObject) {
 	queue.Push("TaskLogQueue", po)
 }
 
-func (repository *TaskLogRepository) GetList(taskGroupName string, logLevel eumLogLevel.Enum, pageSize int, pageIndex int) collections.PageList[taskLog.DomainObject] {
+func (repository *TaskLogRepository) GetList(taskGroupName string, logLevel eumLogLevel.Enum, taskId int64, pageSize int, pageIndex int) collections.PageList[taskLog.DomainObject] {
 	ts := context.MysqlContextIns.TaskLog.Desc("create_at").
 		WhereIf(taskGroupName != "", "name = ?", taskGroupName).
-		WhereIf(logLevel > -1, "log_level = ?", logLevel)
+		WhereIf(logLevel > -1, "log_level = ?", logLevel).
+		WhereIf(taskId > 0, "task_id = ?", taskId)
 
-	pageList := ts.ToPageList(pageSize, pageIndex)
+	pageList := ts.Desc("create_at").ToPageList(pageSize, pageIndex)
 	return mapper.ToPageList[taskLog.DomainObject](pageList)
 }
 

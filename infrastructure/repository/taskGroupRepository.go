@@ -7,6 +7,7 @@ import (
 	"FSchedule/domain/taskGroup"
 	"FSchedule/infrastructure/repository/context"
 	"FSchedule/infrastructure/repository/model"
+	_ "embed"
 	"github.com/farseer-go/cache"
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs/container"
@@ -209,4 +210,13 @@ func (receiver *taskGroupRepository) ToSchedulerWorkingList(pageSize int, pageIn
 	return lst.OrderBy(func(item taskGroup.DomainObject) any {
 		return item.Name + item.Caption
 	}).ToPageList(pageSize, pageIndex)
+}
+
+//go:embed model/sql/taskStatCount.sql
+var taskStatCountSql string
+
+func (receiver *taskGroupRepository) GetStatCount() collections.List[taskGroup.StatTaskEO] {
+	var array []taskGroup.StatTaskEO
+	_, _ = context.MysqlContextIns.ExecuteSqlToResult(&array, taskStatCountSql)
+	return mapper.ToList[taskGroup.StatTaskEO](array)
 }

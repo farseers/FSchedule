@@ -17,7 +17,7 @@ var route = []webapi.Route{
 	{"GET", "/basicapi/log/list", basicapi.LogList, "", []context.IFilter{}, []string{"taskGroupName", "logLevel", "taskId", "pageSize", "pageIndex", ""}},
 	{"GET", "/basicapi/log/listByClientName", basicapi.LogListByClientName, "", []context.IFilter{}, []string{"clientName", "taskGroupName", "logLevel", "taskId", "pageSize", "pageIndex", ""}},
 	{"GET", "/basicapi/server/list", basicapi.ServerList, "", []context.IFilter{}, []string{""}},
-	{"GET", "/basicapi/task/list", basicapi.TaskList, "", []context.IFilter{}, []string{"taskGroupName", "taskStatus", "taskId", "pageSize", "pageIndex", ""}},
+	{"GET", "/basicapi/task/list", basicapi.TaskList, "", []context.IFilter{}, []string{"clientName", "taskGroupName", "taskStatus", "taskId", "pageSize", "pageIndex", ""}},
 	{"GET", "/basicapi/task/todayFailCount", basicapi.TodayFailCount, "", []context.IFilter{}, []string{""}},
 	{"GET", "/basicapi/task/statList", basicapi.StatList, "", []context.IFilter{}, []string{""}},
 	{"GET", "/basicapi/taskGroup/list", basicapi.TaskGroupList, "", []context.IFilter{}, []string{"clientName", "taskGroupName", "enable", "taskStatus", "taskId", "clientId", "pageSize", "pageIndex", ""}},

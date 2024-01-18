@@ -85,13 +85,16 @@ func (receiver *taskRepository) DeleteTask(taskGroupName string) {
 	getCacheManager(taskGroupName).Clear()
 }
 
-func (receiver *taskRepository) ToTaskListByGroupId(taskGroupName string, taskStatus enum.TaskStatus, pageSize int, pageIndex int) collections.PageList[taskGroup.TaskEO] {
+func (receiver *taskRepository) ToTaskListByGroupId(taskGroupName string, taskStatus enum.TaskStatus, taskId int64, pageSize int, pageIndex int) collections.PageList[taskGroup.TaskEO] {
 	ts := context.MysqlContextIns.Task.Desc("create_at")
 	if taskGroupName != "" {
 		ts = ts.Where("name = ?", taskGroupName)
 	}
 	if taskStatus > -1 {
 		ts = ts.Where("status = ?", taskStatus)
+	}
+	if taskId > 0 {
+		ts = ts.Where("id = ?", taskId)
 	}
 	lstPO := ts.ToPageList(pageSize, pageIndex)
 	return mapper.ToPageList[taskGroup.TaskEO](lstPO)

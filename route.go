@@ -16,7 +16,7 @@ var route = []webapi.Route{
 	{"GET", "/basicapi/client/list", basicapi.ClientList, "", []context.IFilter{}, []string{""}},
 	{"GET", "/basicapi/log/list", basicapi.LogList, "", []context.IFilter{}, []string{"taskGroupName", "logLevel", "taskId", "pageSize", "pageIndex", ""}},
 	{"GET", "/basicapi/server/list", basicapi.ServerList, "", []context.IFilter{}, []string{""}},
-	{"GET", "/basicapi/task/list", basicapi.TaskList, "", []context.IFilter{}, []string{"taskGroupName", "taskStatus", "pageSize", "pageIndex", ""}},
+	{"GET", "/basicapi/task/list", basicapi.TaskList, "", []context.IFilter{}, []string{"taskGroupName", "taskStatus", "taskId", "pageSize", "pageIndex", ""}},
 	{"GET", "/basicapi/task/todayFailCount", basicapi.TodayFailCount, "", []context.IFilter{}, []string{""}},
 	{"GET", "/basicapi/taskGroup/list", basicapi.TaskGroupList, "", []context.IFilter{}, []string{"clientName", "taskGroupName", "enable", "taskStatus", "taskId", "clientId", "pageSize", "pageIndex", ""}},
 	{"GET", "/basicapi/taskGroup/info-{taskGroupName}", basicapi.TaskGroupInfo, "", []context.IFilter{}, []string{"taskGroupName", ""}},

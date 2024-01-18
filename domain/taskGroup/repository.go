@@ -42,6 +42,6 @@ type taskRepository interface {
 	ToTaskFinishList(taskGroupName string, top int) collections.List[TaskEO]
 	// *******************仪表盘使用*********************
 	// ToFinishList 获取指定任务组执行成功的任务列表
-	ToTaskListByGroupId(taskGroupName string, taskStatus enum.TaskStatus, pageSize int, pageIndex int) collections.PageList[TaskEO]
+	ToTaskListByGroupId(taskGroupName string, taskStatus enum.TaskStatus, taskId int64, pageSize int, pageIndex int) collections.PageList[TaskEO]
 	TodayFailCount() int64 // 今天失败数量
 }

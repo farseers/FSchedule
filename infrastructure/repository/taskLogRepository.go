@@ -4,6 +4,9 @@ import (
 	"FSchedule/domain/taskLog"
 	"FSchedule/infrastructure/repository/context"
 	"FSchedule/infrastructure/repository/model"
+	"bytes"
+	_ "embed"
+	"fmt"
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs/core/eumLogLevel"
 	"github.com/farseer-go/fs/exception"
@@ -38,4 +41,30 @@ func (repository *TaskLogRepository) AddBatch(lstPO collections.List[model.TaskL
 
 func (repository *TaskLogRepository) DeleteLog(taskGroupName string) {
 	_, _ = context.MysqlContextIns.TaskLog.Where("name = ?", taskGroupName).Delete()
+}
+
+//go:embed model/sql/taskJoinTaskLog.sql
+var taskJoinTaskLogSql string
+
+//go:embed model/sql/taskJoinTaskLogCount.sql
+var taskJoinTaskLogCountSql string
+
+func (repository *TaskLogRepository) GetListByClientName(clientName, taskGroupName string, logLevel eumLogLevel.Enum, taskId int64, pageSize int, pageIndex int) collections.PageList[taskLog.DomainObject] {
+	var where bytes.Buffer
+	if len(clientName) > 0 {
+		where.WriteString(fmt.Sprintf(" and task.client_name ='%s'", clientName))
+	}
+	if len(taskGroupName) > 0 {
+		where.WriteString(fmt.Sprintf(" and log.name ='%s'", taskGroupName))
+	}
+	if logLevel > -1 {
+		where.WriteString(fmt.Sprintf(" and log.log_level >= %d", logLevel))
+	}
+	if taskId > 0 {
+		where.WriteString(fmt.Sprintf(" and log.task_id = %d", taskId))
+	}
+	lst := context.MysqlContextIns.TaskLog.ExecuteSqlToList(fmt.Sprintf(taskJoinTaskLogSql, where.String(), (pageIndex-1)*pageSize, pageSize))
+	count := int64(0)
+	_, _ = context.MysqlContextIns.ExecuteSqlToValue(&count, fmt.Sprintf(taskJoinTaskLogCountSql, where.String()))
+	return collections.NewPageList[taskLog.DomainObject](mapper.ToList[taskLog.DomainObject](lst), count)
 }

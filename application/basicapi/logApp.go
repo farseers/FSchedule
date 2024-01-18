@@ -12,3 +12,9 @@ import (
 func LogList(taskGroupName string, logLevel eumLogLevel.Enum, taskId int64, pageSize int, pageIndex int, taskLogRepository taskLog.Repository) collections.PageList[taskLog.DomainObject] {
 	return taskLogRepository.GetList(taskGroupName, logLevel, taskId, pageSize, pageIndex)
 }
+
+// 日志列表
+// @get log/listByClientName
+func LogListByClientName(clientName, taskGroupName string, logLevel eumLogLevel.Enum, taskId int64, pageSize int, pageIndex int, taskLogRepository taskLog.Repository) collections.PageList[taskLog.DomainObject] {
+	return taskLogRepository.GetListByClientName(clientName, taskGroupName, logLevel, taskId, pageSize, pageIndex)
+}

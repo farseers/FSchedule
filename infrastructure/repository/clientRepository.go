@@ -18,7 +18,7 @@ func (receiver *clientRepository) Save(do *client.DomainObject) {
 	if do.Id == 0 {
 		return
 	}
-	_ = context.RedisContextIns.HashSetEntity(clientCacheKey, strconv.FormatInt(do.Id, 10), &do)
+	_ = context.RedisContext("保存客户端").HashSetEntity(clientCacheKey, strconv.FormatInt(do.Id, 10), &do)
 
 	// 发到所有节点上
 	_ = receiver.ClientUpdateEventBus.Publish(do)
@@ -26,7 +26,7 @@ func (receiver *clientRepository) Save(do *client.DomainObject) {
 
 func (receiver *clientRepository) ToList() collections.List[client.DomainObject] {
 	var clients []client.DomainObject
-	_ = context.RedisContextIns.HashToArray(clientCacheKey, &clients)
+	_ = context.RedisContext("获取客户端列表").HashToArray(clientCacheKey, &clients)
 	lst := collections.NewList(clients...)
 	return lst.OrderBy(func(item client.DomainObject) any {
 		return int(item.Status)
@@ -34,16 +34,16 @@ func (receiver *clientRepository) ToList() collections.List[client.DomainObject]
 }
 
 func (receiver *clientRepository) RemoveClient(id int64) {
-	_, _ = context.RedisContextIns.HashDel(clientCacheKey, strconv.FormatInt(id, 10))
+	_, _ = context.RedisContext("移除客户端").HashDel(clientCacheKey, strconv.FormatInt(id, 10))
 }
 
 func (receiver *clientRepository) GetCount() int64 {
-	count := context.RedisContextIns.HashCount(clientCacheKey)
+	count := context.RedisContext("获取客户端数量").HashCount(clientCacheKey)
 	return int64(count)
 }
 
 func (receiver *clientRepository) ToEntity(clientId int64) client.DomainObject {
 	var do client.DomainObject
-	_, _ = context.RedisContextIns.HashToEntity(clientCacheKey, strconv.FormatInt(clientId, 10), &do)
+	_, _ = context.RedisContext("获取客户端").HashToEntity(clientCacheKey, strconv.FormatInt(clientId, 10), &do)
 	return do
 }

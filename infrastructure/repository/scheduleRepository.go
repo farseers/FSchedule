@@ -12,17 +12,17 @@ type scheduleRepository struct {
 }
 
 func (receiver *scheduleRepository) ScheduleLock(taskGroupName string, taskId int64) core.ILock {
-	return context.RedisContextIns.LockNew("FSchedule_ScheduleLock:"+taskGroupName+"_"+parse.ToString(taskId), strconv.FormatInt(core.AppId, 10), 5*time.Second)
+	return context.RedisContext("调度锁").LockNew("FSchedule_ScheduleLock:"+taskGroupName+"_"+parse.ToString(taskId), strconv.FormatInt(core.AppId, 10), 5*time.Second)
 }
 
 func (receiver *scheduleRepository) Election(fn func()) {
-	go context.RedisContextIns.Election("FSchedule_Master", fn)
+	go context.RedisContext("选举").Election("FSchedule_Master", fn)
 }
 
 func (receiver *scheduleRepository) Schedule(taskGroupName string, fn func()) {
-	context.RedisContextIns.Election("FSchedule_Schedule:"+taskGroupName, fn)
+	context.RedisContext("任务组锁").Election("FSchedule_Schedule:"+taskGroupName, fn)
 }
 
 func (receiver *scheduleRepository) GetLeaderId() int64 {
-	return context.RedisContextIns.GetLeaderId("FSchedule_Master")
+	return context.RedisContext("获取Master节点ID").GetLeaderId("FSchedule_Master")
 }

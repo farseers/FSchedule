@@ -30,12 +30,12 @@ func registerTaskGroupRepository() {
 	taskGroupCache := redis.SetProfiles[taskGroup.DomainObject]("FSchedule_TaskGroup", "Name", "default")
 	// 多级缓存
 	taskGroupCache.SetListSource(func() collections.List[taskGroup.DomainObject] {
-		list := context.MysqlContextIns.TaskGroup.ToList()
+		list := context.MysqlContextIns("获取任务组列表").TaskGroup.ToList()
 		return mapper.ToList[taskGroup.DomainObject](list)
 	})
 
 	taskGroupCache.SetItemSource(func(cacheId any) (taskGroup.DomainObject, bool) {
-		po := context.MysqlContextIns.TaskGroup.Where("Name = ?", cacheId).ToEntity()
+		po := context.MysqlContextIns("获取任务组").TaskGroup.Where("Name = ?", cacheId).ToEntity()
 		if po.Name != "" {
 			return mapper.Single[taskGroup.DomainObject](&po), true
 		}
@@ -71,7 +71,7 @@ func (receiver *taskGroupRepository) Save(do taskGroup.DomainObject) {
 		do.LastRunAt = dateTime.Now()
 		do.NextAt = dateTime.Now()
 		po := mapper.Single[model.TaskGroupPO](&do)
-		_ = context.MysqlContextIns.TaskGroup.Insert(&po)
+		_ = context.MysqlContextIns("新增任务组").TaskGroup.Insert(&po)
 		do.Name = po.Name
 		do.Task.Name = po.Name
 	}
@@ -112,7 +112,7 @@ func (receiver *taskGroupRepository) Sync() {
 			flog.Warningf("任务组：%s NextAt字段时间不正确 %s", do.Name, po.NextAt.String())
 			po.NextAt = time.Now()
 		}
-		_ = context.MysqlContextIns.TaskGroup.UpdateOrInsert(po, "id")
+		_ = context.MysqlContextIns("更新任务组").TaskGroup.UpdateOrInsert(po, "id")
 
 		// 同步任务
 		receiver.taskRepository.syncTask(po.Name)
@@ -175,7 +175,7 @@ func (receiver *taskGroupRepository) Delete(taskGroupName string) {
 	// 删除日志
 	(&TaskLogRepository{}).DeleteLog(taskGroupName)
 	// 删除任务组
-	_, _ = context.MysqlContextIns.TaskGroup.Where("name = ?", taskGroupName).Delete()
+	_, _ = context.MysqlContextIns("删除任务组").TaskGroup.Where("name = ?", taskGroupName).Delete()
 	// 删除缓存
 	receiver.CacheManage.Remove(taskGroupName)
 }
@@ -217,6 +217,6 @@ var taskStatCountSql string
 
 func (receiver *taskGroupRepository) GetStatCount() collections.List[taskGroup.StatTaskEO] {
 	var array []taskGroup.StatTaskEO
-	_, _ = context.MysqlContextIns.ExecuteSqlToResult(&array, taskStatCountSql)
+	_, _ = context.MysqlContextIns("统计任务成功失败数量").ExecuteSqlToResult(&array, taskStatCountSql)
 	return mapper.ToList[taskGroup.StatTaskEO](array)
 }

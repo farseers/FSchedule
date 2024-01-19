@@ -23,7 +23,7 @@ func (repository *TaskLogRepository) Add(taskLogDO taskLog.DomainObject) {
 }
 
 func (repository *TaskLogRepository) GetList(taskGroupName string, logLevel eumLogLevel.Enum, taskId int64, pageSize int, pageIndex int) collections.PageList[taskLog.DomainObject] {
-	ts := context.MysqlContextIns.TaskLog.Desc("create_at").
+	ts := context.MysqlContextIns("获取日志列表").TaskLog.Desc("create_at").
 		WhereIf(taskGroupName != "", "name = ?", taskGroupName).
 		WhereIf(logLevel > -1, "log_level >= ?", logLevel).
 		WhereIf(taskId > 0, "task_id = ?", taskId)
@@ -33,14 +33,14 @@ func (repository *TaskLogRepository) GetList(taskGroupName string, logLevel eumL
 }
 
 func (repository *TaskLogRepository) AddBatch(lstPO collections.List[model.TaskLogPO]) {
-	_, err := context.MysqlContextIns.TaskLog.InsertList(lstPO, 50)
+	_, err := context.MysqlContextIns("批量添加日志").TaskLog.InsertList(lstPO, 50)
 	if err != nil {
 		exception.ThrowRefuseException("批量添加报错：" + err.Error())
 	}
 }
 
 func (repository *TaskLogRepository) DeleteLog(taskGroupName string) {
-	_, _ = context.MysqlContextIns.TaskLog.Where("name = ?", taskGroupName).Delete()
+	_, _ = context.MysqlContextIns("删除日志").TaskLog.Where("name = ?", taskGroupName).Delete()
 }
 
 //go:embed model/sql/taskJoinTaskLog.sql
@@ -63,8 +63,8 @@ func (repository *TaskLogRepository) GetListByClientName(clientName, taskGroupNa
 	if taskId > 0 {
 		where.WriteString(fmt.Sprintf(" and log.task_id = %d", taskId))
 	}
-	lst := context.MysqlContextIns.TaskLog.ExecuteSqlToList(fmt.Sprintf(taskJoinTaskLogSql, where.String(), (pageIndex-1)*pageSize, pageSize))
+	lst := context.MysqlContextIns("获取日志列表").TaskLog.ExecuteSqlToList(fmt.Sprintf(taskJoinTaskLogSql, where.String(), (pageIndex-1)*pageSize, pageSize))
 	count := int64(0)
-	_, _ = context.MysqlContextIns.ExecuteSqlToValue(&count, fmt.Sprintf(taskJoinTaskLogCountSql, where.String()))
+	_, _ = context.MysqlContextIns("获取日志列表数量").ExecuteSqlToValue(&count, fmt.Sprintf(taskJoinTaskLogCountSql, where.String()))
 	return collections.NewPageList[taskLog.DomainObject](mapper.ToList[taskLog.DomainObject](lst), count)
 }

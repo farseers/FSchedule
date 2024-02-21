@@ -7,5 +7,4 @@ COPY /FSchedule/app-server .
 #设置时区
 RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai    /etc/localtime
 
-WORKDIR /app
 ENTRYPOINT ["./app-server"]

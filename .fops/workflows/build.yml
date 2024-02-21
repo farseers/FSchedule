@@ -46,7 +46,7 @@ jobs:
           - go work edit -replace github.com/farseer-go/mapper=../farseer-go/mapper
           - go mod download
           - go mod tidy
-          - GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o ./fschedule-server -ldflags="-w -s" .
+          - GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o ./app-server -ldflags="-w -s" .
 
       - name: 打包镜像
         uses: dockerBuild@v1

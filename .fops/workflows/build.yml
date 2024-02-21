@@ -1,7 +1,7 @@
 name: build
 jobs:
   build:
-    runs-on: steden88/cicd:1.0 # 工作流运行的环境
+    runs-on: steden88/cicd:2.0 # 工作流运行的环境
     steps:
       - name: 开启Git代理
         uses: gitProxy@v1

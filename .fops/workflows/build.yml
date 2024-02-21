@@ -40,6 +40,7 @@ jobs:
 
       - name: 编译fops
         run:
+          - rm -rf ./go.work
           - go work init ./
           - go work edit -replace github.com/farseer-go/fs=../farseer-go/fs
           - go work edit -replace github.com/farseer-go/utils=../farseer-go/utils

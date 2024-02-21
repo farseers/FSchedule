@@ -38,7 +38,7 @@ jobs:
           gitHub: https://github.com/farseer-go/mapper.git
           gitPath: farseer-go/mapper
 
-      - name: 编译fops
+      - name: 编译
         run:
           - rm -rf ./go.work
           - go work init ./

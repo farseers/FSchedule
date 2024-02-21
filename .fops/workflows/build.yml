@@ -1,0 +1,58 @@
+name: build
+jobs:
+  build:
+    runs-on: steden88/cicd:1.0 # 工作流运行的环境
+    steps:
+      - name: 开启Git代理
+        uses: gitProxy@v1
+        with:
+          proxy: "socks5://192.168.1.88:7890"
+
+      - name: 安装GO
+        uses: setup-go@v1
+        with:
+          goVersion: go1.22.0
+          goDownload:
+
+      - name: 拉取应用Git
+        uses: checkout@v1
+
+      - name: 拉取框架fs
+        uses: checkout@v1
+        with:
+          gitHub: https://github.com/farseer-go/fs.git
+          gitBranch: main
+          gitUserName: test
+          gitUserPwd: 123456
+          gitPath: farseer-go/fs
+
+      - name: 拉取框架utils
+        uses: checkout@v1
+        with:
+          gitHub: https://github.com/farseer-go/utils.git
+          gitPath: farseer-go/utils
+
+      - name: 拉取框架mapper
+        uses: checkout@v1
+        with:
+          gitHub: https://github.com/farseer-go/mapper.git
+          gitPath: farseer-go/mapper
+
+      - name: 编译fops
+        run:
+          - go work init ./
+          - go work edit -replace github.com/farseer-go/fs=../farseer-go/fs
+          - go work edit -replace github.com/farseer-go/utils=../farseer-go/utils
+          - go work edit -replace github.com/farseer-go/mapper=../farseer-go/mapper
+          - go mod download
+          - go mod tidy
+          - GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o ./fschedule-server -ldflags="-w -s" .
+
+      - name: 打包镜像
+        uses: dockerBuild@v1
+
+      - name: 上传镜像
+        uses: dockerPush@v1
+
+      - name: 更新镜像
+        uses: dockerswarmUpdateVer@v1

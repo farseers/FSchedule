@@ -61,18 +61,6 @@ func (receiver *taskRepository) syncTask(taskGroupName string) {
 		if (do.IsFinish() && dateTime.Now().Sub(do.RunAt).Seconds() >= float64(30)) ||
 			(dateTime.Now().Sub(do.RunAt).Hours() >= float64(1)) {
 			po := mapper.Single[model.TaskPO](&do)
-			//if po.StartAt.Year() < 2023 {
-			//	po.StartAt = time.Now()
-			//}
-			//if po.CreateAt.Year() < 2023 {
-			//	po.CreateAt = time.Now()
-			//}
-			//if po.RunAt.Year() < 2023 {
-			//	po.RunAt = time.Now()
-			//}
-			//if po.SchedulerAt.Year() < 2023 {
-			//	po.SchedulerAt = time.Now()
-			//}
 			if context.MysqlContextIns("添加或更新任务Task").Task.UpdateOrInsert(po, "Id") == nil {
 				cacheManager.Remove(po.Id)
 			}
@@ -87,18 +75,10 @@ func (receiver *taskRepository) DeleteTask(taskGroupName string) {
 
 func (receiver *taskRepository) ToTaskListByGroupId(clientName, taskGroupName string, taskStatus enum.TaskStatus, taskId int64, pageSize int, pageIndex int) collections.PageList[taskGroup.TaskEO] {
 	ts := context.MysqlContextIns("获取任务Task列表").Task.Desc("create_at")
-	if taskGroupName != "" {
-		ts = ts.Where("name = ?", taskGroupName)
-	}
-	if taskGroupName != "" {
-		ts = ts.Where("client_name = ?", clientName)
-	}
-	if taskStatus > -1 {
-		ts = ts.Where("status = ?", taskStatus)
-	}
-	if taskId > 0 {
-		ts = ts.Where("id = ?", taskId)
-	}
+	ts = ts.WhereIf(taskGroupName != "", "name = ?", taskGroupName)
+	ts = ts.WhereIf(clientName != "", "client_name = ?", clientName)
+	ts = ts.WhereIf(taskStatus > -1, "status = ?", taskStatus)
+	ts = ts.WhereIf(taskId > 0, "id = ?", taskId)
 	lstPO := ts.ToPageList(pageSize, pageIndex)
 	return mapper.ToPageList[taskGroup.TaskEO](lstPO)
 }

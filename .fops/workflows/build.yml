@@ -2,16 +2,16 @@ name: build
 jobs:
   build:
     runs-on: steden88/cicd:2.0 # 工作流运行的环境
-    proxy: "192.168.1.88:7890"
+#    proxy: "192.168.1.88:7890"
     env:
       GO111MODULE: on
       GOPROXY: https://goproxy.cn
 
     steps:
-      - name: 开启Git代理
-        uses: gitProxy@v1
-        with:
-          proxy: "socks5://192.168.1.88:7890"
+#      - name: 开启Git代理
+#        uses: gitProxy@v1
+#        with:
+#          proxy: "socks5://192.168.1.88:7890"
 
       - name: 安装GO
         uses: setup-go@v1

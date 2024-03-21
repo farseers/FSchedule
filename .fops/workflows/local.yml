@@ -2,6 +2,7 @@ name: build
 jobs:
   build:
     runs-on: steden88/cicd:2.0 # 工作流运行的环境
+    proxy: "192.168.1.88:7890"
     env:
       GO111MODULE: on
       GOPROXY: https://goproxy.cn

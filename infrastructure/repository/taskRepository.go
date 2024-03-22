@@ -83,13 +83,10 @@ func (receiver *taskRepository) ToTaskListByGroupId(clientName, taskGroupName st
 	return mapper.ToPageList[taskGroup.TaskEO](lstPO)
 }
 
-func (receiver *taskRepository) ToTaskSpeedList(taskGroupName string) []int64 {
-	lstPO := context.MysqlContextIns("计算任务Task速度").Task.Where("name = ? and status = ?", taskGroupName, enum.Success).Desc("create_at").Select("RunSpeed").Limit(100).ToList()
-	var lstSpeed []int64
-	lstPO.Select(&lstSpeed, func(item model.TaskPO) any {
-		return item.RunSpeed
-	})
-	return lstSpeed
+func (receiver *taskRepository) ToTaskSpeedList() collections.List[taskGroup.TaskEO] {
+	sql := "SELECT name, avg(`run_speed`) as `run_speed` FROM `fschedule_task` WHERE status = 5 and create_at >= DATE_SUB(CURDATE(), INTERVAL 3 DAY) group by name"
+	lstPO := context.MysqlContextIns("计算任务Task速度").Task.ExecuteSqlToList(sql)
+	return mapper.ToList[taskGroup.TaskEO](lstPO)
 }
 
 // TaskClearFinish 清除成功的任务记录（1天前）

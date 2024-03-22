@@ -36,7 +36,7 @@ type Repository interface {
 
 type taskRepository interface {
 	// ToTaskSpeedList 当前任务组下所有任务的执行速度
-	ToTaskSpeedList(taskGroupName string) []int64
+	ToTaskSpeedList() collections.List[TaskEO]
 	// ClearFinish 清除成功的任务记录（1天前）
 	TaskClearFinish(taskGroupName string, taskId int)
 	ToTaskFinishList(taskGroupName string, top int) collections.List[TaskEO]

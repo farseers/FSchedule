@@ -160,8 +160,8 @@ func (receiver *taskGroupRepository) ToListForPage(clientName, taskGroupName str
 	}
 
 	// 排序
-	return lst.OrderByDescending(func(item taskGroup.DomainObject) any {
-		return item.StartAt.Second()
+	return lst.OrderBy(func(item taskGroup.DomainObject) any {
+		return item.Name
 	}).ToPageList(pageSize, pageIndex)
 }
 

@@ -18,3 +18,19 @@ func TaskList(clientName, taskGroupName string, taskStatus enum.TaskStatus, task
 	}
 	return taskGroupRepository.ToTaskListByGroupId(clientName, taskGroupName, taskStatus, taskId, pageSize, pageIndex)
 }
+
+// 按计划执行时间排序
+// @get planList
+func TaskPlanList(top int, taskGroupRepository taskGroup.Repository) collections.List[taskGroup.TaskEO] {
+	lst := taskGroupRepository.ToList()
+	// 先取任务
+	var lstTask collections.List[taskGroup.TaskEO]
+	lst.Select(&lstTask, func(item taskGroup.DomainObject) any {
+		return item.Task
+	})
+
+	// 按时间排序
+	return lstTask.OrderBy(func(item taskGroup.TaskEO) any {
+		return item.StartAt.UnixMilli()
+	}).Take(top).ToList()
+}

@@ -22,6 +22,10 @@ func TaskList(clientName, taskGroupName string, taskStatus enum.TaskStatus, task
 // 按计划执行时间排序
 // @get planList
 func TaskPlanList(top int, taskGroupRepository taskGroup.Repository) collections.List[taskGroup.TaskEO] {
+	if top == 0 {
+		top = 20
+	}
+
 	lst := taskGroupRepository.ToList()
 	// 先取任务
 	var lstTask collections.List[taskGroup.TaskEO]

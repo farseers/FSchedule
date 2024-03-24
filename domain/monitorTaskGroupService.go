@@ -192,7 +192,7 @@ func (receiver *TaskGroupMonitor) waitScheduler() {
 		// 提前了100ms进到这里。
 		receiver.Task.Scheduling()
 		if m := dateTime.Since(receiver.Task.StartAt).Microseconds(); m > 0 {
-			flog.Debugf("任务组：%s %d 发布调度事件，延迟：%s", receiver.Name, receiver.Task.Id, dateTime.Since(receiver.Task.StartAt).String())
+			//flog.Debugf("任务组：%s %d 发布调度事件，延迟：%s", receiver.Name, receiver.Task.Id, dateTime.Since(receiver.Task.StartAt).String())
 		}
 		_ = receiver.SchedulerEventBus.Publish(receiver)
 	case <-receiver.updated:
@@ -211,7 +211,7 @@ func (receiver *TaskGroupMonitor) waitWorking() {
 	timer := timingWheel.Add(time.Duration(receiver.RunSpeedAvg+3000) * time.Millisecond)
 	select {
 	case <-timer.C: // 每隔60秒，主动向客户端询问任务状态
-		flog.Debugf("任务组：%s 主动向客户端询问任务状态", receiver.Name)
+		//flog.Debugf("任务组：%s 主动向客户端询问任务状态", receiver.Name)
 		_ = receiver.CheckWorkingEventBus.Publish(receiver)
 	case <-receiver.updated:
 		timer.Stop()

@@ -25,7 +25,9 @@ func TaskPlanList(top int, taskGroupRepository taskGroup.Repository) collections
 	lst := taskGroupRepository.ToList()
 	// 先取任务
 	var lstTask collections.List[taskGroup.TaskEO]
-	lst.Select(&lstTask, func(item taskGroup.DomainObject) any {
+	lst.Where(func(item taskGroup.DomainObject) bool {
+		return item.IsEnable
+	}).Select(&lstTask, func(item taskGroup.DomainObject) any {
 		return item.Task
 	})
 

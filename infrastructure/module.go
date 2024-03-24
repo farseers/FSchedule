@@ -16,6 +16,7 @@ import (
 	"github.com/farseer-go/linkTrace"
 	"github.com/farseer-go/queue"
 	"github.com/farseer-go/redis"
+	"time"
 )
 
 type Module struct {
@@ -51,7 +52,7 @@ func (module Module) PostInitialize() {
 	redis.RegisterEvent("default", "ClusterLeader").RegisterSubscribe("选举事件", domainEvent.ClusterLeaderSubscribe)
 
 	// 队列任务日志
-	queue.Subscribe("TaskLogQueue", "同步日志到数据库", 1000, localQueue.TaskLogQueueConsumer)
+	queue.Subscribe("TaskLogQueue", "同步日志到数据库", 1000, 5*time.Second, localQueue.TaskLogQueueConsumer)
 
 	// 注册客户端http
 	http.InitHttp()

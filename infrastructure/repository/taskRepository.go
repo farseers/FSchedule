@@ -5,11 +5,11 @@ import (
 	"FSchedule/domain/taskGroup"
 	"FSchedule/infrastructure/repository/context"
 	"FSchedule/infrastructure/repository/model"
+	_ "embed"
 	"github.com/farseer-go/cache"
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs/container"
 	"github.com/farseer-go/fs/dateTime"
-	"github.com/farseer-go/fs/flog"
 	"github.com/farseer-go/mapper"
 	"github.com/farseer-go/redis"
 	"sync"
@@ -55,7 +55,7 @@ func (receiver *taskRepository) syncTask(taskGroupName string) {
 	lst := cacheManager.Get()
 	for i := 0; i < lst.Count(); i++ {
 		do := lst.Index(i)
-		flog.Debugf("同步数据库:%d/%d，task:%d", i+1, lst.Count(), do.Id)
+		//flog.Debugf("同步数据库:%d/%d，task:%d", i+1, lst.Count(), do.Id)
 		// 保存成功后，已完成的任务，且最后运行时间大于1分钟的，移除列表
 		// 最后运行时间超过1小时的移除。（如果有读取，还是会从数据库重新读的）
 		if (do.IsFinish() && dateTime.Now().Sub(do.RunAt).Seconds() >= float64(30)) ||
@@ -113,4 +113,13 @@ func (receiver *taskRepository) TodayFailCount() int64 {
 func (receiver *taskRepository) toTaskPageListTaskEO(page collections.PageList[model.TaskPO]) collections.PageList[taskGroup.TaskEO] {
 	lst := mapper.ToList[taskGroup.TaskEO](page.List)
 	return collections.NewPageList[taskGroup.TaskEO](lst, page.RecordCount)
+}
+
+//go:embed model/sql/taskStatCount.sql
+var taskStatCountSql string
+
+func (receiver *taskRepository) GetStatCount() collections.List[taskGroup.StatTaskEO] {
+	var array []taskGroup.StatTaskEO
+	_, _ = context.MysqlContextIns("统计任务成功失败数量").ExecuteSqlToResult(&array, taskStatCountSql)
+	return mapper.ToList[taskGroup.StatTaskEO](array)
 }

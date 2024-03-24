@@ -18,15 +18,3 @@ func TaskList(clientName, taskGroupName string, taskStatus enum.TaskStatus, task
 	}
 	return taskGroupRepository.ToTaskListByGroupId(clientName, taskGroupName, taskStatus, taskId, pageSize, pageIndex)
 }
-
-// 今天失败数量
-// @get todayFailCount
-func TodayFailCount(taskGroupRepository taskGroup.Repository) int64 {
-	return taskGroupRepository.TodayFailCount()
-}
-
-// 统计异常数量列表
-// @get statList
-func StatList(taskGroupRepository taskGroup.Repository) collections.List[taskGroup.StatTaskEO] {
-	return taskGroupRepository.GetStatCount()
-}

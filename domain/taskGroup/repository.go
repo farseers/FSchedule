@@ -6,7 +6,7 @@ import (
 )
 
 type Repository interface {
-	taskRepository
+	TaskRepository
 	// ToEntity 获取任务组信息
 	ToEntity(taskGroupName string) DomainObject
 	// ToList 获取所有任务组中的任务
@@ -17,8 +17,6 @@ type Repository interface {
 	Save(do DomainObject)
 	// SaveAndTask 保存任务组、任务信息
 	SaveAndTask(do DomainObject)
-	// SaveTask 保存任务信息
-	SaveTask(taskEO TaskEO)
 	// GetTask 获取任务信息
 	GetTask(taskGroupName string, taskId int64) TaskEO
 	// Sync 同步任务组数据
@@ -34,16 +32,17 @@ type Repository interface {
 	GetUnRunList(pageSize int, pageIndex int) collections.PageList[DomainObject]           // 超时未运行的任务组
 }
 
-type taskRepository interface {
+type TaskRepository interface {
 	// ToTaskSpeedList 当前任务组下所有任务的执行速度
 	ToTaskSpeedList() collections.List[TaskEO]
-	// ClearFinish 清除成功的任务记录（1天前）
+	// TaskClearFinish 清除成功的任务记录（1天前）
 	TaskClearFinish(taskGroupName string, taskId int)
 	ToTaskFinishList(taskGroupName string, top int) collections.List[TaskEO]
 	// *******************仪表盘使用*********************
-	// ToFinishList 获取指定任务组执行成功的任务列表
+	// ToTaskListByGroupId 获取指定任务组执行成功的任务列表
 	ToTaskListByGroupId(clientName, taskGroupName string, taskStatus enum.TaskStatus, taskId int64, pageSize int, pageIndex int) collections.PageList[TaskEO]
 	TodayFailCount() int64 // 今天失败数量
-
 	GetStatCount() collections.List[StatTaskEO]
+	// SaveTask 保存任务信息
+	SaveTask(taskEO TaskEO)
 }

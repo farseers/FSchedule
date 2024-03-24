@@ -22,7 +22,8 @@ type TaskLogPO struct {
 // 创建索引
 func (*TaskLogPO) CreateIndex() map[string]data.IdxField {
 	return map[string]data.IdxField{
-		"idx_name_logLevel": {false, "name,log_level,create_at"},
-		"idx_name":          {false, "name,create_at"},
+		"idx_name_logLevel": {false, "name,log_level,create_at desc"},
+		"idx_name":          {false, "name,create_at desc"},
+		"idx_create_at":     {false, "create_at desc"},
 	}
 }

@@ -78,18 +78,15 @@ func TaskGroupDelete(taskGroupName string, taskGroupRepository taskGroup.Reposit
 	taskGroupRepository.Delete(taskGroupName)
 }
 
-// 任务组数量
-// @get count
-func TaskGroupCount(taskGroupRepository taskGroup.Repository) int64 {
-	return taskGroupRepository.GetTaskGroupCount()
+// 设置任务组状态
+// @post setEnable
+func SetEnable(taskGroupName string, enable bool, taskGroupRepository taskGroup.Repository) {
+	taskGroupDO := taskGroupRepository.ToEntity(taskGroupName)
+	taskGroupDO.SetEnable(enable)
+	taskGroupRepository.Save(taskGroupDO)
 }
 
-// 任务组到期未运行数量
-// @get unRunCount
-func TaskGroupUnRunCount(taskGroupRepository taskGroup.Repository) int {
-	return taskGroupRepository.GetUnRunCount()
-}
-
+/*
 // 任务组到期未运行任务组列表
 // @get unRunList
 func TaskGroupUnRunList(pageSize int, pageIndex int, taskGroupRepository taskGroup.Repository) collections.PageList[response.TaskGroupResponse] {
@@ -132,11 +129,4 @@ func TaskGroupSchedulerList(pageSize int, pageIndex int, taskGroupRepository tas
 	})
 	return lstTaskGroupResponse
 }
-
-// 设置任务组状态
-// @post setEnable
-func SetEnable(taskGroupName string, enable bool, taskGroupRepository taskGroup.Repository) {
-	taskGroupDO := taskGroupRepository.ToEntity(taskGroupName)
-	taskGroupDO.SetEnable(enable)
-	taskGroupRepository.Save(taskGroupDO)
-}
+*/

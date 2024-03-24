@@ -33,9 +33,8 @@ type TaskPO struct {
 // 创建索引
 func (*TaskPO) CreateIndex() map[string]data.IdxField {
 	return map[string]data.IdxField{
-		"idx_name_status_create": {false, "name,status,create_at,id"},
-		"idx_name_create":        {false, "name,create_at"},
-		"idx_status_create":      {false, "status,create_at"},
+		"idx_name_create":        {false, "name,create_at desc"},
+		"idx_name_status_create": {false, "create_at desc,status,name"},
 	}
 }
 

@@ -28,7 +28,7 @@ func (repository *TaskLogRepository) GetList(taskGroupName string, logLevel eumL
 		WhereIf(logLevel > -1, "log_level >= ?", logLevel).
 		WhereIf(taskId > 0, "task_id = ?", taskId)
 
-	pageList := ts.Desc("create_at").ToPageList(pageSize, pageIndex)
+	pageList := ts.ToPageList(pageSize, pageIndex)
 	return mapper.ToPageList[taskLog.DomainObject](pageList)
 }
 

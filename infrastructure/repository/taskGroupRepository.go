@@ -211,12 +211,3 @@ func (receiver *taskGroupRepository) ToSchedulerWorkingList(pageSize int, pageIn
 		return item.Name + item.Caption
 	}).ToPageList(pageSize, pageIndex)
 }
-
-//go:embed model/sql/taskStatCount.sql
-var taskStatCountSql string
-
-func (receiver *taskGroupRepository) GetStatCount() collections.List[taskGroup.StatTaskEO] {
-	var array []taskGroup.StatTaskEO
-	_, _ = context.MysqlContextIns("统计任务成功失败数量").ExecuteSqlToResult(&array, taskStatCountSql)
-	return mapper.ToList[taskGroup.StatTaskEO](array)
-}

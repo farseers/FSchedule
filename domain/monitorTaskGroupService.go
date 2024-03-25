@@ -113,7 +113,7 @@ func (receiver *TaskGroupMonitor) Start() {
 		}
 	}
 
-	// 抢占锁，谁抢到，谁负责这个任务组的调度
+	// 抢占锁，谁抢到，谁负责这个任务组的调度（只允许一个集群节点监控任务组）
 	receiver.isReadWork = true
 	receiver.ScheduleRepository.Schedule(receiver.Name, func() {
 		receiver.isWorking = true

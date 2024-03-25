@@ -10,7 +10,7 @@ import (
 )
 
 // TaskReport 客户端回调
-// @post /taskReport
+// @post taskReport
 func TaskReport(dto client.TaskReportVO, taskGroupRepository taskGroup.Repository, scheduleRepository schedule.Repository) {
 	switch dto.Status {
 	case enum.None, enum.Scheduling, enum.ScheduleFail:
@@ -39,4 +39,26 @@ func TaskReport(dto client.TaskReportVO, taskGroupRepository taskGroup.Repositor
 		// 更新任务
 		taskGroupDO.Report(dto.Status, dto.Data, dto.Progress, dto.RunSpeed, dto.NextTimespan, taskGroupRepository)
 	})
+}
+
+// TaskReport Kill任务
+// @post killTask
+func KillTask(taskGroupName string, taskGroupRepository taskGroup.Repository, clientRepository client.Repository, clientCheck client.IClientCheck) {
+	taskGroupDO := taskGroupRepository.ToEntity(taskGroupName)
+	if taskGroupDO.IsNil() {
+		exception.ThrowWebExceptionf(403, "任务组[%s] 不存在", taskGroupName)
+	}
+
+	if taskGroupDO.Task.IsFinish() {
+		exception.ThrowWebExceptionf(403, "任务组[%s] 状态为已完成，无法停止。", taskGroupName)
+	}
+
+	// 通知客户端，停止任务
+	if taskGroupDO.Task.Client.Id > 0 {
+		clientDO := clientRepository.ToEntity(taskGroupDO.Task.Client.Id)
+		clientCheck.Kill(clientDO, taskGroupDO.Task.Id)
+	}
+
+	// 更新任务状态
+	taskGroupDO.Report(enum.Fail, taskGroupDO.Data, taskGroupDO.Task.Progress, taskGroupDO.Task.RunSpeed, 0, taskGroupRepository)
 }

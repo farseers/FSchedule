@@ -13,6 +13,7 @@ var route = []webapi.Route{
 	{"POST", "/api/logout", api.Logout, "", []context.IFilter{}, []string{"clientId", ""}},
 	{"POST", "/api/registry", api.Registry, "", []context.IFilter{}, []string{"dto", "", "", ""}},
 	{"POST", "/api/taskReport", api.TaskReport, "", []context.IFilter{}, []string{"dto", "", ""}},
+	{"POST", "/api/killTask", api.KillTask, "", []context.IFilter{}, []string{"taskGroupName", "", "", ""}},
 	{"GET", "/basicapi/client/list", basicapi.ClientList, "", []context.IFilter{}, []string{""}},
 	{"GET", "/basicapi/log/list", basicapi.LogList, "", []context.IFilter{}, []string{"taskGroupName", "logLevel", "taskId", "pageSize", "pageIndex", ""}},
 	{"GET", "/basicapi/log/listByClientName", basicapi.LogListByClientName, "", []context.IFilter{}, []string{"clientName", "taskGroupName", "logLevel", "taskId", "pageSize", "pageIndex", ""}},

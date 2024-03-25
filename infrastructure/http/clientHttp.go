@@ -67,7 +67,7 @@ func (receiver clientHttp) Status(do *client.DomainObject, taskId int64) (client
 	return apiResponse.Data, nil
 }
 
-func (receiver clientHttp) Kill(do *client.DomainObject, taskId int64) bool {
+func (receiver clientHttp) Kill(do client.DomainObject, taskId int64) bool {
 	clientUrl := fmt.Sprintf("http://%s:%d/api/kill", do.Ip, do.Port)
 	var apiResponse core.ApiResponse[any]
 	body := map[string]any{

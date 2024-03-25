@@ -190,7 +190,7 @@ func (receiver *DomainObject) CalculateNextAtByCron() bool {
 
 // SyncData 同步Data
 func (receiver *DomainObject) SyncData() {
-	if receiver.Task.Status == enum.Success || receiver.Task.Status == enum.Fail {
+	if receiver.Task.IsFinish() {
 		receiver.Data = receiver.Task.Data
 	}
 }

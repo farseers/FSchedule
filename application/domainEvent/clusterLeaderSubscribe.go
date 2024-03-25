@@ -34,7 +34,7 @@ func ClusterLeaderSubscribe(message any, _ core.EventArgs) {
 
 		// 同步任务组、任务数据
 		if configure.GetInt("FSchedule.DataSyncTime") > 0 {
-			tasks.RunNow("taskGroupSync", 60*time.Second, func(context *tasks.TaskContext) {
+			tasks.Run("taskGroupSync", 10*time.Minute, func(context *tasks.TaskContext) {
 				container.Resolve[taskGroup.Repository]().Sync()
 			}, fs.Context)
 		}

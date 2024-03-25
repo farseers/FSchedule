@@ -36,7 +36,7 @@ func TaskPlanList(top int, taskGroupRepository taskGroup.Repository) collections
 	// 先取任务
 	var lstTask collections.List[taskGroup.TaskEO]
 	lst.Where(func(item taskGroup.DomainObject) bool {
-		return item.IsEnable
+		return item.IsEnable && !item.Task.IsFinish()
 	}).Select(&lstTask, func(item taskGroup.DomainObject) any {
 		return item.Task
 	})
@@ -58,6 +58,8 @@ func TaskPlanList(top int, taskGroupRepository taskGroup.Repository) collections
 			} else {
 				r.StartAt = fmt.Sprintf("超时 %s", (time.Duration(dateTime.Now().Sub(startAt).Seconds()) * time.Second).String())
 			}
+		case enum.ScheduleFail:
+			r.StartAt = fmt.Sprintf("调度失败，超时 %s", (time.Duration(dateTime.Now().Sub(startAt).Seconds()) * time.Second).String())
 		case enum.Scheduling, enum.Working:
 			r.StartAt = fmt.Sprintf("已执行 %s", (time.Duration(dateTime.Now().Sub(schedulerAt).Seconds()) * time.Second).String())
 		default:

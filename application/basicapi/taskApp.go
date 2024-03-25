@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs/dateTime"
+	"github.com/farseer-go/fs/flog"
 	"github.com/farseer-go/mapper"
 	"strings"
 	"time"
@@ -45,6 +46,8 @@ func TaskPlanList(top int, taskGroupRepository taskGroup.Repository) collections
 	lstTask = lstTask.OrderBy(func(item taskGroup.TaskEO) any {
 		return item.StartAt.UnixNano()
 	}).Take(top).ToList()
+
+	flog.Infof("任务组：%s 时间：%s", lstTask.First().Name, lstTask.First().StartAt.ToString("yyyy-MM-dd hh:mm:ss"))
 
 	return mapper.ToList[response.TaskPlanResponse](lstTask, func(r *response.TaskPlanResponse, source any) {
 		startAt := source.(taskGroup.TaskEO).StartAt

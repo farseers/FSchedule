@@ -43,7 +43,7 @@ func TaskPlanList(top int, taskGroupRepository taskGroup.Repository) collections
 
 	// 按时间排序
 	lstTask = lstTask.OrderBy(func(item taskGroup.TaskEO) any {
-		return item.StartAt.UnixNano() + item.Id
+		return item.StartAt.UnixNano()
 	}).Take(top).ToList()
 
 	return mapper.ToList[response.TaskPlanResponse](lstTask, func(r *response.TaskPlanResponse, source any) {

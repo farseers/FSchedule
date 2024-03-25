@@ -48,6 +48,7 @@ func TaskPlanList(top int, taskGroupRepository taskGroup.Repository) collections
 
 	return mapper.ToList[response.TaskPlanResponse](lstTask, func(r *response.TaskPlanResponse, source any) {
 		startAt := source.(taskGroup.TaskEO).StartAt
+		schedulerAt := source.(taskGroup.TaskEO).SchedulerAt
 		isAfter := startAt.After(dateTime.Now())
 
 		switch r.Status {
@@ -58,7 +59,7 @@ func TaskPlanList(top int, taskGroupRepository taskGroup.Repository) collections
 				r.StartAt = fmt.Sprintf("超时 %s", (time.Duration(dateTime.Now().Sub(startAt).Seconds()) * time.Second).String())
 			}
 		case enum.Scheduling, enum.Working:
-			r.StartAt = fmt.Sprintf("已执行 %s", (time.Duration(dateTime.Now().Sub(startAt).Seconds()) * time.Second).String())
+			r.StartAt = fmt.Sprintf("已执行 %s", (time.Duration(dateTime.Now().Sub(schedulerAt).Seconds()) * time.Second).String())
 		default:
 		}
 		r.StartAt = strings.ReplaceAll(r.StartAt, "m", "分")

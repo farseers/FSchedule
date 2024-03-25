@@ -2,9 +2,13 @@
 package basicapi
 
 import (
+	"FSchedule/application/basicapi/response"
 	"FSchedule/domain/enum"
 	"FSchedule/domain/taskGroup"
+	"fmt"
 	"github.com/farseer-go/collections"
+	"github.com/farseer-go/fs/dateTime"
+	"github.com/farseer-go/mapper"
 )
 
 // 任务列表
@@ -21,7 +25,7 @@ func TaskList(clientName, taskGroupName string, taskStatus enum.TaskStatus, task
 
 // 按计划执行时间排序
 // @get planList
-func TaskPlanList(top int, taskGroupRepository taskGroup.Repository) collections.List[taskGroup.TaskEO] {
+func TaskPlanList(top int, taskGroupRepository taskGroup.Repository) collections.List[response.TaskPlanResponse] {
 	if top == 0 {
 		top = 20
 	}
@@ -36,7 +40,24 @@ func TaskPlanList(top int, taskGroupRepository taskGroup.Repository) collections
 	})
 
 	// 按时间排序
-	return lstTask.OrderBy(func(item taskGroup.TaskEO) any {
+	lstTask = lstTask.OrderBy(func(item taskGroup.TaskEO) any {
 		return item.StartAt.UnixMilli()
 	}).Take(top).ToList()
+
+	return mapper.ToList[response.TaskPlanResponse](lstTask, func(r *response.TaskPlanResponse, source any) {
+		startAt := source.(taskGroup.DomainObject).StartAt
+		isAfter := dateTime.Now().After(startAt)
+
+		switch r.Status {
+		case enum.None:
+			if isAfter {
+				r.StartAt = fmt.Sprintf("等待%s", dateTime.Now().Sub(startAt).String())
+			} else {
+				r.StartAt = fmt.Sprintf("超时%s", startAt.Sub(dateTime.Now()).String())
+			}
+		case enum.Scheduling, enum.Working:
+			r.StartAt = fmt.Sprintf("已执行了%s", dateTime.Now().Sub(startAt).String())
+		default:
+		}
+	})
 }

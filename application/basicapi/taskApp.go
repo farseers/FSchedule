@@ -46,14 +46,14 @@ func TaskPlanList(top int, taskGroupRepository taskGroup.Repository) collections
 
 	return mapper.ToList[response.TaskPlanResponse](lstTask, func(r *response.TaskPlanResponse, source any) {
 		startAt := source.(taskGroup.TaskEO).StartAt
-		isAfter := dateTime.Now().After(startAt)
+		isAfter := startAt.After(dateTime.Now())
 
 		switch r.Status {
 		case enum.None:
 			if isAfter {
-				r.StartAt = fmt.Sprintf("等待%s", dateTime.Now().Sub(startAt).String())
+				r.StartAt = fmt.Sprintf("等待%s", startAt.Sub(dateTime.Now()).String())
 			} else {
-				r.StartAt = fmt.Sprintf("超时%s", startAt.Sub(dateTime.Now()).String())
+				r.StartAt = fmt.Sprintf("超时%s", dateTime.Now().Sub(startAt).String())
 			}
 		case enum.Scheduling, enum.Working:
 			r.StartAt = fmt.Sprintf("已执行了%s", dateTime.Now().Sub(startAt).String())

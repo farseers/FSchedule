@@ -67,7 +67,7 @@ func (receiver *DomainObject) CheckOnline() error {
 }
 
 // Schedule 调度
-func (receiver *DomainObject) Schedule(task *TaskEO) bool {
+func (receiver *DomainObject) Schedule(task TaskEO) bool {
 	status, err := container.Resolve[IClientCheck]().Invoke(receiver, task)
 	receiver.updateStatus(status, err)
 

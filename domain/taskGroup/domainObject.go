@@ -124,13 +124,8 @@ func (receiver *DomainObject) CreateTask() {
 
 // SetClient 分配客户端
 func (receiver *DomainObject) SetClient(client ClientVO) {
-	receiver.Task.Client = client
-	receiver.Task.Status = enum.Working
-	receiver.Task.SchedulerAt = dateTime.Now()
+	receiver.Task.SetClient(client)
 	receiver.Task.RunAt = dateTime.Now()
-	// 重新赋值是为了担心数据被手动改了
-	//receiver.Task.Data = receiver.Data
-	//receiver.Task.Name = receiver.Name
 }
 
 // IsNil 不存在

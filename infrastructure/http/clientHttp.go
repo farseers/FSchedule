@@ -34,7 +34,7 @@ func (receiver clientHttp) Check(do *client.DomainObject) (client.ResourceVO, er
 	return apiResponse.Data, nil
 }
 
-func (receiver clientHttp) Invoke(do *client.DomainObject, task *client.TaskEO) (client.ResourceVO, error) {
+func (receiver clientHttp) Invoke(do *client.DomainObject, task client.TaskEO) (client.ResourceVO, error) {
 	clientUrl := fmt.Sprintf("http://%s:%d/api/invoke", do.Ip, do.Port)
 	var apiResponse core.ApiResponse[client.ResourceVO]
 	_, err := http.NewClient(clientUrl).HeadAdd(tokenName, token).Body(task).PostUnmarshal(&apiResponse)

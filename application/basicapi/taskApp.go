@@ -45,7 +45,7 @@ func TaskPlanList(top int, taskGroupRepository taskGroup.Repository) collections
 	}).Take(top).ToList()
 
 	return mapper.ToList[response.TaskPlanResponse](lstTask, func(r *response.TaskPlanResponse, source any) {
-		startAt := source.(taskGroup.DomainObject).StartAt
+		startAt := source.(taskGroup.TaskEO).StartAt
 		isAfter := dateTime.Now().After(startAt)
 
 		switch r.Status {

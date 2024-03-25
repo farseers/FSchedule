@@ -43,7 +43,7 @@ func TaskPlanList(top int, taskGroupRepository taskGroup.Repository) collections
 
 	// 按时间排序
 	lstTask = lstTask.OrderBy(func(item taskGroup.TaskEO) any {
-		return item.StartAt.UnixMilli()
+		return item.StartAt.UnixNano()
 	}).Take(top).ToList()
 
 	return mapper.ToList[response.TaskPlanResponse](lstTask, func(r *response.TaskPlanResponse, source any) {
@@ -59,7 +59,7 @@ func TaskPlanList(top int, taskGroupRepository taskGroup.Repository) collections
 				r.StartAt = fmt.Sprintf("超时 %s", (time.Duration(dateTime.Now().Sub(startAt).Seconds()) * time.Second).String())
 			}
 		case enum.Scheduling, enum.Working:
-			r.StartAt = fmt.Sprintf("已执行 %s", (time.Duration(dateTime.Now().Sub(schedulerAt).Seconds()) * time.Second).String())
+			r.StartAt = fmt.Sprintf("已执行 %s %s", schedulerAt.ToString("yyyy-MM-dd hh:mm:ss"), (time.Duration(dateTime.Now().Sub(schedulerAt).Seconds()) * time.Second).String())
 		default:
 		}
 		r.StartAt = strings.ReplaceAll(r.StartAt, "m", "分")

@@ -14,7 +14,7 @@ Fops:
   #Server: "http://127.0.0.1:8889"
 LinkTrace:
   Enable: true
-  PrintLog: true
+  PrintLog: false
 Log:
   Default:
     LogLevel: "info"                  # 只记录级别>=info的日志内容

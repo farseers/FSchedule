@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs/dateTime"
-	"github.com/farseer-go/fs/flog"
 	"github.com/farseer-go/mapper"
 	"strings"
 	"time"
@@ -34,20 +33,18 @@ func TaskPlanList(top int, taskGroupRepository taskGroup.Repository) collections
 	}
 
 	lst := taskGroupRepository.ToList()
-	// 先取任务
-	var lstTask collections.List[taskGroup.TaskEO]
-	lst.Where(func(item taskGroup.DomainObject) bool {
+	// 状态为可用、非完成状态、并按开始时间排序
+	lst = lst.Where(func(item taskGroup.DomainObject) bool {
 		return item.IsEnable && !item.Task.IsFinish()
-	}).Select(&lstTask, func(item taskGroup.DomainObject) any {
-		return item.Task
-	})
-
-	// 按时间排序
-	lstTask = lstTask.OrderBy(func(item taskGroup.TaskEO) any {
-		return item.StartAt.UnixNano()
+	}).OrderBy(func(item taskGroup.DomainObject) any {
+		return item.Task.StartAt.UnixNano()
 	}).Take(top).ToList()
 
-	flog.Infof("任务组：%s 时间：%s", lstTask.First().Name, lstTask.First().StartAt.ToString("yyyy-MM-dd hh:mm:ss"))
+	// 先取任务
+	var lstTask collections.List[taskGroup.TaskEO]
+	lst.Select(&lstTask, func(item taskGroup.DomainObject) any {
+		return item.Task
+	})
 
 	return mapper.ToList[response.TaskPlanResponse](lstTask, func(r *response.TaskPlanResponse, source any) {
 		startAt := source.(taskGroup.TaskEO).StartAt

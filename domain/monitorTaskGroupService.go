@@ -126,7 +126,7 @@ func (receiver *TaskGroupMonitor) Start() {
 			case <-receiver.ctx.Done(): // 任务组停止，或删除时退出
 				flog.Infof("任务组：%s ver:%s 退出调度线程", flog.Blue(receiver.Name), flog.Yellow(receiver.Ver))
 				return
-			default:
+			default: // 没有停止时，继续往下走
 			}
 
 			// 当corn格式错误时，会强制设为false，等待手动启动
@@ -211,7 +211,7 @@ func (receiver *TaskGroupMonitor) waitWorking() {
 	timer := timingWheel.Add(time.Duration(receiver.RunSpeedAvg+3000) * time.Millisecond)
 	select {
 	case <-timer.C: // 每隔60秒，主动向客户端询问任务状态
-		//flog.Debugf("任务组：%s 主动向客户端询问任务状态", receiver.Name)
+		flog.Debugf("任务组：%s 主动向客户端询问任务状态", receiver.Name)
 		_ = receiver.CheckWorkingEventBus.Publish(receiver)
 	case <-receiver.updated:
 		timer.Stop()

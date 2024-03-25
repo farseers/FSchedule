@@ -9,6 +9,7 @@ import (
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs/dateTime"
 	"github.com/farseer-go/mapper"
+	"time"
 )
 
 // 任务列表
@@ -51,12 +52,12 @@ func TaskPlanList(top int, taskGroupRepository taskGroup.Repository) collections
 		switch r.Status {
 		case enum.None:
 			if isAfter {
-				r.StartAt = fmt.Sprintf("等待%s", startAt.Sub(dateTime.Now()).String())
+				r.StartAt = fmt.Sprintf("等待 %s", (time.Duration(startAt.Sub(dateTime.Now()).Seconds()) * time.Second).String())
 			} else {
-				r.StartAt = fmt.Sprintf("超时%s", dateTime.Now().Sub(startAt).String())
+				r.StartAt = fmt.Sprintf("超时 %s", (time.Duration(dateTime.Now().Sub(startAt).Seconds()) * time.Second).String())
 			}
 		case enum.Scheduling, enum.Working:
-			r.StartAt = fmt.Sprintf("已执行了%s", dateTime.Now().Sub(startAt).String())
+			r.StartAt = fmt.Sprintf("已执行 %s", (time.Duration(dateTime.Now().Sub(startAt).Seconds()) * time.Second).String())
 		default:
 		}
 	})

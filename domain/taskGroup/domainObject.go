@@ -116,7 +116,7 @@ func (receiver *DomainObject) CreateTask() {
 		RunSpeed:    0,
 		Progress:    0,
 		Status:      enum.None,
-		CreateAt:    time.Now(),
+		CreateAt:    dateTime.Now(),
 		SchedulerAt: dateTime.Now(),
 		Data:        receiver.Data,
 	}

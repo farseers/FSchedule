@@ -9,6 +9,7 @@ import (
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs/dateTime"
 	"github.com/farseer-go/mapper"
+	"strings"
 	"time"
 )
 
@@ -60,5 +61,8 @@ func TaskPlanList(top int, taskGroupRepository taskGroup.Repository) collections
 			r.StartAt = fmt.Sprintf("已执行 %s", (time.Duration(dateTime.Now().Sub(startAt).Seconds()) * time.Second).String())
 		default:
 		}
+		r.StartAt = strings.ReplaceAll(r.StartAt, "m", "分")
+		r.StartAt = strings.ReplaceAll(r.StartAt, "s", "秒")
+		r.StartAt = strings.ReplaceAll(r.StartAt, "h", "时")
 	})
 }

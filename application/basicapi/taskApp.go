@@ -37,6 +37,8 @@ func TaskPlanList(top int, taskGroupRepository taskGroup.Repository) collections
 	lst = lst.Where(func(item taskGroup.DomainObject) bool {
 		return item.IsEnable && !item.Task.IsFinish()
 	}).OrderBy(func(item taskGroup.DomainObject) any {
+		return item.Name
+	}).OrderBy(func(item taskGroup.DomainObject) any {
 		return item.Task.StartAt.UnixNano()
 	}).Take(top).ToList()
 

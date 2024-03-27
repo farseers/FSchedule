@@ -164,9 +164,8 @@ func (receiver *DomainObject) CalculateNextAtByUnix(timespan int64) {
 
 // CalculateNextAtByCron 重新计算下一个执行周期
 func (receiver *DomainObject) CalculateNextAtByCron() bool {
-	now := dateTime.Now()
-	// 成功才要计算下一个周期
-	if now.After(receiver.NextAt) {
+	// 时间相等，说明客户端没有设置过时间
+	if receiver.NeverSetNextAt() {
 		switch receiver.Task.Status {
 		case enum.Success:
 			cornSchedule, err := StandardParser.Parse(receiver.Cron)
@@ -179,7 +178,8 @@ func (receiver *DomainObject) CalculateNextAtByCron() bool {
 			}
 		case enum.Fail:
 			// 失败，则为下一秒在执行
-			receiver.NextAt = now.AddSeconds(1)
+			receiver.NextAt = dateTime.Now().AddSeconds(1)
+			flog.Infof("任务组:%s 执行失败，将在1秒后（%s）继续执行", receiver.Name, receiver.NextAt.ToString("yyyy-MM-dd HH:mm:ss"))
 		case enum.None:
 		case enum.Scheduling:
 		case enum.ScheduleFail:
@@ -216,4 +216,9 @@ func (receiver *DomainObject) ReportFail(taskGroupRepository Repository) {
 // 设置状态
 func (receiver *DomainObject) SetEnable(enable bool) {
 	receiver.IsEnable = enable
+}
+
+// 没有设置过时间
+func (receiver *DomainObject) NeverSetNextAt() bool {
+	return receiver.NextAt.UnixMilli() == receiver.Task.StartAt.UnixMilli()
 }

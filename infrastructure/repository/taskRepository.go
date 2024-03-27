@@ -90,7 +90,7 @@ func (receiver *taskRepository) ToTaskSpeedList() collections.List[taskGroup.Tas
 }
 
 // TaskClearFinish 清除成功的任务记录（1天前）
-func (receiver *taskRepository) TaskClearFinish(taskGroupName string, taskId int) {
+func (receiver *taskRepository) TaskClearFinish(taskGroupName string, taskId int64) {
 	_, _ = context.MysqlContextIns("清除成功的任务记录").Task.Where("name = ? and (status = ? or status = ?) and create_at < ? and Id < ?", taskGroupName, enum.Success, enum.Fail, time.Now().Add(-24*time.Hour), taskId).Delete()
 }
 

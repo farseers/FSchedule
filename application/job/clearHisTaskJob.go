@@ -23,7 +23,7 @@ func ClearHisTaskJob(context *tasks.TaskContext) {
 		result += lstTask.Count()
 		var taskId = lstTask.Min(func(item taskGroup.TaskEO) any {
 			return item.Id
-		}).(int)
+		}).(int64)
 
 		// 清除历史记录
 		taskGroupRepository.TaskClearFinish(taskGroupDO.Name, taskId)

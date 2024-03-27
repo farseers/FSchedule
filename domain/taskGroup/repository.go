@@ -36,7 +36,7 @@ type TaskRepository interface {
 	// ToTaskSpeedList 当前任务组下所有任务的执行速度
 	ToTaskSpeedList() collections.List[TaskEO]
 	// TaskClearFinish 清除成功的任务记录（1天前）
-	TaskClearFinish(taskGroupName string, taskId int)
+	TaskClearFinish(taskGroupName string, taskId int64)
 	ToTaskFinishList(taskGroupName string, top int) collections.List[TaskEO]
 	// *******************仪表盘使用*********************
 	// ToTaskListByGroupId 获取指定任务组执行成功的任务列表

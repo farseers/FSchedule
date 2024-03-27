@@ -157,6 +157,7 @@ func (receiver *DomainObject) CanScheduler() bool {
 // CalculateNextAtByUnix 重新计算下一个执行周期
 func (receiver *DomainObject) CalculateNextAtByUnix(timespan int64) {
 	if timespan > 0 {
+		flog.Infof("任务组:%s 设置了timespan=%d,更新下一次时间为%s", receiver.Name, timespan, receiver.NextAt.ToString("yyyy-MM-dd HH:mm:ss"))
 		receiver.NextAt = dateTime.NewUnixMilli(timespan)
 	}
 }

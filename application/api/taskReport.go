@@ -7,6 +7,7 @@ import (
 	"FSchedule/domain/schedule"
 	"FSchedule/domain/taskGroup"
 	"github.com/farseer-go/fs/exception"
+	"github.com/farseer-go/fs/flog"
 )
 
 // TaskReport 客户端回调
@@ -46,17 +47,19 @@ func TaskReport(dto client.TaskReportVO, taskGroupRepository taskGroup.Repositor
 func KillTask(taskGroupName string, taskGroupRepository taskGroup.Repository, clientRepository client.Repository, clientCheck client.IClientCheck) {
 	taskGroupDO := taskGroupRepository.ToEntity(taskGroupName)
 	if taskGroupDO.IsNil() {
-		exception.ThrowWebExceptionf(403, "任务组[%s] 不存在", taskGroupName)
+		exception.ThrowWebExceptionf(403, "任务组 %s %d 不存在", taskGroupDO.Name, taskGroupDO.Task.Id)
 	}
 
 	if taskGroupDO.Task.IsFinish() {
-		exception.ThrowWebExceptionf(403, "任务组[%s] 状态为已完成，无法停止。", taskGroupName)
+		exception.ThrowWebExceptionf(403, "任务组 %s %d 状态为已完成，无法停止。", taskGroupDO.Name, taskGroupDO.Task.Id)
 	}
 
 	// 通知客户端，停止任务
 	if taskGroupDO.Task.Client.Id > 0 {
 		clientDO := clientRepository.ToEntity(taskGroupDO.Task.Client.Id)
-		clientCheck.Kill(clientDO, taskGroupDO.Task.Id)
+		if err := clientCheck.Kill(clientDO, taskGroupDO.Task.Id); err != nil {
+			flog.Warningf("任务组 %s %d 通知客户端%s（%d）：%s:%d 停止任务失败：%s", taskGroupDO.Name, taskGroupDO.Task.Id, clientDO.Name, clientDO.Id, clientDO.Ip, clientDO.Port, err.Error())
+		}
 	}
 
 	// 更新任务状态

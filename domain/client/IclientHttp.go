@@ -8,5 +8,5 @@ type IClientCheck interface {
 	// Status 查询任务状态
 	Status(do *DomainObject, taskId int64) (TaskReportVO, error)
 	// Kill 终止任务
-	Kill(do DomainObject, taskId int64) bool
+	Kill(do DomainObject, taskId int64) error
 }

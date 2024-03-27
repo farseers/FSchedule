@@ -24,11 +24,10 @@ func (receiver clientHttp) Check(do *client.DomainObject) (client.ResourceVO, er
 	var apiResponse core.ApiResponse[client.ResourceVO]
 	_, err := http.NewClient(clientUrl).HeadAdd(tokenName, token).Body(body).PostUnmarshal(&apiResponse)
 	if err != nil {
-		flog.Warningf("客户端%s（%d）：%s:%d  检查失败", do.Name, do.Id, do.Ip, do.Port)
 		return client.ResourceVO{}, err
 	}
 	if apiResponse.StatusCode != 200 {
-		log := fmt.Sprintf("客户端%s（%d）：%s，状态码：%d，错误内容：%s", do.Name, do.Id, clientUrl, apiResponse.StatusCode, apiResponse.StatusMessage)
+		log := fmt.Sprintf("状态码：%d，错误内容：%s", apiResponse.StatusCode, apiResponse.StatusMessage)
 		return client.ResourceVO{}, flog.Error(log)
 	}
 	return apiResponse.Data, nil
@@ -42,8 +41,7 @@ func (receiver clientHttp) Invoke(do *client.DomainObject, task client.TaskEO) (
 		return client.ResourceVO{}, err
 	}
 	if apiResponse.StatusCode != 200 {
-		log := fmt.Sprintf("客户端%s（%d）：%s，状态码：%d，错误内容：%s", do.Name, do.Id, clientUrl, apiResponse.StatusCode, apiResponse.StatusMessage)
-		flog.Info(log)
+		log := fmt.Sprintf("状态码：%d，错误内容：%s", apiResponse.StatusCode, apiResponse.StatusMessage)
 		return client.ResourceVO{}, flog.Error(log)
 	}
 	return apiResponse.Data, nil
@@ -60,14 +58,13 @@ func (receiver clientHttp) Status(do *client.DomainObject, taskId int64) (client
 		return client.TaskReportVO{}, err
 	}
 	if apiResponse.StatusCode != 200 {
-		log := fmt.Sprintf("客户端%s（%d）：%s，状态码：%d，错误内容：%s", do.Name, do.Id, clientUrl, apiResponse.StatusCode, apiResponse.StatusMessage)
-		flog.Info(log)
+		log := fmt.Sprintf("状态码：%d，错误内容：%s", apiResponse.StatusCode, apiResponse.StatusMessage)
 		return client.TaskReportVO{}, flog.Error(log)
 	}
 	return apiResponse.Data, nil
 }
 
-func (receiver clientHttp) Kill(do client.DomainObject, taskId int64) bool {
+func (receiver clientHttp) Kill(do client.DomainObject, taskId int64) error {
 	clientUrl := fmt.Sprintf("http://%s:%d/api/kill", do.Ip, do.Port)
 	var apiResponse core.ApiResponse[any]
 	body := map[string]any{
@@ -75,12 +72,10 @@ func (receiver clientHttp) Kill(do client.DomainObject, taskId int64) bool {
 	}
 	_, err := http.NewClient(clientUrl).HeadAdd(tokenName, token).Body(body).PostUnmarshal(&apiResponse)
 	if err != nil {
-		return false
+		return err
 	}
 	if apiResponse.StatusCode != 200 {
-		log := fmt.Sprintf("客户端%s（%d）：%s，状态码：%d，错误内容：%s", do.Name, do.Id, clientUrl, apiResponse.StatusCode, apiResponse.StatusMessage)
-		flog.Info(log)
-		return false
+		return flog.Errorf("状态码：%d，错误内容：%s", apiResponse.StatusCode, apiResponse.StatusMessage)
 	}
-	return true
+	return err
 }

@@ -7,6 +7,7 @@ import (
 	"FSchedule/domain/taskGroup"
 	"github.com/farseer-go/fs/container"
 	"github.com/farseer-go/fs/core"
+	"github.com/farseer-go/fs/flog"
 )
 
 // CheckWorkingEvent 检查进行中的任务
@@ -33,6 +34,7 @@ func CheckWorkingEvent(message any, _ core.EventArgs) {
 	// 主动向客户端查询任务状态
 	dto, err := clientCheck.Status(clientDO, do.Task.Id)
 	if err != nil {
+		flog.Warningf("向客户端%s（%d）：%s:%d 检查任务失败：%s", clientDO.Name, clientDO.Id, clientDO.Ip, clientDO.Port, err.Error())
 		clientDO.UnSchedule()
 		clientRepository.Save(clientDO)
 		return

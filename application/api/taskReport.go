@@ -47,7 +47,7 @@ func TaskReport(dto client.TaskReportVO, taskGroupRepository taskGroup.Repositor
 func KillTask(taskGroupName string, taskGroupRepository taskGroup.Repository, clientRepository client.Repository, clientCheck client.IClientCheck) {
 	taskGroupDO := taskGroupRepository.ToEntity(taskGroupName)
 	if taskGroupDO.IsNil() {
-		exception.ThrowWebExceptionf(403, "任务组 %s %d 不存在", taskGroupDO.Name, taskGroupDO.Task.Id)
+		exception.ThrowWebExceptionf(403, "任务组 %s 不存在", taskGroupName)
 	}
 
 	if taskGroupDO.Task.IsFinish() {

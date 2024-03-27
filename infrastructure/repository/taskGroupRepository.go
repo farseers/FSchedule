@@ -89,6 +89,7 @@ func (receiver *taskGroupRepository) SaveAndTask(do taskGroup.DomainObject) {
 
 func (receiver *taskGroupRepository) Sync() {
 	lst := receiver.CacheManage.Get()
+
 	for i := 0; i < lst.Count(); i++ {
 		do := lst.Index(i)
 		po := mapper.Single[model.TaskGroupPO](&do)

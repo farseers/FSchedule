@@ -17,8 +17,8 @@ type TaskEO struct {
 	Name           string                                 // 实现Job的特性名称（客户端识别哪个实现类）
 	Ver            int                                    // 版本
 	Caption        string                                 // 任务组标题
-	StartAt        dateTime.DateTime                      // 开始时间
-	RunAt          dateTime.DateTime                      // 实际执行时间
+	StartAt        dateTime.DateTime                      // 开始时间（计划时间）
+	RunAt          dateTime.DateTime                      // 实际执行时间（含结束时间）
 	RunSpeed       int64                                  // 运行耗时
 	Client         ClientVO                               // 客户端
 	Progress       int                                    // 进度0-100
@@ -80,10 +80,9 @@ func (receiver *TaskEO) IsWorking() bool {
 }
 
 // UpdateTask 更新任务
-func (receiver *TaskEO) UpdateTask(status executeStatus.Enum, data collections.Dictionary[string, string], progress int, speed int64, remark string) {
+func (receiver *TaskEO) UpdateTask(status executeStatus.Enum, data collections.Dictionary[string, string], progress int, remark string) {
 	receiver.Data = data
 	receiver.Progress = progress
-	receiver.RunSpeed = speed
 	receiver.UpdateTaskStatus(status, remark)
 }
 
@@ -99,6 +98,12 @@ func (receiver *TaskEO) UpdateTaskStatus(status executeStatus.Enum, remark strin
 	}
 
 	receiver.RunAt = dateTime.Now()
+
+	// 耗时
+	if status.IsFinish() {
+		receiver.RunSpeed = receiver.RunAt.Sub(receiver.SchedulerAt).Milliseconds()
+	}
+
 	if remark != "" {
 		receiver.Remark = remark
 	}

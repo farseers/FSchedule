@@ -26,13 +26,13 @@ func TaskReport(dto client.TaskReportVO, taskGroupRepository taskGroup.Repositor
 				exception.ThrowWebExceptionf(403, "任务id={%d} 不存在", dto.Id)
 			}
 			// 仅更新任务
-			taskEO.UpdateTask(dto.Status, dto.Data, dto.Progress, dto.RunSpeed, dto.FailRemark)
+			taskEO.UpdateTask(dto.Status, dto.Data, dto.Progress, dto.FailRemark)
 			taskGroupRepository.SaveTask(taskEO)
 			return
 		}
 
 		// 更新任务
-		taskGroupDO.Report(dto.Status, dto.Data, dto.Progress, dto.RunSpeed, dto.NextTimespan, dto.FailRemark, taskGroupRepository)
+		taskGroupDO.Report(dto.Status, dto.Data, dto.Progress, dto.NextTimespan, dto.FailRemark, taskGroupRepository)
 	})
 }
 
@@ -57,5 +57,5 @@ func KillTask(taskGroupName string, taskGroupRepository taskGroup.Repository, cl
 	}
 
 	// 更新任务状态
-	taskGroupDO.Report(executeStatus.Fail, taskGroupDO.Data, taskGroupDO.Task.Progress, taskGroupDO.Task.RunSpeed, 0, "FOPS主动停止", taskGroupRepository)
+	taskGroupDO.Report(executeStatus.Fail, taskGroupDO.Data, taskGroupDO.Task.Progress, 0, "FOPS主动停止", taskGroupRepository)
 }

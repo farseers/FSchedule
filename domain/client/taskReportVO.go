@@ -12,7 +12,6 @@ type TaskReportVO struct {
 	NextTimespan int64                                  // 下次执行时间
 	Progress     int                                    // 当前进度
 	Status       executeStatus.Enum                     // 执行状态
-	RunSpeed     int64                                  // 执行速度
 	FailRemark   string                                 // 失败原因
 	ResourceVO                                          // 客户端资源状态
 }

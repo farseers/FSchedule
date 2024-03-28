@@ -22,3 +22,8 @@ func (e Enum) String() string {
 	}
 	return "None"
 }
+
+// IsFinish 是否完成
+func (e Enum) IsFinish() bool {
+	return e == Success || e == Fail
+}

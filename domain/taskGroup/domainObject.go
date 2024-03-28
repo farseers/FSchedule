@@ -200,10 +200,10 @@ func (receiver *DomainObject) SyncData() {
 }
 
 // Report 任务报告
-func (receiver *DomainObject) Report(status executeStatus.Enum, data collections.Dictionary[string, string], progress int, runSpeed int64, nextTimespan int64, remark string, taskGroupRepository Repository) {
+func (receiver *DomainObject) Report(status executeStatus.Enum, data collections.Dictionary[string, string], progress int, nextTimespan int64, remark string, taskGroupRepository Repository) {
 	receiver.ActivateAt = dateTime.Now()
 	receiver.LastRunAt = dateTime.Now()
-	receiver.Task.UpdateTask(status, data, progress, runSpeed, remark)
+	receiver.Task.UpdateTask(status, data, progress, remark)
 	receiver.SyncData()
 	// 客户端动态计算下一个执行周期
 	receiver.CalculateNextAtByUnix(nextTimespan)

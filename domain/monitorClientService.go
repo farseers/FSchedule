@@ -46,7 +46,7 @@ func MonitorClientPush(clientDO *client.DomainObject) {
 			go clientMonitor.checkOnline()
 		}
 
-		ClientUpdate(clientDO)
+		//ClientUpdate(clientDO)
 	}
 
 	existsClientDO := clientList.GetValue(clientDO.Id)
@@ -87,9 +87,8 @@ func (receiver *ClientMonitor) checkOnline() {
 				traceContext := container.Resolve[trace.IManager]().EntryTask("检查客户端在线状态")
 
 				err := receiver.client.CheckOnline()
-				traceContext.Error(err)
 				receiver.ClientRepository.Save(receiver.client)
-
+				traceContext.Error(err)
 				traceContext.End()
 			}
 		case <-receiver.ctx.Done():

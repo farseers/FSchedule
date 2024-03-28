@@ -3,8 +3,10 @@ package taskGroup
 import (
 	"FSchedule/domain/enum/executeStatus"
 	"FSchedule/domain/enum/scheduleStatus"
+	"fmt"
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs/dateTime"
+	"github.com/farseer-go/fs/flog"
 	"github.com/farseer-go/fs/trace"
 )
 
@@ -87,7 +89,15 @@ func (receiver *TaskEO) UpdateTask(status executeStatus.Enum, data collections.D
 
 // UpdateTask 更新任务
 func (receiver *TaskEO) UpdateTaskStatus(status executeStatus.Enum, remark string) {
-	receiver.ExecuteStatus = status
+	switch status {
+	case executeStatus.Fail, executeStatus.Working, executeStatus.Success:
+		receiver.ExecuteStatus = status
+	default:
+		receiver.ExecuteStatus = executeStatus.Fail
+		flog.Warningf("任务组 %s %d 回调的状态设置不正确：%d", receiver.Name, receiver.Id, status)
+		remark = fmt.Sprintf("回调的状态设置不正确：%d", status)
+	}
+
 	receiver.RunAt = dateTime.Now()
 	if remark != "" {
 		receiver.Remark = remark

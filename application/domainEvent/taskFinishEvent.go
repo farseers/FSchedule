@@ -1,6 +1,7 @@
 package domainEvent
 
 import (
+	"FSchedule/domain/enum/scheduleStatus"
 	"FSchedule/domain/taskGroup"
 	"github.com/farseer-go/fs/container"
 	"github.com/farseer-go/fs/core"
@@ -10,7 +11,7 @@ import (
 // TaskFinishEvent 任务完成事件
 func TaskFinishEvent(message any, _ core.EventArgs) {
 	do := message.(*taskGroup.DomainObject)
-	if !do.Task.IsFinish() {
+	if do.Task.ScheduleStatus != scheduleStatus.Fail && !do.Task.IsFinish() {
 		return
 	}
 

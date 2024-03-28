@@ -13,10 +13,6 @@ import (
 // TaskReport 客户端回调
 // @post taskReport
 func TaskReport(dto client.TaskReportVO, taskGroupRepository taskGroup.Repository, scheduleRepository schedule.Repository) {
-	if dto.Status == executeStatus.None {
-		exception.ThrowWebExceptionf(403, "任务组 %s %d 回调的状态设置不正确：%s", dto.Name, dto.Id, dto.Status.String())
-	}
-
 	// 加锁
 	scheduleRepository.ScheduleLock(dto.Name, dto.Id).GetLockRun(func() {
 		taskGroupDO := taskGroupRepository.ToEntity(dto.Name)

@@ -137,12 +137,14 @@ func (receiver *TaskGroupMonitor) Start() {
 
 			switch receiver.Task.ScheduleStatus {
 			// 如果调度失败状态，需要重新调度
-			case scheduleStatus.None, scheduleStatus.Fail:
+			case scheduleStatus.None:
 				receiver.waitStart()
 			case scheduleStatus.Scheduling:
 				// 等待更新即可
 				//flog.Debugf("任务组：%s 等待更新", receiver.Name)
 				<-receiver.updated
+			case scheduleStatus.Fail:
+				receiver.taskFinish()
 			case scheduleStatus.Success:
 				switch receiver.Task.ExecuteStatus {
 				case executeStatus.Working:
@@ -154,6 +156,10 @@ func (receiver *TaskGroupMonitor) Start() {
 					// 等待客户端上报运行状态
 					// todo 这里要加个超时设置。超过一定时间，如果还是处于未运行状态。则判断失败
 					<-receiver.updated
+				default:
+					flog.Warningf("任务组：%s ver:%s 出现未知执行状态：%d 将强制设为失败状态", flog.Blue(receiver.Name), flog.Yellow(receiver.Ver), receiver.Task.ExecuteStatus)
+					receiver.Task.SetFail(fmt.Sprintf("出现未知执行状态：%d", receiver.Task.ExecuteStatus))
+					receiver.taskFinish()
 				}
 			}
 		}

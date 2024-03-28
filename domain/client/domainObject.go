@@ -62,7 +62,8 @@ func (receiver *DomainObject) Logout() {
 func (receiver *DomainObject) CheckOnline() error {
 	status, err := container.Resolve[IClientCheck]().Check(receiver)
 	if err != nil {
-		flog.Warningf("检查客户端%s（%d）：%s:%d 是否存活失败：%s", receiver.Name, receiver.Id, receiver.Ip, receiver.Port, err.Error())
+		flog.Warningf("检查客户端%s（%d）：%s:%d 在线状态失败：%s", receiver.Name, receiver.Id, receiver.Ip, receiver.Port, err.Error())
+		receiver.scheduleFail()
 		return err
 	}
 	// 检查成功
@@ -73,14 +74,14 @@ func (receiver *DomainObject) CheckOnline() error {
 // 向客户端检查任务状态
 func (receiver *DomainObject) CheckTaskStatus(taskId int64) (TaskReportVO, error) {
 	clientCheck := container.Resolve[IClientCheck]()
-	clientRepository := container.Resolve[Repository]()
 
 	dto, err := clientCheck.Status(receiver, taskId)
 	if err != nil {
 		flog.Warningf("向客户端%s（%d）：%s:%d 检查任务失败：%s", receiver.Name, receiver.Id, receiver.Ip, receiver.Port, err.Error())
 		receiver.scheduleFail()
-		clientRepository.Save(receiver)
 		return TaskReportVO{}, err
+	} else {
+		receiver.updateStatus(dto.ResourceVO)
 	}
 	return dto, nil
 }
@@ -100,11 +101,6 @@ func (receiver *DomainObject) TrySchedule(task TaskEO) (bool, error) {
 	// 调度成功
 	receiver.ScheduleAt = dateTime.Now()
 	receiver.updateStatus(status)
-	//milliseconds := time.Since(task.StartAt).Milliseconds()
-	//if milliseconds < 0 {
-	//	milliseconds = 0
-	//}
-	//flog.Infof("任务组：%s %d 调度成功 延迟：%s ms", task.Name, task.Id, flog.Red(milliseconds))
 	return true, nil
 }
 

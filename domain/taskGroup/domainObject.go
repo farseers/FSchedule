@@ -9,6 +9,7 @@ import (
 	"github.com/farseer-go/fs/flog"
 	"github.com/farseer-go/fs/snowflake"
 	"github.com/robfig/cron/v3"
+	"strings"
 	"time"
 )
 
@@ -22,7 +23,7 @@ type DomainObject struct {
 	Data              collections.Dictionary[string, string] // 本次执行任务时的Data数据
 	StartAt           dateTime.DateTime                      // 开始时间
 	NextAt            dateTime.DateTime                      // 下次执行时间
-	Cron              string                                 // 时间定时器表达式
+	Cron              string                                 // 时间定时器表达式（开头不能用*，请使用0代替，否则会出现，每秒都在执行的BUG）
 	ActivateAt        dateTime.DateTime                      // 活动时间
 	LastRunAt         dateTime.DateTime                      // 最后一次完成时间
 	LastExecuteStatus executeStatus.Enum                     // 上次执行结果
@@ -53,10 +54,15 @@ func (receiver *DomainObject) UpdateVer(name string, caption string, ver int, st
 		receiver.Data = data
 
 		if enable {
+			if strings.HasPrefix(receiver.Cron, "* ") {
+				exception.ThrowWebExceptionf(403, "任务组:%s，Cron格式错误:%s，开头不能使用*，请使用0代替，否则会出现，每秒都在执行的BUG", receiver.Name, receiver.Cron)
+			}
+
 			cornSchedule, err := StandardParser.Parse(receiver.Cron)
 			if err != nil {
 				_ = flog.Errorf("任务组:%s，Cron格式错误:%s", receiver.Name, receiver.Cron)
 				receiver.NeedSave = false
+				exception.ThrowWebExceptionf(403, "任务组:%s，Cron格式错误:%s", receiver.Name, receiver.Cron)
 				return
 			} else {
 				receiver.NextAt = dateTime.New(cornSchedule.Next(time.Now()))
@@ -101,9 +107,13 @@ func (receiver *DomainObject) Update() {
 		exception.ThrowWebException(403, "任务组处于调度状态或执行中，不允许修改")
 	}
 
+	if strings.HasPrefix(receiver.Cron, "* ") {
+		exception.ThrowWebExceptionf(403, "任务组:%s，Cron格式错误:%s，开头不能使用*，请使用0代替，否则会出现，每秒都在执行的BUG", receiver.Name, receiver.Cron)
+	}
+
 	cornSchedule, err := StandardParser.Parse(receiver.Cron)
 	if err != nil {
-		_ = flog.Errorf("任务组:%s，Cron格式错误:%s", receiver.Name, receiver.Cron)
+		exception.ThrowWebExceptionf(403, "任务组:%s，Cron格式错误:%s", receiver.Name, receiver.Cron)
 	}
 	receiver.NextAt = dateTime.New(cornSchedule.Next(time.Now()))
 	receiver.Task.Data = receiver.Data

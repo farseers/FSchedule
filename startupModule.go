@@ -20,7 +20,15 @@ func (module StartupModule) Initialize() {
 }
 
 func (module StartupModule) PostInitialize() {
-
+	//parse, _ := taskGroup.StandardParser.Parse("* 0/10 * * * ?")
+	//n := time.Now()
+	//fmt.Println(n)
+	//fmt.Println("--------------")
+	//for i := 0; i < 10; i++ {
+	//	n = parse.Next(n)
+	//	fmt.Println(n)
+	//}
+	//fmt.Println("--------------")
 }
 
 func (module StartupModule) Shutdown() {

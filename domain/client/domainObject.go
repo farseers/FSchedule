@@ -1,12 +1,11 @@
 package client
 
 import (
-	"FSchedule/domain/enum"
+	"FSchedule/domain/enum/clientStatus"
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs/container"
 	"github.com/farseer-go/fs/dateTime"
 	"github.com/farseer-go/fs/flog"
-	"time"
 )
 
 type DomainObject struct {
@@ -16,7 +15,7 @@ type DomainObject struct {
 	Port        int                     // 客户端端口
 	ActivateAt  dateTime.DateTime       // 活动时间
 	ScheduleAt  dateTime.DateTime       // 任务调度时间
-	Status      enum.ClientStatus       // 客户端状态
+	Status      clientStatus.Enum       // 客户端状态
 	QueueCount  int                     // 排队中的任务数量
 	WorkCount   int                     // 正在处理的任务数量
 	CpuUsage    float64                 // CPU百分比
@@ -33,29 +32,29 @@ func (receiver *DomainObject) IsNil() bool {
 
 // IsOnline 是否刚注册进来
 func (receiver *DomainObject) IsOnline() bool {
-	return receiver.Status == enum.Online
+	return receiver.Status == clientStatus.Online
 }
 
 // IsOffline 判断客户端是否下线
 func (receiver *DomainObject) IsOffline() bool {
-	return receiver.Status == enum.Offline
+	return receiver.Status == clientStatus.Offline
 }
 
 // IsNotSchedule 状态不是调度状态
 func (receiver *DomainObject) IsNotSchedule() bool {
-	return receiver.Status != enum.Scheduler
+	return receiver.Status != clientStatus.Scheduler
 }
 
 // Registry 注册客户端
 func (receiver *DomainObject) Registry() {
 	receiver.ActivateAt = dateTime.Now()
-	receiver.Status = enum.Online
+	receiver.Status = clientStatus.Online
 	receiver.NeedNotice = true
 }
 
 // Logout 客户端下线
 func (receiver *DomainObject) Logout() {
-	receiver.Status = enum.Offline
+	receiver.Status = clientStatus.Offline
 	receiver.NeedNotice = true
 }
 
@@ -64,65 +63,86 @@ func (receiver *DomainObject) CheckOnline() error {
 	status, err := container.Resolve[IClientCheck]().Check(receiver)
 	if err != nil {
 		flog.Warningf("检查客户端%s（%d）：%s:%d 是否存活失败：%s", receiver.Name, receiver.Id, receiver.Ip, receiver.Port, err.Error())
+		return err
 	}
-	receiver.updateStatus(status, err)
-	return err
+	// 检查成功
+	receiver.updateStatus(status)
+	return nil
 }
 
-// Schedule 调度
-func (receiver *DomainObject) Schedule(task TaskEO) bool {
-	status, err := container.Resolve[IClientCheck]().Invoke(receiver, task)
+// 向客户端检查任务状态
+func (receiver *DomainObject) CheckTaskStatus(taskId int64) (TaskReportVO, error) {
+	clientCheck := container.Resolve[IClientCheck]()
+	clientRepository := container.Resolve[Repository]()
+
+	dto, err := clientCheck.Status(receiver, taskId)
 	if err != nil {
+		flog.Warningf("向客户端%s（%d）：%s:%d 检查任务失败：%s", receiver.Name, receiver.Id, receiver.Ip, receiver.Port, err.Error())
+		receiver.scheduleFail()
+		clientRepository.Save(receiver)
+		return TaskReportVO{}, err
+	}
+	return dto, nil
+}
+
+// TrySchedule 调度
+func (receiver *DomainObject) TrySchedule(task TaskEO) (bool, error) {
+	var status ResourceVO
+	var err error
+
+	// 向客户端发起调度请求
+	if status, err = container.Resolve[IClientCheck]().Invoke(receiver, task); err != nil {
 		flog.Warningf("任务组：%s %d 向客户端%s（%d）：%s:%d 调度失败：%s", task.Name, task.Id, receiver.Name, receiver.Id, receiver.Ip, receiver.Port, err.Error())
+		receiver.scheduleFail()
+		return false, err
 	}
-	receiver.updateStatus(status, err)
 
-	milliseconds := time.Since(task.StartAt).Milliseconds()
-	if milliseconds < 0 {
-		milliseconds = 0
-	}
-	if receiver.Status == enum.Scheduler {
-		receiver.ScheduleAt = dateTime.Now()
-		//flog.Infof("任务组：%s %d 调度成功 延迟：%s ms", task.Name, task.Id, flog.Red(milliseconds))
-		return true
-	}
-	return false
+	// 调度成功
+	receiver.ScheduleAt = dateTime.Now()
+	receiver.updateStatus(status)
+	//milliseconds := time.Since(task.StartAt).Milliseconds()
+	//if milliseconds < 0 {
+	//	milliseconds = 0
+	//}
+	//flog.Infof("任务组：%s %d 调度成功 延迟：%s ms", task.Name, task.Id, flog.Red(milliseconds))
+	return true, nil
 }
 
-// 更新状态
-func (receiver *DomainObject) updateStatus(status ResourceVO, err error) {
+// 更新客户端状态
+func (receiver *DomainObject) updateStatus(status ResourceVO) {
 	oldStatus := receiver.Status
-	if err != nil {
-		// 先设置为无法调度
-		receiver.UnSchedule()
-	} else {
-		receiver.ActivateAt = dateTime.Now()
-		receiver.ErrorCount = 0
-		receiver.CpuUsage = status.CpuUsage
-		receiver.MemoryUsage = status.MemoryUsage
-		receiver.QueueCount = status.QueueCount
-		receiver.WorkCount = status.WorkCount
+	receiver.ActivateAt = dateTime.Now()
+	receiver.ErrorCount = 0
+	receiver.CpuUsage = status.CpuUsage
+	receiver.MemoryUsage = status.MemoryUsage
+	receiver.QueueCount = status.QueueCount
+	receiver.WorkCount = status.WorkCount
 
-		if status.AllowSchedule {
-			receiver.Status = enum.Scheduler
-		} else {
-			receiver.Status = enum.StopSchedule
-		}
+	if status.AllowSchedule {
+		receiver.Status = clientStatus.Scheduler
+	} else {
+		receiver.Status = clientStatus.StopSchedule
 	}
 
 	receiver.NeedNotice = oldStatus != receiver.Status
 }
 
-// UnSchedule 客户端无法调度
-func (receiver *DomainObject) UnSchedule() {
-	if !receiver.IsOffline() {
-		receiver.ErrorCount++
-		receiver.Status = enum.UnSchedule
+// 调度失败
+func (receiver *DomainObject) scheduleFail() {
+	// 离线状态，不需要设置
+	if receiver.IsOffline() {
+		return
+	}
 
-		// 大于3次、活动时间超过30秒，则判定为离线
-		now := dateTime.Now()
-		if receiver.ErrorCount >= 3 && now.Sub(receiver.ActivateAt).Seconds() >= 30 {
-			receiver.Logout()
-		}
+	// 3次失败，则标记为无法调度
+	receiver.ErrorCount++
+	if receiver.ErrorCount >= 3 {
+		receiver.Status = clientStatus.UnSchedule
+	}
+
+	// 大于3次、活动时间超过30秒，则判定为离线
+	now := dateTime.Now()
+	if receiver.ErrorCount >= 5 && now.Sub(receiver.ActivateAt).Seconds() >= 30 {
+		receiver.Logout()
 	}
 }

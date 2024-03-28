@@ -1,7 +1,8 @@
 package taskGroup
 
 import (
-	"FSchedule/domain/enum"
+	"FSchedule/domain/enum/executeStatus"
+	"FSchedule/domain/enum/scheduleStatus"
 	"github.com/farseer-go/collections"
 )
 
@@ -17,19 +18,15 @@ type Repository interface {
 	Save(do DomainObject)
 	// SaveAndTask 保存任务组、任务信息
 	SaveAndTask(do DomainObject)
-	// GetTask 获取任务信息
-	GetTask(taskGroupName string, taskId int64) TaskEO
 	// Sync 同步任务组数据
 	Sync()
 
 	// *******************仪表盘使用*********************
-	ToListForPage(clientName, taskGroupName string, enable int, taskStatus enum.TaskStatus, taskId, clientId int64, pageSize int, pageIndex int) collections.PageList[DomainObject]
-	IsExists(taskGroupName string) bool                                                    // 任务组是否存在
-	Delete(taskGroupName string)                                                           // 删除
-	GetTaskGroupCount() int64                                                              // 任务组数量
-	GetUnRunCount() int                                                                    // 超时未运行的任务组数量
-	ToSchedulerWorkingList(pageSize int, pageIndex int) collections.PageList[DomainObject] // 调度中的任务组
-	GetUnRunList(pageSize int, pageIndex int) collections.PageList[DomainObject]           // 超时未运行的任务组
+	ToListForPage(clientName, taskGroupName string, enable int, taskStatus executeStatus.Enum, taskId, clientId int64, pageSize int, pageIndex int) collections.PageList[DomainObject]
+	IsExists(taskGroupName string) bool // 任务组是否存在
+	Delete(taskGroupName string)        // 删除
+	GetTaskGroupCount() int64           // 任务组数量
+	GetUnRunCount() int                 // 超时未运行的任务组数量
 }
 
 type TaskRepository interface {
@@ -40,9 +37,11 @@ type TaskRepository interface {
 	ToTaskFinishList(taskGroupName string, top int) collections.List[TaskEO]
 	// *******************仪表盘使用*********************
 	// ToTaskListByGroupId 获取指定任务组执行成功的任务列表
-	ToTaskListByGroupId(clientName, taskGroupName string, taskStatus enum.TaskStatus, taskId int64, pageSize int, pageIndex int) collections.PageList[TaskEO]
+	ToHistoryTaskList(clientName, taskGroupName string, scheduleStatus scheduleStatus.Enum, executeStatus executeStatus.Enum, taskId string, pageSize int, pageIndex int) collections.PageList[TaskEO]
 	TodayFailCount() int64 // 今天失败数量
 	GetStatCount() collections.List[StatTaskEO]
 	// SaveTask 保存任务信息
 	SaveTask(taskEO TaskEO)
+	// GetTask 获取任务信息
+	GetTask(taskGroupName string, taskId int64) TaskEO
 }

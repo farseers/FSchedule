@@ -2,7 +2,9 @@ package domain
 
 import (
 	"FSchedule/domain/client"
-	"FSchedule/domain/enum"
+	"FSchedule/domain/enum/clientStatus"
+	"FSchedule/domain/enum/executeStatus"
+	"FSchedule/domain/enum/scheduleStatus"
 	"FSchedule/domain/schedule"
 	"FSchedule/domain/taskGroup"
 	"context"
@@ -10,7 +12,6 @@ import (
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs/container"
 	"github.com/farseer-go/fs/core"
-	"github.com/farseer-go/fs/dateTime"
 	"github.com/farseer-go/fs/flog"
 	"github.com/farseer-go/fs/timingWheel"
 	"time"
@@ -134,19 +135,26 @@ func (receiver *TaskGroupMonitor) Start() {
 				<-receiver.updated
 			}
 
-			switch receiver.Task.Status {
-			case enum.None, enum.ScheduleFail: // 如果调度失败状态，需要重新调度
-				// 等待时间达了之后，开始调度
+			switch receiver.Task.ScheduleStatus {
+			// 如果调度失败状态，需要重新调度
+			case scheduleStatus.None, scheduleStatus.Fail:
 				receiver.waitStart()
-			case enum.Scheduling:
+			case scheduleStatus.Scheduling:
 				// 等待更新即可
 				//flog.Debugf("任务组：%s 等待更新", receiver.Name)
 				<-receiver.updated
-			case enum.Working:
-				// 已成功调度到客户端，等待客户端执行完成
-				receiver.waitWorking()
-			case enum.Fail, enum.Success:
-				receiver.taskFinish()
+			case scheduleStatus.Success:
+				switch receiver.Task.ExecuteStatus {
+				case executeStatus.Working:
+					// 已成功调度到客户端，等待客户端执行完成
+					receiver.waitWorking()
+				case executeStatus.Fail, executeStatus.Success:
+					receiver.taskFinish()
+				case executeStatus.None:
+					// 等待客户端上报运行状态
+					// todo 这里要加个超时设置。超过一定时间，如果还是处于未运行状态。则判断失败
+					<-receiver.updated
+				}
 			}
 		}
 	})
@@ -155,7 +163,8 @@ func (receiver *TaskGroupMonitor) Start() {
 // 等待开始
 func (receiver *TaskGroupMonitor) waitStart() {
 	for {
-		if receiver.Task.Status != enum.None && receiver.Task.Status != enum.ScheduleFail {
+		// 这里receiver.Task.ExecuteStatus == Working 会怎么样？
+		if receiver.Task.ScheduleStatus != scheduleStatus.None && receiver.Task.ScheduleStatus != scheduleStatus.Fail {
 			return
 		}
 
@@ -190,10 +199,11 @@ func (receiver *TaskGroupMonitor) waitScheduler() {
 	select {
 	case <-timingWheel.AddTime(receiver.Task.StartAt.AddMillisecond(-100).ToTime()).C: // 执行时间到了，准开始调度
 		// 提前了100ms进到这里。
-		receiver.Task.Scheduling()
-		if m := dateTime.Since(receiver.Task.StartAt).Microseconds(); m > 0 {
-			//flog.Debugf("任务组：%s %d 发布调度事件，延迟：%s", receiver.Name, receiver.Task.Id, dateTime.Since(receiver.Task.StartAt).String())
-		}
+		receiver.Task.SetScheduling()
+		//if m := dateTime.Since(receiver.Task.StartAt).Microseconds(); m > 0 {
+		//flog.Debugf("任务组：%s %d 发布调度事件，延迟：%s", receiver.Name, receiver.Task.Id, dateTime.Since(receiver.Task.StartAt).String())
+		//}
+		// 发布调度事件
 		_ = receiver.SchedulerEventBus.Publish(receiver)
 	case <-receiver.updated:
 		//flog.Debugf("任务组：%s %d 有更新", receiver.Name, receiver.Task.Id)
@@ -220,7 +230,6 @@ func (receiver *TaskGroupMonitor) waitWorking() {
 
 // 任务完成
 func (receiver *TaskGroupMonitor) taskFinish() {
-	//flog.Debugf("任务组：%s 任务完成", receiver.Name)
 	_ = receiver.FinishEventBus.Publish(receiver.DomainObject)
 }
 
@@ -254,7 +263,7 @@ func (receiver *TaskGroupMonitor) PollingClient() *client.DomainObject {
 	for ver := receiver.Ver; ver > 0; ver-- {
 		// 使用轮询方式，根据调度时间排序，取最晚没调度的客户端
 		receiver.curClient = lst.Where(func(item *client.DomainObject) bool {
-			return item.Status == enum.Scheduler && item.Jobs.Where(func(jobVO client.JobVO) bool {
+			return item.Status == clientStatus.Scheduler && item.Jobs.Where(func(jobVO client.JobVO) bool {
 				return jobVO.Name == receiver.Name && jobVO.Ver == ver
 			}).Any()
 		}).OrderBy(func(item *client.DomainObject) any {
@@ -295,7 +304,7 @@ func TaskGroupCount() int {
 			if v.curClient != nil {
 				curClientId = v.curClient.Id
 			}
-			lstLog.Add(fmt.Sprintf("任务组：%s，\t状态：%s，客户端%s个，当前客户端：%s", flog.Blue(v.Name), v.Task.Status.String(), flog.Red(v.clients.Count()), flog.Green(curClientId)))
+			lstLog.Add(fmt.Sprintf("任务组：%s，\t状态：%s，客户端%s个，当前客户端：%s", flog.Blue(v.Name), v.Task.ExecuteStatus.String(), flog.Red(v.clients.Count()), flog.Green(curClientId)))
 		}
 	}
 	if lstLog.Count() > 0 {

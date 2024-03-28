@@ -1,11 +1,11 @@
 package taskGroup
 
 import (
-	"FSchedule/domain/enum"
+	"FSchedule/domain/enum/executeStatus"
 )
 
 type StatTaskEO struct {
-	ClientName string          // 应用名称
-	Status     enum.TaskStatus // 状态
-	Count      int             // 日志数量
+	ClientName    string             // 应用名称
+	ExecuteStatus executeStatus.Enum // 状态
+	Count         int                // 日志数量
 }

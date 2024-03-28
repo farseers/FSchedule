@@ -1,7 +1,8 @@
 package repository
 
 import (
-	"FSchedule/domain/enum"
+	"FSchedule/domain/enum/executeStatus"
+	"FSchedule/domain/enum/scheduleStatus"
 	"FSchedule/domain/taskGroup"
 	"FSchedule/infrastructure/repository/context"
 	"FSchedule/infrastructure/repository/model"
@@ -10,6 +11,7 @@ import (
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs/container"
 	"github.com/farseer-go/fs/dateTime"
+	"github.com/farseer-go/fs/parse"
 	"github.com/farseer-go/mapper"
 	"github.com/farseer-go/redis"
 	"sync"
@@ -73,41 +75,42 @@ func (receiver *taskRepository) DeleteTask(taskGroupName string) {
 	getCacheManager(taskGroupName).Clear()
 }
 
-func (receiver *taskRepository) ToTaskListByGroupId(clientName, taskGroupName string, taskStatus enum.TaskStatus, taskId int64, pageSize int, pageIndex int) collections.PageList[taskGroup.TaskEO] {
+func (receiver *taskRepository) ToHistoryTaskList(clientName, taskGroupName string, scheduleStatus scheduleStatus.Enum, executeStatus executeStatus.Enum, taskId string, pageSize int, pageIndex int) collections.PageList[taskGroup.TaskEO] {
 	ts := context.MysqlContextIns("获取任务Task列表").Task.Desc("create_at")
 	ts = ts.WhereIf(taskGroupName != "", "name = ?", taskGroupName)
 	ts = ts.WhereIf(clientName != "", "client_name = ?", clientName)
-	ts = ts.WhereIf(taskStatus > -1, "status = ?", taskStatus)
-	ts = ts.WhereIf(taskId > 0, "id = ?", taskId)
+	ts = ts.WhereIf(scheduleStatus > -1, "schedule_status = ?", scheduleStatus)
+	ts = ts.WhereIf(executeStatus > -1, "execute_status = ?", executeStatus)
+	ts = ts.WhereIf(taskId != "", "id = ?", parse.ToInt64(taskId))
 	lstPO := ts.ToPageList(pageSize, pageIndex)
 	return mapper.ToPageList[taskGroup.TaskEO](lstPO)
 }
 
 func (receiver *taskRepository) ToTaskSpeedList() collections.List[taskGroup.TaskEO] {
-	sql := "SELECT name, avg(`run_speed`) as `run_speed` FROM `fschedule_task` WHERE status = 5 and create_at >= DATE_SUB(CURDATE(), INTERVAL 3 DAY) group by name"
-	lstPO := context.MysqlContextIns("计算任务Task速度").Task.ExecuteSqlToList(sql)
+	sql := "SELECT name, avg(`run_speed`) as `run_speed` FROM `fschedule_task` WHERE execute_status = ? and create_at >= DATE_SUB(CURDATE(), INTERVAL 3 DAY) group by name"
+	lstPO := context.MysqlContextIns("计算任务Task速度").Task.ExecuteSqlToList(sql, executeStatus.Success)
 	return mapper.ToList[taskGroup.TaskEO](lstPO)
 }
 
 // TaskClearFinish 清除成功的任务记录（1天前）
 func (receiver *taskRepository) TaskClearFinish(taskGroupName string, taskId int64) {
-	_, _ = context.MysqlContextIns("清除成功的任务记录").Task.Where("name = ? and (status = ? or status = ?) and create_at < ? and Id < ?", taskGroupName, enum.Success, enum.Fail, time.Now().Add(-24*time.Hour), taskId).Delete()
+	_, _ = context.MysqlContextIns("清除成功的任务记录").Task.Where("name = ? and (execute_status = ? or execute_status = ?) and create_at < ? and Id < ?", taskGroupName, executeStatus.Success, executeStatus.Fail, time.Now().Add(-24*time.Hour), taskId).Delete()
 }
 
 func (receiver *taskRepository) ToTaskFinishList(taskGroupName string, top int) collections.List[taskGroup.TaskEO] {
-	lstPO := context.MysqlContextIns("获取已完成的任务Task").Task.Where("name = ? and (status = ? or status = ?)", taskGroupName, enum.Success, enum.Fail).Desc("create_at").Limit(top).ToList()
+	lstPO := context.MysqlContextIns("获取已完成的任务Task").Task.Where("name = ? and (execute_status = ? or execute_status = ?)", taskGroupName, executeStatus.Success, executeStatus.Fail).Desc("create_at").Limit(top).ToList()
 	return mapper.ToList[taskGroup.TaskEO](lstPO)
 
 }
 func (receiver *taskRepository) ToTaskFinishPageList(pageSize int, pageIndex int) collections.PageList[taskGroup.TaskEO] {
-	page := context.MysqlContextIns("获取已完成的任务Task").Task.Where("(status = ? or status = ?) and (create_at >= ?)", enum.Fail, enum.Success, time.Now().Add(-24*time.Hour)).
+	page := context.MysqlContextIns("获取已完成的任务Task").Task.Where("(execute_status = ? or execute_status = ?) and (create_at >= ?)", executeStatus.Fail, executeStatus.Success, time.Now().Add(-24*time.Hour)).
 		Desc("run_at").ToPageList(pageSize, pageIndex)
 	return receiver.toTaskPageListTaskEO(page)
 }
 
 func (receiver *taskRepository) TodayFailCount() int64 {
 	now := dateTime.Now()
-	return context.MysqlContextIns("今日失败的任务数量").Task.Where("status = ? and create_at >= ?", enum.Fail, now.Date()).Count()
+	return context.MysqlContextIns("今日失败的任务数量").Task.Where("execute_status = ? and create_at >= ?", executeStatus.Fail, now.Date()).Count()
 }
 
 func (receiver *taskRepository) toTaskPageListTaskEO(page collections.PageList[model.TaskPO]) collections.PageList[taskGroup.TaskEO] {

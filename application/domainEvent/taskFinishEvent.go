@@ -14,7 +14,7 @@ func TaskFinishEvent(message any, _ core.EventArgs) {
 		return
 	}
 
-	status := do.Task.Status
+	status := do.Task.ExecuteStatus
 	taskGroupRepository := container.Resolve[taskGroup.Repository]()
 	// 先保存任务内容
 	taskGroupRepository.SaveTask(do.Task)

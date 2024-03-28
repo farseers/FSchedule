@@ -3,7 +3,7 @@ package api
 
 import (
 	"FSchedule/domain/client"
-	"FSchedule/domain/enum"
+	"FSchedule/domain/enum/executeStatus"
 	"FSchedule/domain/schedule"
 	"FSchedule/domain/taskGroup"
 	"github.com/farseer-go/fs/exception"
@@ -13,10 +13,8 @@ import (
 // TaskReport 客户端回调
 // @post taskReport
 func TaskReport(dto client.TaskReportVO, taskGroupRepository taskGroup.Repository, scheduleRepository schedule.Repository) {
-	switch dto.Status {
-	case enum.None, enum.Scheduling, enum.ScheduleFail:
+	if dto.Status == executeStatus.None {
 		exception.ThrowWebExceptionf(403, "任务组 %s %d 回调的状态设置不正确：%s", dto.Name, dto.Id, dto.Status.String())
-	case enum.Working, enum.Fail, enum.Success: // 正确的，继续执行
 	}
 
 	// 加锁
@@ -32,13 +30,13 @@ func TaskReport(dto client.TaskReportVO, taskGroupRepository taskGroup.Repositor
 				exception.ThrowWebExceptionf(403, "任务id={%d} 不存在", dto.Id)
 			}
 			// 仅更新任务
-			taskEO.UpdateTask(dto.Status, dto.Data, dto.Progress, dto.RunSpeed)
+			taskEO.UpdateTask(dto.Status, dto.Data, dto.Progress, dto.RunSpeed, "")
 			taskGroupRepository.SaveTask(taskEO)
 			return
 		}
 
 		// 更新任务
-		taskGroupDO.Report(dto.Status, dto.Data, dto.Progress, dto.RunSpeed, dto.NextTimespan, taskGroupRepository)
+		taskGroupDO.Report(dto.Status, dto.Data, dto.Progress, dto.RunSpeed, dto.NextTimespan, "", taskGroupRepository)
 	})
 }
 
@@ -63,5 +61,5 @@ func KillTask(taskGroupName string, taskGroupRepository taskGroup.Repository, cl
 	}
 
 	// 更新任务状态
-	taskGroupDO.Report(enum.Fail, taskGroupDO.Data, taskGroupDO.Task.Progress, taskGroupDO.Task.RunSpeed, 0, taskGroupRepository)
+	taskGroupDO.Report(executeStatus.Fail, taskGroupDO.Data, taskGroupDO.Task.Progress, taskGroupDO.Task.RunSpeed, 0, "FOPS主动停止", taskGroupRepository)
 }

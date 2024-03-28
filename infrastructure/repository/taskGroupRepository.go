@@ -3,7 +3,8 @@ package repository
 import (
 	"FSchedule/domain"
 	"FSchedule/domain/client"
-	"FSchedule/domain/enum"
+	"FSchedule/domain/enum/executeStatus"
+	"FSchedule/domain/enum/scheduleStatus"
 	"FSchedule/domain/taskGroup"
 	"FSchedule/infrastructure/repository/context"
 	"FSchedule/infrastructure/repository/model"
@@ -120,7 +121,7 @@ func (receiver *taskGroupRepository) Sync() {
 	}
 }
 
-func (receiver *taskGroupRepository) ToListForPage(clientName, taskGroupName string, enable int, taskStatus enum.TaskStatus, taskId, clientId int64, pageSize int, pageIndex int) collections.PageList[taskGroup.DomainObject] {
+func (receiver *taskGroupRepository) ToListForPage(clientName, taskGroupName string, enable int, taskStatus executeStatus.Enum, taskId, clientId int64, pageSize int, pageIndex int) collections.PageList[taskGroup.DomainObject] {
 	lst := receiver.CacheManage.Get()
 	if taskGroupName != "" {
 		lst = lst.Where(func(item taskGroup.DomainObject) bool {
@@ -134,7 +135,7 @@ func (receiver *taskGroupRepository) ToListForPage(clientName, taskGroupName str
 	}
 	if taskStatus > -1 {
 		lst = lst.Where(func(item taskGroup.DomainObject) bool {
-			return item.Task.Status == taskStatus
+			return item.Task.ExecuteStatus == taskStatus
 		}).ToList()
 	}
 
@@ -187,28 +188,6 @@ func (receiver *taskGroupRepository) GetTaskGroupCount() int64 {
 
 func (receiver *taskGroupRepository) GetUnRunCount() int {
 	return receiver.CacheManage.Get().Where(func(item taskGroup.DomainObject) bool {
-		return item.IsEnable && (item.Task.Status == enum.None || item.Task.Status == enum.Scheduling) && item.NextAt.Before(dateTime.Now())
+		return item.IsEnable && (item.Task.ExecuteStatus == executeStatus.None && item.Task.ScheduleStatus == scheduleStatus.Scheduling) && item.NextAt.Before(dateTime.Now())
 	}).Count()
-}
-
-func (receiver *taskGroupRepository) GetUnRunList(pageSize int, pageIndex int) collections.PageList[taskGroup.DomainObject] {
-	lst := receiver.CacheManage.Get().Where(func(item taskGroup.DomainObject) bool {
-		return item.IsEnable && (item.Task.Status == enum.None || item.Task.Status == enum.Scheduling) && item.NextAt.Before(dateTime.Now())
-	})
-
-	// 排序
-	return lst.OrderBy(func(item taskGroup.DomainObject) any {
-		return item.Name + item.Caption
-	}).ToPageList(pageSize, pageIndex)
-}
-
-func (receiver *taskGroupRepository) ToSchedulerWorkingList(pageSize int, pageIndex int) collections.PageList[taskGroup.DomainObject] {
-	lst := receiver.CacheManage.Get().Where(func(item taskGroup.DomainObject) bool {
-		return item.Task.Status == enum.Scheduling || item.Task.Status == enum.Working
-	}).ToList()
-
-	// 排序
-	return lst.OrderBy(func(item taskGroup.DomainObject) any {
-		return item.Name + item.Caption
-	}).ToPageList(pageSize, pageIndex)
 }

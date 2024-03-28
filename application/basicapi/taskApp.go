@@ -3,7 +3,8 @@ package basicapi
 
 import (
 	"FSchedule/application/basicapi/response"
-	"FSchedule/domain/enum"
+	"FSchedule/domain/enum/executeStatus"
+	"FSchedule/domain/enum/scheduleStatus"
 	"FSchedule/domain/taskGroup"
 	"fmt"
 	"github.com/farseer-go/collections"
@@ -15,14 +16,14 @@ import (
 
 // 任务列表
 // @get list
-func TaskList(clientName, taskGroupName string, taskStatus enum.TaskStatus, taskId int64, pageSize int, pageIndex int, taskGroupRepository taskGroup.Repository) collections.PageList[taskGroup.TaskEO] {
+func TaskList(clientName, taskGroupName string, scheduleStatus scheduleStatus.Enum, executeStatus executeStatus.Enum, taskId string, pageSize int, pageIndex int, taskGroupRepository taskGroup.Repository) collections.PageList[taskGroup.TaskEO] {
 	if pageSize < 1 {
 		pageSize = 20
 	}
 	if pageIndex < 1 {
 		pageIndex = 1
 	}
-	return taskGroupRepository.ToTaskListByGroupId(clientName, taskGroupName, taskStatus, taskId, pageSize, pageIndex)
+	return taskGroupRepository.ToHistoryTaskList(clientName, taskGroupName, scheduleStatus, executeStatus, taskId, pageSize, pageIndex)
 }
 
 // 按计划执行时间排序
@@ -53,21 +54,26 @@ func TaskPlanList(top int, taskGroupRepository taskGroup.Repository) collections
 		schedulerAt := source.(taskGroup.TaskEO).SchedulerAt
 		isAfter := startAt.After(dateTime.Now())
 
-		switch r.Status {
-		case enum.None:
-			if isAfter {
-				r.StartAt = fmt.Sprintf("等待 %s", (time.Duration(startAt.Sub(dateTime.Now()).Seconds()) * time.Second).String())
-			} else {
-				r.StartAt = fmt.Sprintf("超时 %s", (time.Duration(dateTime.Now().Sub(startAt).Seconds()) * time.Second).String())
+		switch r.ExecuteStatus {
+		case executeStatus.None:
+			if r.ScheduleStatus != scheduleStatus.None {
+				r.Plan = r.ScheduleStatus.String()
 			}
-		case enum.ScheduleFail:
-			r.StartAt = fmt.Sprintf("调度失败，超时 %s", (time.Duration(dateTime.Now().Sub(startAt).Seconds()) * time.Second).String())
-		case enum.Scheduling, enum.Working:
-			r.StartAt = fmt.Sprintf("已执行 %s", (time.Duration(dateTime.Now().Sub(schedulerAt).Seconds()) * time.Second).String())
+
+			if isAfter {
+				// 等待
+				r.Plan += "等待 " + (time.Duration(startAt.Sub(dateTime.Now()).Seconds()) * time.Second).String()
+			} else {
+				// 超时
+				r.Plan += "超时 " + (time.Duration(dateTime.Now().Sub(startAt).Seconds()) * time.Second).String()
+			}
+		case executeStatus.Working:
+			r.Plan = fmt.Sprintf("已执行 %s", (time.Duration(dateTime.Now().Sub(schedulerAt).Seconds()) * time.Second).String())
 		default:
 		}
-		r.StartAt = strings.ReplaceAll(r.StartAt, "m", "分")
-		r.StartAt = strings.ReplaceAll(r.StartAt, "s", "秒")
-		r.StartAt = strings.ReplaceAll(r.StartAt, "h", "时")
+
+		r.Plan = strings.ReplaceAll(r.Plan, "m", "分")
+		r.Plan = strings.ReplaceAll(r.Plan, "s", "秒")
+		r.Plan = strings.ReplaceAll(r.Plan, "h", "时")
 	})
 }

@@ -5,7 +5,7 @@ import (
 	"FSchedule/application/basicapi/request"
 	"FSchedule/application/basicapi/response"
 	"FSchedule/domain"
-	"FSchedule/domain/enum"
+	"FSchedule/domain/enum/executeStatus"
 	"FSchedule/domain/taskGroup"
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs/exception"
@@ -14,7 +14,7 @@ import (
 
 // 任务组列表
 // @get list
-func TaskGroupList(clientName, taskGroupName string, enable int, taskStatus enum.TaskStatus, taskId, clientId int64, pageSize int, pageIndex int, taskGroupRepository taskGroup.Repository) collections.PageList[response.TaskGroupResponse] {
+func TaskGroupList(clientName, taskGroupName string, enable int, taskStatus executeStatus.Enum, taskId, clientId int64, pageSize int, pageIndex int, taskGroupRepository taskGroup.Repository) collections.PageList[response.TaskGroupResponse] {
 	if pageSize < 1 {
 		pageSize = 20
 	}
@@ -85,48 +85,3 @@ func SetEnable(taskGroupName string, enable bool, taskGroupRepository taskGroup.
 	taskGroupDO.SetEnable(enable)
 	taskGroupRepository.Save(taskGroupDO)
 }
-
-/*
-// 任务组到期未运行任务组列表
-// @get unRunList
-func TaskGroupUnRunList(pageSize int, pageIndex int, taskGroupRepository taskGroup.Repository) collections.PageList[response.TaskGroupResponse] {
-	if pageSize < 1 {
-		pageSize = 20
-	}
-	if pageIndex < 1 {
-		pageIndex = 1
-	}
-
-	lst := taskGroupRepository.GetUnRunList(pageSize, pageIndex)
-	lstTaskGroupResponse := mapper.ToPageList[response.TaskGroupResponse](lst)
-	// 获取每个任务组当前注册的客户端
-	lstTaskGroupResponse.List.Foreach(func(item *response.TaskGroupResponse) {
-		item.Clients = collections.NewList[response.ClientResponse]()
-		for _, c := range domain.GetClientList(item.Name).ToArray() {
-			item.Clients.Add(mapper.Single[response.ClientResponse](*c))
-		}
-	})
-	return lstTaskGroupResponse
-}
-
-// 调度中或执行中的任务组
-// @get schedulerWorkingList
-func TaskGroupSchedulerList(pageSize int, pageIndex int, taskGroupRepository taskGroup.Repository) collections.PageList[response.TaskGroupResponse] {
-	if pageSize < 1 {
-		pageSize = 20
-	}
-	if pageIndex < 1 {
-		pageIndex = 1
-	}
-	lst := taskGroupRepository.ToSchedulerWorkingList(pageSize, pageIndex)
-	lstTaskGroupResponse := mapper.ToPageList[response.TaskGroupResponse](lst)
-	// 获取每个任务组当前注册的客户端
-	lstTaskGroupResponse.List.Foreach(func(item *response.TaskGroupResponse) {
-		item.Clients = collections.NewList[response.ClientResponse]()
-		for _, c := range domain.GetClientList(item.Name).ToArray() {
-			item.Clients.Add(mapper.Single[response.ClientResponse](*c))
-		}
-	})
-	return lstTaskGroupResponse
-}
-*/

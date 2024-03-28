@@ -2,7 +2,7 @@ package domain
 
 import (
 	"FSchedule/domain/client"
-	"FSchedule/domain/enum"
+	"FSchedule/domain/enum/clientStatus"
 	"FSchedule/domain/serverNode"
 	"context"
 	"github.com/farseer-go/collections"
@@ -106,7 +106,7 @@ func ClientCount() int {
 // ClientNormalCount 返回正常状态的客户端数量
 func ClientNormalCount() int {
 	return clientList.Values().Where(func(item *ClientMonitor) bool {
-		return item.client.Status == enum.Scheduler
+		return item.client.Status == clientStatus.Scheduler
 	}).Count()
 }
 

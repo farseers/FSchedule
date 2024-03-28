@@ -34,7 +34,7 @@ type DomainObject struct {
 }
 
 func New(name string, caption string, ver int, strCron string, data collections.Dictionary[string, string], startAt int64, enable bool) *DomainObject {
-	do := &DomainObject{}
+	do := &DomainObject{Ver: ver - 1}
 	do.UpdateVer(name, caption, ver, strCron, data, startAt, enable)
 	return do
 }

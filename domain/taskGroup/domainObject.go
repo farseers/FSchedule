@@ -116,6 +116,7 @@ func (receiver *DomainObject) CreateTask() {
 		receiver.RunCount++
 		receiver.LastRunAt = dateTime.Now()
 		receiver.ActivateAt = dateTime.Now()
+		receiver.LastExecuteStatus = receiver.Task.ExecuteStatus
 	}
 	receiver.Task = TaskEO{
 		Id:             snowflake.GenerateId(),

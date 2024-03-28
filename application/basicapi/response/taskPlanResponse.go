@@ -9,7 +9,7 @@ import (
 )
 
 type TaskPlanResponse struct {
-	Id             int64                                  // 主键
+	Id             string                                 // 主键
 	TraceId        string                                 // 上下文ID
 	Name           string                                 // 实现Job的特性名称（客户端识别哪个实现类）
 	Ver            int                                    // 版本

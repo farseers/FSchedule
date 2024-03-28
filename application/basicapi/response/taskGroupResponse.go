@@ -24,7 +24,7 @@ type TaskGroupResponse struct {
 }
 
 type ClientResponse struct {
-	Id   int64  // 客户端ID
+	Id   string // 客户端ID
 	Name string // 客户端名称
 	Ip   string // 客户端IP
 	Port int    // 客户端端口

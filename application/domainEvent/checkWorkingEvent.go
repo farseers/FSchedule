@@ -33,7 +33,7 @@ func CheckWorkingEvent(message any, _ core.EventArgs) {
 		if dto.IsNil() {
 			do.ReportFail(taskGroupRepository, "客户端dto返回nil")
 		} else {
-			do.Report(dto.Status, dto.Data, dto.Progress, dto.RunSpeed, dto.NextTimespan, "", taskGroupRepository)
+			do.Report(dto.Status, dto.Data, dto.Progress, dto.NextTimespan, "", taskGroupRepository)
 		}
 	}
 

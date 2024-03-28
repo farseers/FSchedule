@@ -178,6 +178,8 @@ func (receiver *DomainObject) CalculateNextAtByCron() bool {
 		} else {
 			receiver.NextAt = dateTime.New(cornSchedule.Next(time.Now()))
 		}
+	} else {
+		flog.Debugf("任务组：%s %d 时间不相等，NextAt=%s，Task.StartAt=%s", receiver.Name, receiver.Task.Id, receiver.NextAt.ToString("yyyy-MM-dd HH:mm:ss"), receiver.Task.StartAt.ToString("yyyy-MM-dd HH:mm:ss"))
 	}
 	return true
 }

@@ -163,7 +163,7 @@ func (receiver *DomainObject) CanScheduler() bool {
 // CalculateNextAtByUnix 重新计算下一个执行周期
 func (receiver *DomainObject) CalculateNextAtByUnix(timespan int64) {
 	if timespan > 0 {
-		flog.Infof("任务组:%s 设置了timespan=%d,更新下一次时间为%s", receiver.Name, timespan, receiver.NextAt.ToString("yyyy-MM-dd HH:mm:ss"))
+		//flog.Infof("任务组:%s 设置了timespan=%d,更新下一次时间为%s", receiver.Name, timespan, receiver.NextAt.ToString("yyyy-MM-dd HH:mm:ss"))
 		receiver.NextAt = dateTime.NewUnixMilli(timespan)
 	}
 }
@@ -176,7 +176,7 @@ func (receiver *DomainObject) CalculateNextAtByCron() bool {
 		if receiver.Task.ExecuteStatus == executeStatus.Fail && receiver.RetryDelaySecond > 0 {
 			// 失败，则为下一秒在执行
 			receiver.NextAt = dateTime.Now().AddSeconds(receiver.RetryDelaySecond)
-			flog.Infof("任务组:%s 执行失败，将在1秒后（%s）继续执行", receiver.Name, receiver.NextAt.ToString("yyyy-MM-dd HH:mm:ss"))
+			flog.Debugf("任务组:%s 执行失败，将在%d秒后（%s）继续执行", receiver.Name, receiver.RetryDelaySecond, receiver.NextAt.ToString("yyyy-MM-dd HH:mm:ss"))
 			return true
 		}
 
@@ -186,12 +186,8 @@ func (receiver *DomainObject) CalculateNextAtByCron() bool {
 			receiver.IsEnable = false
 			return false
 		} else {
-			nextAt := receiver.NextAt
 			receiver.NextAt = dateTime.New(cornSchedule.Next(time.Now()))
-			flog.Debugf("任务组：%s %d 调用了corn，之前时间：%s，下次执行时间：%s 格式：%s", receiver.Name, receiver.Task.Id, nextAt.ToString("yyyy-MM-dd HH:mm:ss"), receiver.NextAt.ToString("yyyy-MM-dd HH:mm:ss"), receiver.Cron)
 		}
-	} else {
-		flog.Debugf("任务组：%s %d 时间不相等，NextAt=%s，Task.StartAt=%s", receiver.Name, receiver.Task.Id, receiver.NextAt.ToString("yyyy-MM-dd HH:mm:ss"), receiver.Task.StartAt.ToString("yyyy-MM-dd HH:mm:ss"))
 	}
 	return true
 }

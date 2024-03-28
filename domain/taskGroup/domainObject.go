@@ -176,7 +176,9 @@ func (receiver *DomainObject) CalculateNextAtByCron() bool {
 			receiver.IsEnable = false
 			return false
 		} else {
+			nextAt := receiver.NextAt
 			receiver.NextAt = dateTime.New(cornSchedule.Next(time.Now()))
+			flog.Debugf("任务组：%s %d 调用了corn，之前时间：%s，下次执行时间：%s 格式：%s", receiver.Name, receiver.Task.Id, nextAt.ToString("yyyy-MM-dd HH:mm:ss"), receiver.NextAt.ToString("yyyy-MM-dd HH:mm:ss"), receiver.Cron)
 		}
 	} else {
 		flog.Debugf("任务组：%s %d 时间不相等，NextAt=%s，Task.StartAt=%s", receiver.Name, receiver.Task.Id, receiver.NextAt.ToString("yyyy-MM-dd HH:mm:ss"), receiver.Task.StartAt.ToString("yyyy-MM-dd HH:mm:ss"))

@@ -12,13 +12,13 @@ const (
 func (e Enum) String() string {
 	switch e {
 	case None:
-		return "None"
+		return "未调度"
 	case Scheduling:
-		return "Scheduling"
+		return "调度中"
 	case Success:
-		return "Success"
+		return "调度成功"
 	case Fail:
-		return "Fail"
+		return "调度失败"
 	}
-	return "None"
+	return "未调度"
 }

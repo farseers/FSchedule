@@ -154,8 +154,7 @@ func (receiver *TaskGroupMonitor) Start() {
 					receiver.taskFinish()
 				case executeStatus.None:
 					// 等待客户端上报运行状态
-					// todo 这里要加个超时设置。超过一定时间，如果还是处于未运行状态。则判断失败
-					<-receiver.updated
+					receiver.waitJobReportWorkStatus()
 				default:
 					flog.Warningf("任务组：%s ver:%s 出现未知执行状态：%d 将强制设为失败状态", flog.Blue(receiver.Name), flog.Yellow(receiver.Ver), receiver.Task.ExecuteStatus)
 					receiver.Task.SetFail(fmt.Sprintf("出现未知执行状态：%d", receiver.Task.ExecuteStatus))
@@ -202,8 +201,9 @@ func (receiver *TaskGroupMonitor) waitStart() {
 // 等待调度
 func (receiver *TaskGroupMonitor) waitScheduler() {
 	// 由于创建锁的时候，需要网络IO开销，所以这里提前100ms进入
+	timer := timingWheel.AddTime(receiver.Task.StartAt.AddMillisecond(-100).ToTime())
 	select {
-	case <-timingWheel.AddTime(receiver.Task.StartAt.AddMillisecond(-100).ToTime()).C: // 执行时间到了，准开始调度
+	case <-timer.C: // 执行时间到了，准开始调度
 		// 提前了100ms进到这里。
 		receiver.Task.SetScheduling()
 		//if m := dateTime.Since(receiver.Task.StartAt).Microseconds(); m > 0 {
@@ -213,6 +213,7 @@ func (receiver *TaskGroupMonitor) waitScheduler() {
 		_ = receiver.SchedulerEventBus.Publish(receiver)
 	case <-receiver.updated:
 		//flog.Debugf("任务组：%s %d 有更新", receiver.Name, receiver.Task.Id)
+		timer.Stop()
 	}
 }
 
@@ -243,10 +244,21 @@ func (receiver *TaskGroupMonitor) taskFinish() {
 	_ = receiver.FinishEventBus.Publish(receiver.DomainObject)
 }
 
+// 检查超时未执行
+func (receiver *TaskGroupMonitor) waitJobReportWorkStatus() {
+	timer := timingWheel.AddTime(receiver.Task.SchedulerAt.AddSeconds(10).ToTime())
+	select {
+	case <-timer.C: // 调度时间超过10s，仍未执行
+		_ = receiver.CheckWorkingEventBus.Publish(receiver)
+	case <-receiver.updated:
+		timer.Stop()
+	}
+}
+
 // 更新客户端
 func (receiver *TaskGroupMonitor) updateClient(newData *client.DomainObject) {
 	// 状态为不可调度时，则移除列表
-	if newData.IsNotSchedule() {
+	if newData.IsOffline() {
 		// 移除客户端
 		if receiver.clients.ContainsKey(newData.Id) {
 			receiver.clients.Remove(newData.Id)

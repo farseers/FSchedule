@@ -134,11 +134,13 @@ func (receiver *DomainObject) scheduleFail() {
 	receiver.ErrorCount++
 	if receiver.ErrorCount >= 3 {
 		receiver.Status = clientStatus.UnSchedule
+		flog.Warningf("客户端%s（%d）：%s:%d 调度失败%d次，状态变更为：%s", receiver.Name, receiver.Id, receiver.Ip, receiver.Port, receiver.ErrorCount, receiver.Status.String())
 	}
 
 	// 大于5次、活动时间超过30秒，则判定为离线
 	now := dateTime.Now()
 	if receiver.ErrorCount >= 5 && now.Sub(receiver.ActivateAt).Seconds() >= 30 {
 		receiver.Logout()
+		flog.Warningf("客户端%s（%d）：%s:%d 调度失败%d次且超过30秒没有活动，状态变更为：%s", receiver.Name, receiver.Id, receiver.Ip, receiver.Port, receiver.ErrorCount, receiver.Status.String())
 	}
 }

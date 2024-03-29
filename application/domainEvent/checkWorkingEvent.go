@@ -3,7 +3,6 @@ package domainEvent
 import (
 	"FSchedule/domain"
 	"FSchedule/domain/client"
-	"FSchedule/domain/enum/executeStatus"
 	"FSchedule/domain/taskGroup"
 	"github.com/farseer-go/fs/container"
 	"github.com/farseer-go/fs/core"
@@ -14,7 +13,7 @@ func CheckWorkingEvent(message any, _ core.EventArgs) {
 	do := message.(*domain.TaskGroupMonitor)
 	taskGroupRepository := container.Resolve[taskGroup.Repository]()
 
-	if do.Task.ExecuteStatus != executeStatus.Working {
+	if do.Task.ExecuteStatus.IsFinish() {
 		return
 	}
 

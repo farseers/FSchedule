@@ -16,14 +16,17 @@ import (
 
 // 任务列表
 // @get list
-func TaskList(clientName, taskGroupName string, scheduleStatus scheduleStatus.Enum, executeStatus executeStatus.Enum, taskId string, pageSize int, pageIndex int, taskGroupRepository taskGroup.Repository) collections.PageList[taskGroup.TaskEO] {
+func TaskList(clientName, taskGroupName string, scheduleStatus scheduleStatus.Enum, executeStatus executeStatus.Enum, taskId string, pageSize int, pageIndex int, taskGroupRepository taskGroup.Repository) collections.PageList[response.TaskResponse] {
 	if pageSize < 1 {
 		pageSize = 20
 	}
 	if pageIndex < 1 {
 		pageIndex = 1
 	}
-	return taskGroupRepository.ToHistoryTaskList(clientName, taskGroupName, scheduleStatus, executeStatus, taskId, pageSize, pageIndex)
+	lst := taskGroupRepository.ToHistoryTaskList(clientName, taskGroupName, scheduleStatus, executeStatus, taskId, pageSize, pageIndex)
+	return mapper.ToPageList[response.TaskResponse](lst, func(r *response.TaskResponse, a any) {
+		r.RunSpeed = (time.Duration(a.(taskGroup.TaskEO).RunSpeed) * time.Millisecond).String()
+	})
 }
 
 // 按计划执行时间排序

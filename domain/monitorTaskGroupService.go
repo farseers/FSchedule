@@ -252,7 +252,7 @@ func (receiver *TaskGroupMonitor) updateClient(newData *client.DomainObject) {
 			}
 
 			receiver.updateNotice()
-			flog.Debugf("任务组：%s 移除客户端：%s %d 状态：%s", receiver.Name, newData.Name, newData.Id, newData.Status)
+			flog.Debugf("任务组：%s 移除客户端：%s %d 状态：%s", receiver.Name, newData.Name, newData.Id, newData.Status.String())
 		}
 	} else {
 		if !receiver.clients.ContainsKey(newData.Id) {

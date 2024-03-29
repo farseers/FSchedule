@@ -5,7 +5,7 @@ import (
 	"FSchedule/domain"
 	"FSchedule/domain/serverNode"
 	"FSchedule/domain/taskGroup"
-	"github.com/farseer-go/fs"
+	"context"
 	"github.com/farseer-go/fs/configure"
 	"github.com/farseer-go/fs/container"
 	"github.com/farseer-go/fs/core"
@@ -39,7 +39,7 @@ func ClusterLeaderSubscribe(message any, _ core.EventArgs) {
 				container.Resolve[core.ITransaction]("default").Transaction(func() {
 					container.Resolve[taskGroup.Repository]().Sync()
 				})
-			}, fs.Context)
+			}, context.Background())
 		}
 
 		// 标记当前节点为Leader
@@ -47,14 +47,14 @@ func ClusterLeaderSubscribe(message any, _ core.EventArgs) {
 		serverNode.IsLeaderNode = true
 
 		// 移除30秒不活跃的
-		tasks.Run("ServerNodeTimeoutJob", 30*time.Second, job.ServerNodeTimeoutJob, fs.Context)
+		tasks.Run("ServerNodeTimeoutJob", 30*time.Second, job.ServerNodeTimeoutJob, context.Background())
 
 		// 计算任务组的平均耗时
-		tasks.Run("SyncAvgSpeedJob", 30*time.Minute, job.SyncAvgSpeedJob, fs.Context)
+		tasks.Run("SyncAvgSpeedJob", 30*time.Minute, job.SyncAvgSpeedJob, context.Background())
 
 		// 自动清除历史任务记录
 		if configure.GetInt("FSchedule.ReservedTaskCount") > 0 {
-			tasks.Run("ClearHisTaskJob", 1*time.Hour, job.ClearHisTaskJob, fs.Context)
+			tasks.Run("ClearHisTaskJob", 1*time.Hour, job.ClearHisTaskJob, context.Background())
 		}
 	}
 }

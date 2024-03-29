@@ -134,7 +134,7 @@ func (receiver *DomainObject) CreateTask() {
 		Caption:        receiver.Caption,
 		Name:           receiver.Name,
 		StartAt:        receiver.NextAt,
-		RunAt:          dateTime.Now(),
+		RunAt:          receiver.NextAt,
 		RunSpeed:       0,
 		Progress:       0,
 		ScheduleStatus: scheduleStatus.None,

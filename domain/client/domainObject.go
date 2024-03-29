@@ -42,7 +42,7 @@ func (receiver *DomainObject) IsOffline() bool {
 
 // IsNotSchedule 状态不是调度状态
 func (receiver *DomainObject) IsNotSchedule() bool {
-	return receiver.Status != clientStatus.Scheduler
+	return receiver.Status == clientStatus.Offline
 }
 
 // Registry 注册客户端
@@ -136,7 +136,7 @@ func (receiver *DomainObject) scheduleFail() {
 		receiver.Status = clientStatus.UnSchedule
 	}
 
-	// 大于3次、活动时间超过30秒，则判定为离线
+	// 大于5次、活动时间超过30秒，则判定为离线
 	now := dateTime.Now()
 	if receiver.ErrorCount >= 5 && now.Sub(receiver.ActivateAt).Seconds() >= 30 {
 		receiver.Logout()

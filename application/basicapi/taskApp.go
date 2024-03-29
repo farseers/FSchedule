@@ -69,6 +69,7 @@ func TaskPlanList(top int, taskGroupRepository taskGroup.Repository) collections
 				if r.Plan == "等待 0s" {
 					r.Plan = "等待调度"
 				}
+
 			} else {
 				// 超时
 				r.Plan += "超时 " + (time.Duration(dateTime.Now().Sub(startAt).Seconds()) * time.Second).String()
@@ -78,6 +79,7 @@ func TaskPlanList(top int, taskGroupRepository taskGroup.Repository) collections
 		default:
 		}
 
+		r.Plan = strings.ReplaceAll(r.Plan, "等待 0s", "等待执行")
 		r.Plan = strings.ReplaceAll(r.Plan, "m", "分")
 		r.Plan = strings.ReplaceAll(r.Plan, "s", "秒")
 		r.Plan = strings.ReplaceAll(r.Plan, "h", "时")

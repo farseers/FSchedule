@@ -66,6 +66,9 @@ func TaskPlanList(top int, taskGroupRepository taskGroup.Repository) collections
 			if isAfter {
 				// 等待
 				r.Plan += "等待 " + (time.Duration(startAt.Sub(dateTime.Now()).Seconds()) * time.Second).String()
+				if r.Plan == "等待 0s" {
+					r.Plan = "等待调度"
+				}
 			} else {
 				// 超时
 				r.Plan += "超时 " + (time.Duration(dateTime.Now().Sub(startAt).Seconds()) * time.Second).String()

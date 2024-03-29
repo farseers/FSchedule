@@ -225,9 +225,10 @@ func (receiver *TaskGroupMonitor) waitWorking() {
 		return
 	}
 
+	// 小于10s，则按10s检查一次
 	checkWorkWaitMillisecond := time.Duration(receiver.RunSpeedAvg * 3)
-	if checkWorkWaitMillisecond < 3000 {
-		checkWorkWaitMillisecond = 3000
+	if checkWorkWaitMillisecond < 10000 {
+		checkWorkWaitMillisecond = 10000
 	}
 	timer := timingWheel.Add(checkWorkWaitMillisecond * time.Millisecond)
 	select {

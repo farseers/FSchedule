@@ -60,7 +60,7 @@ func TaskPlanList(top int, taskGroupRepository taskGroup.Repository) collections
 		switch r.ExecuteStatus {
 		case executeStatus.None:
 			if r.ScheduleStatus != scheduleStatus.None {
-				r.Plan = r.ScheduleStatus.String()
+				r.Plan = r.ScheduleStatus.String() + "，"
 			}
 
 			if isAfter {

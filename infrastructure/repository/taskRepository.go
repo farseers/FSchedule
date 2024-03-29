@@ -86,7 +86,7 @@ func (receiver *taskRepository) ToHistoryTaskList(clientName, taskGroupName stri
 }
 
 func (receiver *taskRepository) ToTaskSpeedList() collections.List[taskGroup.TaskEO] {
-	sql := "SELECT name, avg(`run_speed`) as `run_speed` FROM `fschedule_task` WHERE execute_status = ? and create_at >= DATE_SUB(CURDATE(), INTERVAL 3 DAY) group by name"
+	sql := "SELECT name, CAST(avg(`run_speed`) as UNSIGNED) as `run_speed` FROM `fschedule_task` WHERE execute_status = ? and create_at >= DATE_SUB(CURDATE(), INTERVAL 3 DAY) group by name"
 	lstPO := context.MysqlContextIns("计算任务Task速度").Task.ExecuteSqlToList(sql, executeStatus.Success)
 	return mapper.ToList[taskGroup.TaskEO](lstPO)
 }

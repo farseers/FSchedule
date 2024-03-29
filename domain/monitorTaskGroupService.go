@@ -224,7 +224,11 @@ func (receiver *TaskGroupMonitor) waitWorking() {
 		return
 	}
 
-	timer := timingWheel.Add(time.Duration(receiver.RunSpeedAvg*3) * time.Millisecond)
+	checkWorkWaitMillisecond := time.Duration(receiver.RunSpeedAvg * 3)
+	if checkWorkWaitMillisecond < 3000 {
+		checkWorkWaitMillisecond = 3000
+	}
+	timer := timingWheel.Add(checkWorkWaitMillisecond * time.Millisecond)
 	select {
 	case <-timer.C: // 每隔60秒，主动向客户端询问任务状态
 		flog.Debugf("任务组：%s 主动向客户端询问任务状态", receiver.Name)

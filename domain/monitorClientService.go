@@ -82,6 +82,12 @@ func (receiver *ClientMonitor) checkOnline() {
 
 		select {
 		case <-timingWheel.Add(checkTime).C:
+			// 客户端接受调度状态，且60秒内有活动的，不需要检查
+			if receiver.client.Status == clientStatus.Scheduler && dateTime.Now().Sub(receiver.client.ActivateAt).Seconds() < 60 {
+				continue
+			}
+
+			// 检查非离线状态
 			if !receiver.client.IsOffline() {
 				// 链路追踪
 				traceContext := container.Resolve[trace.IManager]().EntryTask("检查客户端在线状态")

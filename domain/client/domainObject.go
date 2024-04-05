@@ -72,10 +72,10 @@ func (receiver *DomainObject) CheckOnline() error {
 }
 
 // 向客户端检查任务状态
-func (receiver *DomainObject) CheckTaskStatus(taskId int64) (TaskReportVO, error) {
+func (receiver *DomainObject) CheckTaskStatus(taskGroupName string, taskId int64) (TaskReportVO, error) {
 	clientCheck := container.Resolve[IClientCheck]()
 
-	dto, err := clientCheck.Status(receiver, taskId)
+	dto, err := clientCheck.Status(receiver, taskGroupName, taskId)
 	if err != nil {
 		flog.Warningf("向客户端%s（%d）：%s:%d 检查任务失败：%s", receiver.Name, receiver.Id, receiver.Ip, receiver.Port, err.Error())
 		receiver.scheduleFail()

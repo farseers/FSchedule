@@ -28,7 +28,7 @@ func CheckWorkingEvent(message any, _ core.EventArgs) {
 	}
 
 	// 主动向客户端查询任务状态
-	if dto, err := clientDO.CheckTaskStatus(do.Task.Id); err == nil {
+	if dto, err := clientDO.CheckTaskStatus(do.Name, do.Task.Id); err == nil {
 		if dto.IsNil() {
 			do.ReportFail(taskGroupRepository, "客户端dto返回nil")
 		} else {

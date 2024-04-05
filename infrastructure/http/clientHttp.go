@@ -47,11 +47,12 @@ func (receiver clientHttp) Invoke(do *client.DomainObject, task client.TaskEO) (
 	return apiResponse.Data, nil
 }
 
-func (receiver clientHttp) Status(do *client.DomainObject, taskId int64) (client.TaskReportVO, error) {
+func (receiver clientHttp) Status(do *client.DomainObject, taskGroupName string, taskId int64) (client.TaskReportVO, error) {
 	clientUrl := fmt.Sprintf("http://%s:%d/api/status", do.Ip, do.Port)
 	var apiResponse core.ApiResponse[client.TaskReportVO]
 	body := map[string]any{
 		"TaskId": taskId,
+		"Name":   taskGroupName,
 	}
 	_, err := http.NewClient(clientUrl).HeadAdd(tokenName, token).Body(body).PostUnmarshal(&apiResponse)
 	if err != nil {

@@ -104,13 +104,13 @@ func (receiver *TaskGroupMonitor) Start() {
 		receiver.isWorking = false
 		receiver.waitWork = false
 		taskGroupList.Remove(receiver.Name)
+		flog.Infof("任务组：%s ver:%s 退出调度线程", flog.Blue(receiver.Name), flog.Yellow(receiver.Ver))
 	}()
 
 	// 没有可用客户端，不需要调度
 	for receiver.CanScheduleClient() == 0 {
 		select {
 		case <-receiver.ctx.Done(): // 任务组停止，或删除时退出
-			flog.Infof("任务组：%s ver:%s 退出等待线程", flog.Blue(receiver.Name), flog.Yellow(receiver.Ver))
 			return
 		case <-receiver.updated:
 			continue
@@ -128,11 +128,10 @@ func (receiver *TaskGroupMonitor) Start() {
 
 			select {
 			case <-receiver.ctx.Done(): // 任务组停止，或删除时退出
-				flog.Infof("任务组：%s ver:%s 退出调度线程", flog.Blue(receiver.Name), flog.Yellow(receiver.Ver))
 				return
 			default: // 没有停止时，继续往下走
 				if !receiver.IsEnable { // // 当corn格式错误时，会强制设为false，等待手动启动
-					flog.Infof("任务组：%s ver:%s 状态未启用，退出调度线程", flog.Blue(receiver.Name), flog.Yellow(receiver.Ver))
+					flog.Infof("任务组：%s ver:%s 状态未启用", flog.Blue(receiver.Name), flog.Yellow(receiver.Ver))
 					return
 				}
 			}

@@ -47,14 +47,10 @@ func MonitorTaskGroupPush(taskGroupDO *taskGroup.DomainObject) {
 		// 之前是运行状态，改为停止状态，则需要退出调度线程
 		needKill := taskGroupMonitor.IsEnable && !taskGroupDO.IsEnable
 		*taskGroupMonitor.DomainObject = *taskGroupDO
-		if taskGroupMonitor.isWorking {
-			//flog.Debugf("任务组更新通知：%s Ver:%d", taskGroupDO.Name, taskGroupDO.Ver)
-			taskGroupMonitor.updateNotice()
-		}
+		taskGroupMonitor.updateNotice()
 		if needKill {
 			// 强制退出线程
 			taskGroupMonitor.cancelFunc()
-			taskGroupList.Remove(taskGroupDO.Name)
 		}
 	}
 }
@@ -83,7 +79,7 @@ type TaskGroupMonitor struct {
 	updated              chan struct{}                                       // 数据有更新，让流程重置
 	curClient            *client.DomainObject                                // 当前调度的客户端
 	isWorking            bool                                                // 是否进入工作状态
-	isReadWork           bool                                                // 是否进入抢锁中（false：任务组enable=false、没有客户端）
+	waitWork             bool                                                // 进入抢占锁状态
 	*taskGroup.DomainObject
 	ctx        context.Context
 	cancelFunc context.CancelFunc
@@ -103,8 +99,15 @@ func newMonitor(do *taskGroup.DomainObject) *TaskGroupMonitor {
 
 // Start 监听任务组
 func (receiver *TaskGroupMonitor) Start() {
-	// 任务组状态不可用、没有可用客户端，不需要调度
-	for !receiver.IsEnable || receiver.CanScheduleClient() == 0 {
+	// 退出时，移除监控
+	defer func() {
+		receiver.isWorking = false
+		receiver.waitWork = false
+		taskGroupList.Remove(receiver.Name)
+	}()
+
+	// 没有可用客户端，不需要调度
+	for receiver.CanScheduleClient() == 0 {
 		select {
 		case <-receiver.ctx.Done(): // 任务组停止，或删除时退出
 			flog.Infof("任务组：%s ver:%s 退出等待线程", flog.Blue(receiver.Name), flog.Yellow(receiver.Ver))
@@ -115,7 +118,7 @@ func (receiver *TaskGroupMonitor) Start() {
 	}
 
 	// 抢占锁，谁抢到，谁负责这个任务组的调度（只允许一个集群节点监控任务组）
-	receiver.isReadWork = true
+	receiver.waitWork = true
 	receiver.ScheduleRepository.Schedule(receiver.Name, func() {
 		receiver.isWorking = true
 		flog.Infof("任务组：%s ver:%s 加入调度线程", flog.Blue(receiver.Name), flog.Yellow(receiver.Ver))
@@ -128,11 +131,10 @@ func (receiver *TaskGroupMonitor) Start() {
 				flog.Infof("任务组：%s ver:%s 退出调度线程", flog.Blue(receiver.Name), flog.Yellow(receiver.Ver))
 				return
 			default: // 没有停止时，继续往下走
-			}
-
-			// 当corn格式错误时，会强制设为false，等待手动启动
-			if !receiver.IsEnable {
-				<-receiver.updated
+				if !receiver.IsEnable { // // 当corn格式错误时，会强制设为false，等待手动启动
+					flog.Infof("任务组：%s ver:%s 状态未启用，退出调度线程", flog.Blue(receiver.Name), flog.Yellow(receiver.Ver))
+					return
+				}
 			}
 
 			switch receiver.Task.ScheduleStatus {
@@ -313,7 +315,9 @@ func (receiver *TaskGroupMonitor) CanScheduleClient() int {
 
 // 通知客户端有更新
 func (receiver *TaskGroupMonitor) updateNotice() {
-	if !receiver.isReadWork || receiver.isWorking {
+	// 进入抢占锁状态且没有在工作，说明没有拿到执行权，不需要更新
+	if !receiver.waitWork || receiver.isWorking {
+		//flog.Debugf("任务组更新通知：%s Ver:%d", taskGroupDO.Name, taskGroupDO.Ver)
 		receiver.updated <- struct{}{}
 	}
 }

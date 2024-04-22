@@ -34,8 +34,8 @@ type DomainObject struct {
 	RetryDelaySecond  int                                    // 失败后多少秒重试（0不重试）
 }
 
-func New(name string, caption string, ver int, strCron string, data collections.Dictionary[string, string], startAt int64, enable bool) *DomainObject {
-	do := &DomainObject{Ver: ver - 1}
+func New(name string, caption string, ver int, strCron string, data collections.Dictionary[string, string], startAt int64, enable bool) DomainObject {
+	do := DomainObject{Ver: ver - 1}
 	do.UpdateVer(name, caption, ver, strCron, data, startAt, enable)
 	return do
 }

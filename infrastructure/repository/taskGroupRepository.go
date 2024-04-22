@@ -53,12 +53,6 @@ func (receiver *taskGroupRepository) ToList() collections.List[taskGroup.DomainO
 	return receiver.CacheManage.Get()
 }
 
-func (receiver *taskGroupRepository) ToListByName(taskGroupName string) collections.List[taskGroup.DomainObject] {
-	return receiver.CacheManage.Get().Where(func(item taskGroup.DomainObject) bool {
-		return item.Name == taskGroupName
-	}).ToList()
-}
-
 func (receiver *taskGroupRepository) ToEntity(taskGroupName string) taskGroup.DomainObject {
 	item, _ := receiver.CacheManage.GetItem(taskGroupName)
 	return item

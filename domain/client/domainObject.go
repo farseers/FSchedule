@@ -45,6 +45,11 @@ func (receiver *DomainObject) IsNotSchedule() bool {
 	return receiver.Status != clientStatus.Scheduler
 }
 
+// IsNotSchedule 可调度状态
+func (receiver *DomainObject) IsCanSchedule() bool {
+	return receiver.Status == clientStatus.Scheduler || receiver.Status == clientStatus.Online
+}
+
 // Registry 注册客户端
 func (receiver *DomainObject) Registry() {
 	receiver.ActivateAt = dateTime.Now()

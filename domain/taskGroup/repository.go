@@ -12,8 +12,6 @@ type Repository interface {
 	ToEntity(taskGroupName string) DomainObject
 	// ToList 获取所有任务组中的任务
 	ToList() collections.List[DomainObject]
-	// ToListByName 获取所有任务组中的任务
-	ToListByName(taskGroupName string) collections.List[DomainObject]
 	// Save 保存任务组信息
 	Save(do DomainObject)
 	// SaveAndTask 保存任务组、任务信息

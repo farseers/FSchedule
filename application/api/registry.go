@@ -7,7 +7,6 @@ import (
 	"FSchedule/domain/taskGroup"
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs/exception"
-	"github.com/farseer-go/fs/flog"
 	"github.com/farseer-go/mapper"
 	"github.com/farseer-go/webapi"
 )
@@ -38,6 +37,14 @@ type RegistryResponse struct {
 // Registry 客户端注册
 // @post /registry
 func Registry(dto RegistryDTO, clientRepository client.Repository, taskGroupRepository taskGroup.Repository, scheduleRepository schedule.Repository) RegistryResponse {
+	// 注册客户端时，如果之前已注册过，且为可调度状态，则不操作
+	if do := clientRepository.ToEntity(dto.Id); !do.IsNil() && do.IsCanSchedule() {
+		return RegistryResponse{
+			ClientIp:   do.Ip,
+			ClientPort: do.Port,
+		}
+	}
+
 	do := mapper.Single[client.DomainObject](dto)
 	// 如果客户端没有指定IP时，由服务端获取
 	if do.Ip == "" {
@@ -48,7 +55,7 @@ func Registry(dto RegistryDTO, clientRepository client.Repository, taskGroupRepo
 		exception.ThrowWebException(403, "客户端ID、Name、IP、Port未完整传入")
 	}
 
-	flog.Debugf("接收到客户端%s（%d）：%s:%d 注册请求", dto.Name, dto.Id, dto.Ip, dto.Port)
+	//flog.Debugf("接收到客户端%s（%d）：%s:%d 注册请求", dto.Name, dto.Id, dto.Ip, dto.Port)
 	// 更新任务组
 	for _, jobDTO := range dto.Jobs {
 		// 确认cron格式是否正确
@@ -57,18 +64,17 @@ func Registry(dto RegistryDTO, clientRepository client.Repository, taskGroupRepo
 			exception.ThrowWebExceptionf(403, "任务组:%s %s，Cron格式[%s]错误:%s", jobDTO.Name, jobDTO.Caption, jobDTO.Cron, err.Error())
 		}
 
-		lstTaskGroup := taskGroupRepository.ToListByName(jobDTO.Name)
+		taskGroupDO := taskGroupRepository.ToEntity(jobDTO.Name)
 		// 当没有找到任务组时，注册一个新的任务组
-		if lstTaskGroup.Count() == 0 {
-			taskGroupDO := taskGroup.New(jobDTO.Name, jobDTO.Caption, jobDTO.Ver, jobDTO.Cron, jobDTO.Data, jobDTO.StartAt, jobDTO.IsEnable)
-			taskGroupRepository.Save(*taskGroupDO)
-		} else { // 找到任务组，则更新现有任务组版本（如果有变动）
-			lstTaskGroup.Foreach(func(taskGroupDO *taskGroup.DomainObject) {
-				taskGroupDO.UpdateVer(jobDTO.Name, jobDTO.Caption, jobDTO.Ver, jobDTO.Cron, taskGroupDO.Data, jobDTO.StartAt, jobDTO.IsEnable)
-				if taskGroupDO.NeedSave {
-					taskGroupRepository.Save(*taskGroupDO)
-				}
-			})
+		if taskGroupDO.IsNil() {
+			taskGroupDO = taskGroup.New(jobDTO.Name, jobDTO.Caption, jobDTO.Ver, jobDTO.Cron, jobDTO.Data, jobDTO.StartAt, jobDTO.IsEnable)
+			taskGroupRepository.Save(taskGroupDO)
+		} else {
+			// 找到任务组，则更新现有任务组版本（如果有变动）
+			taskGroupDO.UpdateVer(jobDTO.Name, jobDTO.Caption, jobDTO.Ver, jobDTO.Cron, taskGroupDO.Data, jobDTO.StartAt, jobDTO.IsEnable)
+			if taskGroupDO.NeedSave {
+				taskGroupRepository.Save(taskGroupDO)
+			}
 		}
 		do.Jobs.Add(mapper.Single[client.JobVO](jobDTO))
 	}

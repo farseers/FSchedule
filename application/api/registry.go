@@ -7,6 +7,7 @@ import (
 	"FSchedule/domain/taskGroup"
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs/exception"
+	"github.com/farseer-go/fs/flog"
 	"github.com/farseer-go/mapper"
 	"github.com/farseer-go/webapi"
 )
@@ -47,6 +48,7 @@ func Registry(dto RegistryDTO, clientRepository client.Repository, taskGroupRepo
 		exception.ThrowWebException(403, "客户端ID、Name、IP、Port未完整传入")
 	}
 
+	flog.Debugf("接收到客户端%s（%d）：%s:%d 注册请求", dto.Name, dto.Id, dto.Ip, dto.Port)
 	// 更新任务组
 	for _, jobDTO := range dto.Jobs {
 		// 确认cron格式是否正确

@@ -259,7 +259,7 @@ func (receiver *TaskGroupMonitor) waitJobReportWorkStatus() {
 // 更新客户端
 func (receiver *TaskGroupMonitor) updateClient(newData *client.DomainObject) {
 	// 状态为不可调度时，则移除列表
-	if newData.IsOffline() {
+	if newData.IsNotSchedule() {
 		// 移除客户端
 		if receiver.clients.ContainsKey(newData.Id) {
 			receiver.clients.Remove(newData.Id)

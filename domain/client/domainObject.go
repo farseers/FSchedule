@@ -42,7 +42,7 @@ func (receiver *DomainObject) IsOffline() bool {
 
 // IsNotSchedule 状态不是调度状态
 func (receiver *DomainObject) IsNotSchedule() bool {
-	return receiver.Status == clientStatus.Offline
+	return receiver.Status != clientStatus.Scheduler
 }
 
 // Registry 注册客户端

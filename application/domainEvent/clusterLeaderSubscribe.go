@@ -11,6 +11,7 @@ import (
 	"github.com/farseer-go/fs/core"
 	"github.com/farseer-go/fs/flog"
 	"github.com/farseer-go/fs/parse"
+	"github.com/farseer-go/redis"
 	"github.com/farseer-go/tasks"
 	"time"
 )
@@ -26,11 +27,14 @@ func ClusterLeaderSubscribe(message any, _ core.EventArgs) {
 		// 更新集群leader信息
 		serverNodeRepository := container.Resolve[serverNode.Repository]()
 		lst := serverNodeRepository.ToList()
-		for i := 0; i < lst.Count(); i++ {
-			serverNodeDO := lst.Index(i)
-			serverNodeDO.SetLeader(leaderId)
-			serverNodeRepository.Save(&serverNodeDO)
-		}
+
+		// redis事务更新
+		_ = container.Resolve[redis.IClient]("default").Transaction(func() {
+			lst.Foreach(func(item *serverNode.DomainObject) {
+				item.SetLeader(leaderId)
+				serverNodeRepository.Save(item)
+			})
+		})
 
 		// 同步任务组、任务数据
 		if configure.GetInt("FSchedule.DataSyncTime") > 0 {

@@ -16,7 +16,7 @@ func (receiver *scheduleRepository) ScheduleLock(taskGroupName string, taskId in
 }
 
 func (receiver *scheduleRepository) Election(fn func()) {
-	go context.RedisContext("选举").Election("FSchedule_Master", fn)
+	context.RedisContext("选举").Election("FSchedule_Master", fn)
 }
 
 func (receiver *scheduleRepository) Schedule(taskGroupName string, fn func()) {

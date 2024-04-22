@@ -41,9 +41,10 @@ func (module Module) PostInitialize() {
 
 	fs.AddInitCallback("选举", func() {
 		// 抢占锁，谁抢到，谁就是master
-		container.Resolve[schedule.Repository]().Election(func() {
+		go container.Resolve[schedule.Repository]().Election(func() {
 			// 推送当前选举结果
 			_ = container.Resolve[core.IEvent]("ClusterLeader").Publish(core.AppId)
+			<-fs.Context.Done()
 		})
 	})
 

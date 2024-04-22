@@ -22,8 +22,7 @@ func CheckWorkingEvent(message any, _ core.EventArgs) {
 
 	// 客户端下线了
 	if clientDO == nil || clientDO.IsNil() || clientDO.IsOffline() {
-		do.Task.SetFail("客户端下线了")
-		taskGroupRepository.Save(*do.DomainObject)
+		do.ReportFail(taskGroupRepository, "客户端下线了")
 		return
 	}
 

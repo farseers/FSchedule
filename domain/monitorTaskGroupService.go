@@ -148,14 +148,14 @@ func (receiver *TaskGroupMonitor) Start() {
 				receiver.taskFinish()
 			case scheduleStatus.Success:
 				switch receiver.Task.ExecuteStatus {
+				case executeStatus.None:
+					// 等待客户端上报运行状态
+					receiver.waitJobReportWorkStatus()
 				case executeStatus.Working:
 					// 已成功调度到客户端，等待客户端执行完成
 					receiver.waitWorking()
 				case executeStatus.Fail, executeStatus.Success:
 					receiver.taskFinish()
-				case executeStatus.None:
-					// 等待客户端上报运行状态
-					receiver.waitJobReportWorkStatus()
 				default:
 					flog.Warningf("任务组：%s ver:%s 出现未知执行状态：%d 将强制设为失败状态", flog.Blue(receiver.Name), flog.Yellow(receiver.Ver), receiver.Task.ExecuteStatus)
 					receiver.Task.SetFail(fmt.Sprintf("出现未知执行状态：%d", receiver.Task.ExecuteStatus))

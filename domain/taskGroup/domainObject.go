@@ -195,6 +195,18 @@ func (receiver *DomainObject) CalculateNextAtByCron() bool {
 // SyncData 同步Data
 func (receiver *DomainObject) SyncData() {
 	if receiver.Task.IsFinish() {
+
+		strData := receiver.Data.Values().ToString(",")
+		strData2 := receiver.Task.Data.Values().ToString(",")
+
+		if receiver.Data.Count() != receiver.Task.Data.Count() {
+			_ = flog.Errorf("任务组：%s 注意，发现data数量不一致，TaskId=%d，原data:%s，新data：%s", receiver.Name, receiver.Task.Id, strData, strData2)
+		}
+		receiver.Data.Keys().Foreach(func(dataKey *string) {
+			if strings.HasSuffix(*dataKey, "Name") && receiver.Data.GetValue(*dataKey) != receiver.Task.Data.GetValue(*dataKey) {
+				_ = flog.Errorf("任务组：%s 注意，发现data不一致，TaskId=%d，原data:%s，新data：%s", receiver.Name, receiver.Task.Id, strData, strData2)
+			}
+		})
 		receiver.Data = receiver.Task.Data
 	}
 }

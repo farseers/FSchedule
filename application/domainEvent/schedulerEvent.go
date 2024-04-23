@@ -43,6 +43,9 @@ func SchedulerEvent(message any, _ core.EventArgs) {
 
 		// 请求客户端
 		clientTask := mapper.Single[client.TaskEO](do.Task)
+		if do.Name != clientTask.Name {
+			_ = flog.Errorf("任务组：%s 注意，任务调度，发现task.Name不一致，TaskId=%d，taskName=%s, task=%+v", do.Name, clientTask.Id, clientTask.Name, clientTask)
+		}
 		var err error
 		var success bool
 		if success, err = clientSchedule.TrySchedule(clientTask); success {

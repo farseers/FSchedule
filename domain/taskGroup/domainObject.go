@@ -7,7 +7,7 @@ import (
 	"github.com/farseer-go/fs/dateTime"
 	"github.com/farseer-go/fs/exception"
 	"github.com/farseer-go/fs/flog"
-	"github.com/farseer-go/fs/snowflake"
+	"github.com/farseer-go/fs/sonyflake"
 	"github.com/robfig/cron/v3"
 	"strings"
 	"time"
@@ -129,7 +129,7 @@ func (receiver *DomainObject) CreateTask() {
 		receiver.LastExecuteStatus = receiver.Task.ExecuteStatus
 	}
 	receiver.Task = TaskEO{
-		Id:             snowflake.GenerateId(),
+		Id:             sonyflake.GenerateId(),
 		Ver:            receiver.Ver,
 		Caption:        receiver.Caption,
 		Name:           receiver.Name,

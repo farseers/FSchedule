@@ -107,16 +107,6 @@ func (receiver *TaskGroupMonitor) Start() {
 		flog.Infof("任务组：%s ver:%s 退出调度线程", flog.Blue(receiver.Name), flog.Yellow(receiver.Ver))
 	}()
 
-	//// 没有可用客户端，不需要调度
-	//for receiver.CanScheduleClient() == 0 {
-	//	select {
-	//	case <-receiver.ctx.Done(): // 任务组停止，或删除时退出
-	//		return
-	//	case <-receiver.updated:
-	//		continue
-	//	}
-	//}
-
 	// 抢占锁，谁抢到，谁负责这个任务组的调度（只允许一个集群节点监控任务组）
 	receiver.waitWork = true
 	receiver.ScheduleRepository.Schedule(receiver.Name, func() {

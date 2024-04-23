@@ -6,6 +6,7 @@ import (
 	"FSchedule/domain/taskGroup"
 	"github.com/farseer-go/fs/container"
 	"github.com/farseer-go/fs/core"
+	"github.com/farseer-go/fs/flog"
 )
 
 // CheckWorkingEvent 检查进行中的任务
@@ -16,7 +17,9 @@ func CheckWorkingEvent(message any, _ core.EventArgs) {
 	if do.Task.ExecuteStatus.IsFinish() {
 		return
 	}
-
+	if do.Name != do.Task.Name {
+		_ = flog.Errorf("任务组：%s 注意，检查进行中的任务时，发现task.Name不一致，TaskId=%d，taskName=%s, task=%+v", do.Name, do.Task.Id, do.Task.Name, do.Task)
+	}
 	// 得到当前处理的客户端
 	clientDO := do.GetClient()
 
@@ -31,6 +34,9 @@ func CheckWorkingEvent(message any, _ core.EventArgs) {
 		if dto.IsNil() {
 			do.ReportFail(taskGroupRepository, "客户端dto返回nil")
 		} else {
+			if do.Name != dto.Name {
+				_ = flog.Errorf("任务组：%s 注意，检查进行中的任务时，发现task.Name不一致，TaskId=%d，taskName=%s, task=%+v", do.Name, do.Task.Id, do.Task.Name, do.Task)
+			}
 			do.Report(dto.Status, dto.Data, dto.Progress, dto.NextTimespan, "", taskGroupRepository)
 		}
 	}

@@ -32,6 +32,9 @@ func TaskReport(dto client.TaskReportVO, taskGroupRepository taskGroup.Repositor
 		}
 
 		// 更新任务
+		if taskGroupDO.Name != taskGroupDO.Task.Name {
+			_ = flog.Errorf("任务组：%s 注意，客户端回调，发现task.Name不一致，TaskId=%d，taskName=%s, task=%+v", taskGroupDO.Name, taskGroupDO.Task.Id, taskGroupDO.Task.Name, taskGroupDO.Task)
+		}
 		taskGroupDO.Report(dto.Status, dto.Data, dto.Progress, dto.NextTimespan, dto.FailRemark, taskGroupRepository)
 	})
 }
@@ -57,5 +60,8 @@ func KillTask(taskGroupName string, taskGroupRepository taskGroup.Repository, cl
 	}
 
 	// 更新任务状态
+	if taskGroupDO.Name != taskGroupDO.Task.Name {
+		_ = flog.Errorf("任务组：%s 注意，Kill任务，发现task.Name不一致，TaskId=%d，taskName=%s, task=%+v", taskGroupDO.Name, taskGroupDO.Task.Id, taskGroupDO.Task.Name, taskGroupDO.Task)
+	}
 	taskGroupDO.Report(executeStatus.Fail, taskGroupDO.Data, taskGroupDO.Task.Progress, 0, "FOPS主动停止", taskGroupRepository)
 }

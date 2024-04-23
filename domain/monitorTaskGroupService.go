@@ -142,7 +142,7 @@ func (receiver *TaskGroupMonitor) Start() {
 					receiver.waitJobReportWorkStatus()
 				case executeStatus.Working:
 					// 已成功调度到客户端，等待客户端执行完成
-					receiver.waitWorking()
+					receiver.waitFinish()
 				case executeStatus.Fail, executeStatus.Success:
 					receiver.taskFinish()
 				default:
@@ -197,7 +197,7 @@ func (receiver *TaskGroupMonitor) waitScheduler() {
 }
 
 // 等待完成
-func (receiver *TaskGroupMonitor) waitWorking() {
+func (receiver *TaskGroupMonitor) waitFinish() {
 	if receiver.curClient == nil || receiver.curClient.IsNil() || receiver.curClient.IsOffline() {
 		flog.Debugf("任务组：%s 当前客户端已离线", receiver.Name)
 		_ = receiver.CheckWorkingEventBus.Publish(receiver)

@@ -107,15 +107,15 @@ func (receiver *TaskGroupMonitor) Start() {
 		flog.Infof("任务组：%s ver:%s 退出调度线程", flog.Blue(receiver.Name), flog.Yellow(receiver.Ver))
 	}()
 
-	// 没有可用客户端，不需要调度
-	for receiver.CanScheduleClient() == 0 {
-		select {
-		case <-receiver.ctx.Done(): // 任务组停止，或删除时退出
-			return
-		case <-receiver.updated:
-			continue
-		}
-	}
+	//// 没有可用客户端，不需要调度
+	//for receiver.CanScheduleClient() == 0 {
+	//	select {
+	//	case <-receiver.ctx.Done(): // 任务组停止，或删除时退出
+	//		return
+	//	case <-receiver.updated:
+	//		continue
+	//	}
+	//}
 
 	// 抢占锁，谁抢到，谁负责这个任务组的调度（只允许一个集群节点监控任务组）
 	receiver.waitWork = true
@@ -141,8 +141,7 @@ func (receiver *TaskGroupMonitor) Start() {
 			case scheduleStatus.None:
 				receiver.waitStart()
 			case scheduleStatus.Scheduling:
-				// 等待更新即可
-				//flog.Debugf("任务组：%s 等待更新", receiver.Name)
+				// 等待其它协程更新状态
 				<-receiver.updated
 			case scheduleStatus.Fail:
 				receiver.taskFinish()
@@ -168,34 +167,27 @@ func (receiver *TaskGroupMonitor) Start() {
 
 // 等待开始
 func (receiver *TaskGroupMonitor) waitStart() {
-	for {
-		// 这里receiver.Task.ExecuteStatus == Working 会怎么样？
-		if receiver.Task.ScheduleStatus != scheduleStatus.None && receiver.Task.ScheduleStatus != scheduleStatus.Fail {
-			return
-		}
+	// 手动提前kill的任务，调度状态 = None，执行状态 = fail
+	if receiver.Task.ExecuteStatus.IsFinish() {
+		receiver.taskFinish()
+		return
+	}
 
-		// 任务组状态不可用，不需要调度
-		if !receiver.IsEnable {
-			flog.Debugf("任务组：%s "+flog.Yellow("停止状态，等待任务重新开启"), receiver.Name)
-			<-receiver.updated
-			continue
-		}
-
-		// 没有可用客户端，不需要调度
-		if receiver.CanScheduleClient() == 0 {
-			flog.Debugf("任务组：%s "+flog.Yellow("等待客户端接入"), receiver.Name)
-			<-receiver.updated
-			continue
-		}
-
-		timer := timingWheel.AddTimePrecision(receiver.StartAt.ToTime())
+	// 没有可用客户端，不需要调度
+	if receiver.CanScheduleClient() == 0 {
 		select {
-		case <-timer.C: // 开始时间到了，可以开始计算任务执行赶时间
-			receiver.waitScheduler()
-			return
 		case <-receiver.updated:
-			timer.Stop()
+			// 有可能enable有变，所以这里要返回出去，让外面来判断
+			return
 		}
+	}
+
+	timer := timingWheel.AddTimePrecision(receiver.StartAt.ToTime())
+	select {
+	case <-timer.C: // 开始时间到了，可以开始计算任务执行赶时间
+		receiver.waitScheduler()
+	case <-receiver.updated:
+		timer.Stop()
 	}
 }
 
@@ -207,13 +199,9 @@ func (receiver *TaskGroupMonitor) waitScheduler() {
 	case <-timer.C: // 执行时间到了，准开始调度
 		// 提前了100ms进到这里。
 		receiver.Task.SetScheduling()
-		//if m := dateTime.Since(receiver.Task.StartAt).Microseconds(); m > 0 {
-		//flog.Debugf("任务组：%s %d 发布调度事件，延迟：%s", receiver.Name, receiver.Task.Id, dateTime.Since(receiver.Task.StartAt).String())
-		//}
 		// 发布调度事件
 		_ = receiver.SchedulerEventBus.Publish(receiver)
 	case <-receiver.updated:
-		//flog.Debugf("任务组：%s %d 有更新", receiver.Name, receiver.Task.Id)
 		timer.Stop()
 	}
 }

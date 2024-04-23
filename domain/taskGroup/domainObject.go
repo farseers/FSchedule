@@ -200,11 +200,12 @@ func (receiver *DomainObject) SyncData() {
 		strData2 := receiver.Task.Data.Values().ToString(",")
 
 		if receiver.Data.Count() != receiver.Task.Data.Count() {
-			_ = flog.Errorf("任务组：%s 注意，发现data数量不一致，TaskId=%d，原data:%s，新data：%s", receiver.Name, receiver.Task.Id, strData, strData2)
+			_ = flog.Errorf("任务组：%s 注意，发现data数量不一致，TaskId=%d，taskName=%s, 原data:%s，新data：%s", receiver.Name, receiver.Task.Id, receiver.Task.Name, strData, strData2)
 		}
 		receiver.Data.Keys().Foreach(func(dataKey *string) {
 			if strings.HasSuffix(*dataKey, "Name") && receiver.Data.GetValue(*dataKey) != receiver.Task.Data.GetValue(*dataKey) {
-				_ = flog.Errorf("任务组：%s 注意，发现data不一致，TaskId=%d，原data:%s，新data：%s", receiver.Name, receiver.Task.Id, strData, strData2)
+				_ = flog.Errorf("任务组：%s 注意，发现data不一致，TaskId=%d，taskName=%s, 原data:%s，新data：%s", receiver.Name, receiver.Task.Id, receiver.Task.Name, strData, strData2)
+				return
 			}
 		})
 		receiver.Data = receiver.Task.Data

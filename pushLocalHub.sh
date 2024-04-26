@@ -23,3 +23,6 @@ docker service create --name fschedule --replicas 1 -d --network=net \
 hub.fsgit.cc/fschedule:dev
 
 #docker rmi $(docker images -f "dangling=true" -q)
+
+#本地
+#docker run --name fschedule  -d --network=host -e "Fops_Server=http://host.docker.internal:8889/" hub.fsgit.cc/fschedule:123

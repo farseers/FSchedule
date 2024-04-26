@@ -41,7 +41,7 @@ jobs:
           - go work edit -replace github.com/farseer-go/rabbit=../farseer-go/rabbit
           - go work edit -replace github.com/farseer-go/linkTrace=../farseer-go/linkTrace
           - go mod download
-          - GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o ./app-server -ldflags="-w -s" .
+          - GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o ./FSchedule -ldflags="-w -s" .
 
       - name: 打包镜像
         uses: dockerBuild@v1

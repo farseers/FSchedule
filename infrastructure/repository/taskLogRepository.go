@@ -29,6 +29,10 @@ func (repository *TaskLogRepository) GetList(taskGroupName string, logLevel eumL
 		WhereIf(taskId > 0, "task_id = ?", taskId)
 
 	pageList := ts.ToPageList(pageSize, pageIndex)
+	// 当前页面的数据，重新排序，模拟控制台日志的顺序
+	pageList.List = pageList.List.OrderBy(func(item model.TaskLogPO) any {
+		return item.CreateAt.UnixMilli()
+	}).ToList()
 	return mapper.ToPageList[taskLog.DomainObject](pageList)
 }
 

@@ -36,8 +36,8 @@ type TaskRepository interface {
 	// *******************仪表盘使用*********************
 	// ToTaskListByGroupId 获取指定任务组执行成功的任务列表
 	ToHistoryTaskList(clientName, taskGroupName string, scheduleStatus scheduleStatus.Enum, executeStatus executeStatus.Enum, taskId string, pageSize int, pageIndex int) collections.PageList[TaskEO]
-	TodayFailCount() int64 // 今天失败数量
-	GetStatCount() collections.List[StatTaskEO]
+	TodayFailCount() int64                      // 今天失败数量
+	GetStatCount() collections.List[StatTaskEO] // 统计任务成功失败数量
 	// SaveTask 保存任务信息
 	SaveTask(taskEO TaskEO)
 	// GetTask 获取任务信息

@@ -177,7 +177,9 @@ func (receiver *taskGroupRepository) Delete(taskGroupName string) {
 }
 
 func (receiver *taskGroupRepository) GetTaskGroupCount() int64 {
-	return int64(receiver.CacheManage.Count())
+	return int64(receiver.CacheManage.Get().Where(func(item taskGroup.DomainObject) bool {
+		return item.IsEnable
+	}).Count())
 }
 
 func (receiver *taskGroupRepository) GetUnRunCount() int {

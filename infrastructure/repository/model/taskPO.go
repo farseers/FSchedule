@@ -3,10 +3,6 @@ package model
 import (
 	"FSchedule/domain/enum/executeStatus"
 	"FSchedule/domain/enum/scheduleStatus"
-	"database/sql/driver"
-	"encoding/json"
-	"errors"
-	"fmt"
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/data"
 	"time"
@@ -28,7 +24,7 @@ type TaskPO struct {
 	ExecuteStatus  executeStatus.Enum                     `gorm:"type:tinyint;not null;comment:执行状态;"`
 	ScheduleStatus scheduleStatus.Enum                    `gorm:"type:tinyint;not null;comment:调度状态;"`
 	SchedulerAt    time.Time                              `gorm:"type:timestamp;size:6;not null;comment:调度时间"`
-	Data           collections.Dictionary[string, string] `gorm:"type:string;size:2048;serializer:json;not null;comment:本次执行任务时的Data数据"`
+	Data           collections.Dictionary[string, string] `gorm:"type:string;size:2048;json;not null;comment:本次执行任务时的Data数据"`
 	CreateAt       time.Time                              `gorm:"type:timestamp;size:6;not null;comment:任务创建时间;"`
 	Remark         string                                 `gorm:"size:1024;not null;comment:备注"`
 }
@@ -36,32 +32,17 @@ type TaskPO struct {
 // 创建索引
 func (*TaskPO) CreateIndex() map[string]data.IdxField {
 	return map[string]data.IdxField{
-		"idx_name_create":        {false, "name,create_at desc"},
+		/*
+			Where("name = ?", taskGroupName)
+			name = ? and (execute_status = ? or execute_status = ?)
+		*/
+		"idx_name_create": {false, "name,create_at desc"},
+		/*
+			execute_status = ? and create_at >= DATE_SUB(CURDATE(), INTERVAL 3 DAY) group by name
+			name = ? and (execute_status = ? or execute_status = ?) and create_at < ? and Id < ?
+			(execute_status = ? or execute_status = ?) and (create_at >= ?)
+			execute_status = ? and create_at >= ?
+		*/
 		"idx_name_status_create": {false, "create_at desc,execute_status,name"},
 	}
-}
-
-// Value return json value, implement driver.Valuer interface
-func (receiver *TaskPO) Value() (driver.Value, error) {
-	ba, err := json.Marshal(receiver)
-	return string(ba), err
-}
-
-// Scan scan value into Jsonb, implements sql.Scanner interface
-func (receiver *TaskPO) Scan(val any) error {
-	var ba []byte
-	switch v := val.(type) {
-	case []byte:
-		ba = v
-	case string:
-		ba = []byte(v)
-	default:
-		return errors.New(fmt.Sprint("Failed to unmarshal JSONB value:", val))
-	}
-	return json.Unmarshal(ba, &receiver)
-}
-
-// GormDataType gorm common data type
-func (receiver *TaskPO) GormDataType() string {
-	return "json"
 }

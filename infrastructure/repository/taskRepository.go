@@ -117,11 +117,13 @@ func (receiver *taskRepository) toTaskPageListTaskEO(page collections.PageList[m
 	return collections.NewPageList[taskGroup.TaskEO](lst, page.RecordCount)
 }
 
-//go:embed model/sql/taskStatCount.sql
-var taskStatCountSql string
-
 func (receiver *taskRepository) GetStatCount() collections.List[taskGroup.StatTaskEO] {
 	var array []taskGroup.StatTaskEO
+	taskStatCountSql :=
+		`SELECT client_name, execute_status, COUNT(*) AS count
+		 FROM fschedule.fschedule_task
+		 WHERE create_at >= (NOW() - INTERVAL 30 MINUTE) and client_name !=''
+		 GROUP BY client_name,execute_status;`
 	_, _ = context.MysqlContextIns("统计任务成功失败数量").ExecuteSqlToResult(&array, taskStatCountSql)
 	return mapper.ToList[taskGroup.StatTaskEO](array)
 }

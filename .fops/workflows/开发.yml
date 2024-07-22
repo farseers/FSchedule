@@ -2,7 +2,7 @@ name: build
 jobs:
   clusterId: [4]
   build:
-    runs-on: steden88/cicd:3.0 # 工作流运行的环境
+    runs-on: steden88/cicd:3.0-npm # 工作流运行的环境
     proxy: "http://host.orb.internal:7890"
     env:
       GO111MODULE: on

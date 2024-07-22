@@ -2,7 +2,7 @@ name: build
 jobs:
   clusterId: [3]
   build:
-    runs-on: steden88/cicd:3.0 # 工作流运行的环境
+    runs-on: steden88/cicd:3.0-npm # 工作流运行的环境
     proxy: "http://192.168.1.8:7890"
     env:
       GO111MODULE: on

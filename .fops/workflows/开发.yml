@@ -6,7 +6,7 @@ jobs:
     proxy: "http://host.orb.internal:7890"
     env:
       GO111MODULE: on
-      GOPROXY: https://goproxy.cn
+      GOPROXY: https://goproxy.cn,direct
 
     steps:
       - name: 安装GO

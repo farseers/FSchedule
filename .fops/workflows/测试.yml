@@ -12,7 +12,7 @@ jobs:
       - name: 安装GO
         uses: setup-go@v1
         with:
-          goVersion: go1.22.0
+          goVersion: go1.22.5
           goDownload:
 
       - name: 拉取应用Git

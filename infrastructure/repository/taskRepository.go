@@ -62,6 +62,9 @@ func (receiver *taskRepository) syncTask(taskGroupName string) {
 		if (do.IsFinish() && dateTime.Now().Sub(do.RunAt).Seconds() >= float64(30)) ||
 			(dateTime.Now().Sub(do.RunAt).Hours() >= float64(1)) {
 			po := mapper.Single[model.TaskPO](&do)
+			//INSERT INTO `fschedule_task` (`trace_id`,`name`,`ver`,`caption`,`start_at`,`run_at`,`run_speed`,`client_id`,`client_ip`,`client_name`,`progress`,`execute_status`,`schedule_status`,`scheduler_at`,`data`,`create_at`,`remark`,`id`)
+			//VALUES ('','lbs.1.ResendMessage',1,'1.重发消息到MQ','2024-04-22 07:28:00','2024-04-22 07:28:00',0,0,'','',0,3,3,'0000-00-00 00:00:00','{}','0000-00-00 00:00:00','',285413354345877507)
+			//ON DUPLICATE KEY UPDATE `trace_id`=VALUES(`trace_id`),`name`=VALUES(`name`),`ver`=VALUES(`ver`),`caption`=VALUES(`caption`),`start_at`=VALUES(`start_at`),`run_at`=VALUES(`run_at`),`run_speed`=VALUES(`run_speed`),`client_id`=VALUES(`client_id`),`client_ip`=VALUES(`client_ip`),`client_name`=VALUES(`client_name`),`progress`=VALUES(`progress`),`execute_status`=VALUES(`execute_status`),`schedule_status`=VALUES(`schedule_status`),`scheduler_at`=VALUES(`scheduler_at`),`data`=VALUES(`data`),`create_at`=VALUES(`create_at`),`remark`=VALUES(`remark`)
 			if po.CreateAt.Year() < 2000 {
 				po.CreateAt = time.Date(2000, 0, 1, 0, 0, 0, 0, time.Local)
 			}

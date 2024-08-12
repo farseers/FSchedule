@@ -62,6 +62,12 @@ func (receiver *taskRepository) syncTask(taskGroupName string) {
 		if (do.IsFinish() && dateTime.Now().Sub(do.RunAt).Seconds() >= float64(30)) ||
 			(dateTime.Now().Sub(do.RunAt).Hours() >= float64(1)) {
 			po := mapper.Single[model.TaskPO](&do)
+			if po.CreateAt.Year() < 2000 {
+				po.CreateAt = time.Date(2000, 0, 1, 0, 0, 0, 0, time.Local)
+			}
+			if po.SchedulerAt.Year() < 2000 {
+				po.SchedulerAt = time.Date(2000, 0, 1, 0, 0, 0, 0, time.Local)
+			}
 			if context.MysqlContextIns("添加或更新任务Task").Task.UpdateOrInsert(po, "Id") == nil {
 				cacheManager.Remove(po.Id)
 			}

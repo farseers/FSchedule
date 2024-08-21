@@ -37,8 +37,8 @@ type RegistryResponse struct {
 // Registry 客户端注册
 // @post /registry
 func Registry(dto RegistryDTO, clientRepository client.Repository, taskGroupRepository taskGroup.Repository, scheduleRepository schedule.Repository) RegistryResponse {
-	// 注册客户端时，如果之前已注册过，且为可调度状态，则不操作
-	if do := clientRepository.ToEntity(dto.Id); !do.IsNil() && do.IsCanSchedule() {
+	// 注册客户端时，如果之前已注册过，且为可调度状态，并且Job数量相等，则不操作
+	if do := clientRepository.ToEntity(dto.Id); !do.IsNil() && do.IsCanSchedule() && do.Jobs.Count() == len(dto.Jobs) {
 		return RegistryResponse{
 			ClientIp:   do.Ip,
 			ClientPort: do.Port,

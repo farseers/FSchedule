@@ -45,13 +45,13 @@ func Registry(dto RegistryDTO, clientRepository client.Repository, taskGroupRepo
 		}
 	}
 
-	do := mapper.Single[client.DomainObject](dto)
+	clientDO := mapper.Single[client.DomainObject](dto)
 	// 如果客户端没有指定IP时，由服务端获取
-	if do.Ip == "" {
-		do.Ip = webapi.GetHttpContext().URI.GetRealIp()
+	if clientDO.Ip == "" {
+		clientDO.Ip = webapi.GetHttpContext().URI.GetRealIp()
 	}
-	do.Jobs = collections.NewList[client.JobVO]()
-	if do.IsNil() {
+	clientDO.Jobs = collections.NewList[client.JobVO]()
+	if clientDO.IsNil() {
 		exception.ThrowWebException(403, "客户端ID、Name、IP、Port未完整传入")
 	}
 
@@ -76,15 +76,15 @@ func Registry(dto RegistryDTO, clientRepository client.Repository, taskGroupRepo
 				taskGroupRepository.Save(taskGroupDO)
 			}
 		}
-		do.Jobs.Add(mapper.Single[client.JobVO](jobDTO))
+		clientDO.Jobs.Add(mapper.Single[client.JobVO](jobDTO))
 	}
 
 	// 保存客户端信息
-	do.Registry()
-	clientRepository.Save(&do)
+	clientDO.Registry()
+	clientRepository.Save(&clientDO)
 
 	return RegistryResponse{
-		ClientIp:   do.Ip,
-		ClientPort: do.Port,
+		ClientIp:   clientDO.Ip,
+		ClientPort: clientDO.Port,
 	}
 }

@@ -60,16 +60,6 @@ func (receiver *taskGroupRepository) ToEntity(taskGroupName string) taskGroup.Do
 
 func (receiver *taskGroupRepository) Save(do taskGroup.DomainObject) {
 	do.NeedSave = false
-	// 说明是新注册的任务
-	if do.Name == "" {
-		do.ActivateAt = dateTime.Now()
-		do.LastRunAt = dateTime.Now()
-		do.NextAt = dateTime.Now()
-		po := mapper.Single[model.TaskGroupPO](&do)
-		_ = context.MysqlContextIns("新增任务组").TaskGroup.Insert(&po)
-		do.Name = po.Name
-		do.Task.Name = po.Name
-	}
 	receiver.CacheManage.SaveItem(do)
 
 	// 发到所有节点上
@@ -108,7 +98,7 @@ func (receiver *taskGroupRepository) Sync() {
 			flog.Warningf("任务组：%s NextAt字段时间不正确 %s", do.Name, po.NextAt.String())
 			po.NextAt = time.Now()
 		}
-		_ = context.MysqlContextIns("更新任务组").TaskGroup.UpdateOrInsert(po, "id")
+		_ = context.MysqlContextIns("更新任务组").TaskGroup.UpdateOrInsert(po, "name")
 
 		// 同步任务
 		receiver.taskRepository.syncTask(po.Name)

@@ -52,12 +52,15 @@ func Registry(dto RegistryDTO, clientRepository client.Repository, taskGroupRepo
 	}
 	clientDO.Jobs = collections.NewList[client.JobVO]()
 	if clientDO.IsNil() {
-		exception.ThrowWebException(403, "客户端ID、Name、IP、Port未完整传入")
+		exception.ThrowWebExceptionf(403, "客户端ID=%d、Name=%s、IP=%s、Port=%d，未完整传入", clientDO.Id, clientDO.Name, clientDO.Ip, clientDO.Port)
 	}
 
-	//flog.Debugf("接收到客户端%s（%d）：%s:%d 注册请求", dto.Name, dto.Id, dto.Ip, dto.Port)
 	// 更新任务组
 	for _, jobDTO := range dto.Jobs {
+		if jobDTO.Name == "" {
+			continue
+		}
+
 		// 确认cron格式是否正确
 		_, err := taskGroup.StandardParser.Parse(jobDTO.Cron)
 		if err != nil {

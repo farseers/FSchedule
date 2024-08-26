@@ -58,8 +58,7 @@ func (receiver *DomainObject) UpdateVer(name string, caption string, ver int, st
 				exception.ThrowWebExceptionf(403, "任务组:%s，Cron格式错误:%s，开头不能使用*，请使用0代替，否则会出现，每秒都在执行的BUG", receiver.Name, receiver.Cron)
 			}
 
-			cornSchedule, err := StandardParser.Parse(receiver.Cron)
-			if err != nil {
+			if cornSchedule, err := StandardParser.Parse(receiver.Cron); err != nil {
 				_ = flog.Errorf("任务组:%s，Cron格式错误:%s", receiver.Name, receiver.Cron)
 				receiver.NeedSave = false
 				exception.ThrowWebExceptionf(403, "任务组:%s，Cron格式错误:%s", receiver.Name, receiver.Cron)

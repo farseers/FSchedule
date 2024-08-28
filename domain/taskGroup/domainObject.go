@@ -114,7 +114,6 @@ func (receiver *DomainObject) Update() {
 	if err != nil {
 		exception.ThrowWebExceptionf(403, "任务组:%s，Cron格式错误:%s", receiver.Name, receiver.Cron)
 	}
-	//receiver.NextAt = dateTime.New(cornSchedule.Next(time.Now()))
 	receiver.Task.Data = receiver.Data
 	receiver.Task.StartAt = receiver.NextAt
 }
@@ -162,7 +161,10 @@ func (receiver *DomainObject) CanScheduler() bool {
 // CalculateNextAtByUnix 重新计算下一个执行周期
 func (receiver *DomainObject) CalculateNextAtByUnix(timespan int64) {
 	if timespan > 0 {
-		//flog.Infof("任务组:%s 设置了timespan=%d,更新下一次时间为%s", receiver.Name, timespan, receiver.NextAt.ToString("yyyy-MM-dd HH:mm:ss"))
+		// 设置的时间是之前的，则强制改为当前时间，否则会误认为此任务延迟了
+		if time.Now().UnixMilli() > timespan {
+			timespan = time.Now().UnixMilli()
+		}
 		receiver.NextAt = dateTime.NewUnixMilli(timespan)
 	}
 }
@@ -179,14 +181,14 @@ func (receiver *DomainObject) CalculateNextAtByCron() bool {
 			return true
 		}
 
+		// 按cron设置下一个时间点
 		cornSchedule, err := StandardParser.Parse(receiver.Cron)
 		if err != nil {
 			_ = flog.Errorf("任务组:%s，Cron格式错误:%s，已将任务暂停。", receiver.Name, receiver.Cron)
 			receiver.IsEnable = false
 			return false
-		} else {
-			receiver.NextAt = dateTime.New(cornSchedule.Next(time.Now()))
 		}
+		receiver.NextAt = dateTime.New(cornSchedule.Next(time.Now()))
 	}
 	return true
 }
@@ -194,22 +196,21 @@ func (receiver *DomainObject) CalculateNextAtByCron() bool {
 // SyncData 同步Data
 func (receiver *DomainObject) SyncData() {
 	if receiver.Task.IsFinish() {
-
 		strData := receiver.Data.Values().ToString(",")
 		strData2 := receiver.Task.Data.Values().ToString(",")
 
 		if receiver.Name != receiver.Task.Name {
-			_ = flog.Errorf("任务组：%s 注意，发现task.Name不一致，TaskId=%d，taskName=%s, 原data:%s，新data：%s , task=%+v", receiver.Name, receiver.Task.Id, receiver.Task.Name, strData, strData2, receiver.Task)
+			flog.Warningf("任务组：%s 注意，发现task.Name不一致，TaskId=%d，taskName=%s, 原data:%s，新data：%s , task=%+v", receiver.Name, receiver.Task.Id, receiver.Task.Name, strData, strData2, receiver.Task)
 			return
 		}
 
 		if receiver.Data.Count() != receiver.Task.Data.Count() {
-			_ = flog.Errorf("任务组：%s 注意，发现data数量不一致，TaskId=%d，taskName=%s, 原data:%s，新data：%s", receiver.Name, receiver.Task.Id, receiver.Task.Name, strData, strData2)
+			flog.Warningf("任务组：%s 注意，发现data数量不一致，TaskId=%d，taskName=%s, 原data:%s，新data：%s", receiver.Name, receiver.Task.Id, receiver.Task.Name, strData, strData2)
 			return
 		}
 		receiver.Data.Keys().Foreach(func(dataKey *string) {
 			if strings.HasSuffix(*dataKey, "Name") && receiver.Data.GetValue(*dataKey) != receiver.Task.Data.GetValue(*dataKey) {
-				_ = flog.Errorf("任务组：%s 注意，发现data不一致，TaskId=%d，taskName=%s, 原data:%s，新data：%s , task=%+v", receiver.Name, receiver.Task.Id, receiver.Task.Name, strData, strData2, receiver.Task)
+				flog.Warningf("任务组：%s 注意，发现data不一致，TaskId=%d，taskName=%s, 原data:%s，新data：%s , task=%+v", receiver.Name, receiver.Task.Id, receiver.Task.Name, strData, strData2, receiver.Task)
 				return
 			}
 		})

@@ -73,7 +73,7 @@ func Registry(websocketContext *websocket.BaseContext, dto RegistryDTO, clientRe
 		}
 		clientDO.Registry(websocketContext, mapper.Single[client.JobVO](dto.Job))
 		clientRepository.Save(clientDO)
-		go ActivateClient(websocketContext, clientDO.Id, clientRepository)
+		go ActivateClient(websocketContext, clientDO.Id, clientRepository, scheduleRepository)
 		// 将任务组接入监控
 		MonitorTaskGroupPush(&clientDO, &taskGroupDO)
 	})

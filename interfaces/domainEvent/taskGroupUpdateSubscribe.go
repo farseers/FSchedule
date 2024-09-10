@@ -20,5 +20,14 @@ func TaskGroupUpdateSubscribe(message any, _ core.EventArgs) {
 		return
 	}
 
-	domain.MonitorTaskGroupPush(nil, &taskGroupDO)
+	// 通知处理该任务组的服务端，需要调用客户端发起Kill请求
+	if taskGroupMonitor := domain.GetTaskGroupMonitor(taskGroupDO.Name); taskGroupMonitor != nil {
+		taskGroupMonitor.DomainObject.Data = taskGroupDO.Data
+		taskGroupMonitor.DomainObject.Caption = taskGroupDO.Caption
+		taskGroupMonitor.DomainObject.StartAt = taskGroupDO.StartAt
+		taskGroupMonitor.DomainObject.NextAt = taskGroupDO.NextAt
+		taskGroupMonitor.DomainObject.Cron = taskGroupDO.Cron
+		taskGroupMonitor.DomainObject.IsEnable = taskGroupDO.IsEnable
+		taskGroupMonitor.Notify()
+	}
 }

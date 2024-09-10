@@ -57,7 +57,7 @@ func Registry(websocketContext *websocket.BaseContext, dto RegistryDTO, clientRe
 		}
 	}
 
-	// 加锁
+	// 加锁，防止同一个客户端有多个任务组时，会丢失任务组列表
 	scheduleRepository.RegistryLock(dto.ClientId).GetLockRun(func() {
 		// 更新客户端
 		clientDO := clientRepository.ToEntity(dto.ClientId)

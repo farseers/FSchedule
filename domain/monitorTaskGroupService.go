@@ -263,6 +263,11 @@ func (receiver *TaskGroupMonitor) TaskKill() {
 	receiver.Client.Kill(receiver.Task.Id)
 }
 
+// 通知
+func (receiver *TaskGroupMonitor) Notify() {
+	receiver.updated <- struct{}{}
+}
+
 // TaskGroupEnableCount 返回开启状态的任务组
 func TaskGroupEnableCount() int {
 	return taskGroupList.Values().Where(func(item *TaskGroupMonitor) bool {

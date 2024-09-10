@@ -88,6 +88,12 @@ func (receiver *TaskGroupMonitor) Start() {
 
 		// 有可能原节点挂了，由另外节点继续接管，所以需要重新取到最新的对象（因为现在取消了任务组数据的实时订阅发送）
 		*receiver.DomainObject = taskGroupRepository.ToEntity(receiver.Name)
+		// 重新连接进来时，有可能上一次的任务执行了一半。因此这里要做检查
+		if receiver.Task.ScheduleStatus == scheduleStatus.Scheduling || receiver.Task.ScheduleStatus == scheduleStatus.Success {
+			receiver.Task.SetFail("客户端重连，强制取消上次未执行的任务")
+			receiver.taskFinish()
+		}
+
 		flog.Infof("任务组：%s ver:%s 加入调度线程", flog.Blue(receiver.Name), flog.Yellow(receiver.Ver))
 		for {
 			// 清空更新队列

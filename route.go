@@ -24,6 +24,6 @@ var route = []webapi.Route{
 	{"POST", "/basicapi/taskGroup/update", basicapi.TaskGroupUpdate, "", []context.IFilter{}, []string{"req", ""}},
 	{"POST", "/basicapi/taskGroup/delete", basicapi.TaskGroupDelete, "", []context.IFilter{}, []string{"taskGroupName", ""}},
 	{"POST", "/basicapi/taskGroup/setEnable", basicapi.SetEnable, "", []context.IFilter{}, []string{"taskGroupName", "enable", ""}},
-	{"WS", "/ws/connect", ws.Connect, "", []context.IFilter{}, []string{"wsContext", "", "", ""}},
+	{"WS", "/ws/connect", ws.Connect, "", []context.IFilter{}, []string{"wsContext", "", "", "", ""}},
 	{"POST", "/taskReport", domain.TaskReportService, "", []context.IFilter{}, []string{"dto", ""}},
 }

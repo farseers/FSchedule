@@ -2,6 +2,7 @@ package domain
 
 import (
 	"FSchedule/domain/client"
+	"FSchedule/domain/schedule"
 	"FSchedule/domain/taskGroup"
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs/exception"
@@ -31,7 +32,7 @@ type RegistryDTO struct {
 }
 
 // Registry 客户端注册
-func Registry(websocketContext *websocket.BaseContext, dto RegistryDTO, clientRepository client.Repository, taskGroupRepository taskGroup.Repository) RegistryResponse {
+func Registry(websocketContext *websocket.BaseContext, dto RegistryDTO, clientRepository client.Repository, taskGroupRepository taskGroup.Repository, scheduleRepository schedule.Repository) RegistryResponse {
 	if dto.ClientId == 0 || dto.ClientName == "" || dto.Job.Name == "" {
 		exception.ThrowWebExceptionf(403, "客户端ID=%d、ClientName=%s、JobName=%s，未完整传入", dto.ClientId, dto.ClientName, dto.Job.Name)
 	}
@@ -41,23 +42,6 @@ func Registry(websocketContext *websocket.BaseContext, dto RegistryDTO, clientRe
 	if err != nil {
 		exception.ThrowWebExceptionf(403, "任务组:%s %s，Cron格式[%s]错误:%s", dto.Job.Name, dto.Job.Caption, dto.Job.Cron, err.Error())
 	}
-
-	// 更新客户端
-	clientDO := clientRepository.ToEntity(dto.ClientId)
-	// 新注册的客户端
-	if clientDO.IsNil() {
-		clientDO = client.DomainObject{
-			Id:   dto.ClientId,
-			Name: dto.ClientName,
-			Ip:   dto.ClientIp,
-			Port: dto.ClientPort,
-			Jobs: collections.NewList[client.JobVO](),
-		}
-	}
-	clientDO.Registry(websocketContext, mapper.Single[client.JobVO](dto.Job))
-	clientRepository.Save(clientDO)
-
-	go ActivateClient(websocketContext, clientDO.Id, clientRepository)
 
 	// 新增 或 修改任务组
 	taskGroupDO := taskGroupRepository.ToEntity(dto.Job.Name)
@@ -73,10 +57,29 @@ func Registry(websocketContext *websocket.BaseContext, dto RegistryDTO, clientRe
 		}
 	}
 
-	// 将任务组接入监控
-	MonitorTaskGroupPush(&clientDO, &taskGroupDO)
+	// 加锁
+	scheduleRepository.RegistryLock(dto.ClientId).GetLockRun(func() {
+		// 更新客户端
+		clientDO := clientRepository.ToEntity(dto.ClientId)
+		// 新注册的客户端
+		if clientDO.IsNil() {
+			clientDO = client.DomainObject{
+				Id:   dto.ClientId,
+				Name: dto.ClientName,
+				Ip:   dto.ClientIp,
+				Port: dto.ClientPort,
+				Jobs: collections.NewList[client.JobVO](),
+			}
+		}
+		clientDO.Registry(websocketContext, mapper.Single[client.JobVO](dto.Job))
+		clientRepository.Save(clientDO)
+		go ActivateClient(websocketContext, clientDO.Id, clientRepository)
+		// 将任务组接入监控
+		MonitorTaskGroupPush(&clientDO, &taskGroupDO)
+	})
+
 	return RegistryResponse{
-		ClientIp:   clientDO.Ip,
-		ClientPort: clientDO.Port,
+		ClientIp:   dto.ClientIp,
+		ClientPort: dto.ClientPort,
 	}
 }

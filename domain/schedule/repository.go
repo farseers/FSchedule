@@ -5,8 +5,8 @@ import (
 )
 
 type Repository interface {
-	// ScheduleLock 创建调度锁
-	ScheduleLock(taskGroupName string, taskId int64) core.ILock
+	// RegistryLock 创建注册锁
+	RegistryLock(clientId int64) core.ILock
 	// Election 选举锁
 	Election(fn func())
 	// Schedule 调度

@@ -11,8 +11,8 @@ import (
 type scheduleRepository struct {
 }
 
-func (receiver *scheduleRepository) ScheduleLock(taskGroupName string, taskId int64) core.ILock {
-	return context.RedisContext("调度锁").LockNew("FSchedule_ScheduleLock:"+taskGroupName+"_"+parse.ToString(taskId), strconv.FormatInt(core.AppId, 10), 5*time.Second)
+func (receiver *scheduleRepository) RegistryLock(clientId int64) core.ILock {
+	return context.RedisContext("调度锁").LockNew("FSchedule_RegistryLock:"+parse.ToString(clientId), strconv.FormatInt(core.AppId, 10), 5*time.Second)
 }
 
 func (receiver *scheduleRepository) Election(fn func()) {

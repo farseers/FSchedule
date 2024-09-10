@@ -81,6 +81,7 @@ func TaskGroupUpdate(req request.TaskGroupUpdateRequest, taskGroupRepository tas
 	// 更新
 	taskGroupDO.Update()
 	taskGroupRepository.Save(taskGroupDO)
+
 	// 发到所有节点上
 	_ = container.Resolve[core.IEvent]("TaskGroupUpdate").Publish(taskGroupDO)
 }

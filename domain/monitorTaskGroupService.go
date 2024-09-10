@@ -109,12 +109,15 @@ func (receiver *TaskGroupMonitor) Start() {
 				return
 			default:
 				// 在下面子函数中，有可能已捕获到receiver.Client.Ctx.Done()状态，所以这里需要兜底判断关闭状态
-				if receiver.Client.IsClose() {
-					return
-				}
-
+				//if receiver.Client.IsClose() {
+				//	return
+				//}
 				// 如果任务是停止状态，则等待fops开启后继续执行
 				if !receiver.IsEnable {
+					// 如果任务是完成状态，则重新初始化
+					if receiver.Task.IsFinish() {
+						receiver.taskFinish()
+					}
 					<-receiver.updated
 					continue
 				}

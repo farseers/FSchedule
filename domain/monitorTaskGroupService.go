@@ -66,12 +66,12 @@ func MonitorTaskGroupPush(clientDO *client.DomainObject, taskGroupDO *taskGroup.
 		}
 
 		// 之前是运行状态，改为停止状态，则需要退出调度线程
-		needClose := taskGroupMonitor.IsEnable && !taskGroupDO.IsEnable
+		needKill := taskGroupMonitor.IsEnable && !taskGroupDO.IsEnable
 		*taskGroupMonitor.DomainObject = *taskGroupDO
 		taskGroupMonitor.updated <- struct{}{}
-		if needClose {
-			// 强制退出线程
-			taskGroupMonitor.Client.Close()
+		if needKill {
+			// 主动通知客户端，停止任务
+			taskGroupMonitor.TaskKill()
 		}
 	}
 }

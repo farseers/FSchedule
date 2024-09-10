@@ -39,7 +39,7 @@ func (*TaskPO) CreateIndex() map[string]data.IdxField {
 		"idx_name_create": {false, "name,create_at desc"},
 		/*
 			execute_status = ? and create_at >= DATE_SUB(CURDATE(), INTERVAL 3 DAY) group by name
-			name = ? and (execute_status = ? or execute_status = ?) and create_at < ? and Id < ?
+			name = ? and (execute_status = ? or execute_status = ?) and create_at < ? and ClientId < ?
 			(execute_status = ? or execute_status = ?) and (create_at >= ?)
 			execute_status = ? and create_at >= ?
 		*/

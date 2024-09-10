@@ -20,5 +20,5 @@ func TaskGroupUpdateSubscribe(message any, _ core.EventArgs) {
 		return
 	}
 
-	domain.MonitorTaskGroupPush(&taskGroupDO)
+	domain.MonitorTaskGroupPush(nil, &taskGroupDO)
 }

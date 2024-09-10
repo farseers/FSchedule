@@ -1,10 +1,9 @@
 package domainEvent
 
 import (
-	"FSchedule/application/job"
-	"FSchedule/domain"
 	"FSchedule/domain/serverNode"
 	"FSchedule/domain/taskGroup"
+	"FSchedule/interfaces/job"
 	"context"
 	"github.com/farseer-go/fs/configure"
 	"github.com/farseer-go/fs/container"
@@ -46,8 +45,6 @@ func ClusterLeaderSubscribe(message any, _ core.EventArgs) {
 			}, context.Background())
 		}
 
-		// 标记当前节点为Leader
-		domain.CheckOnline()
 		serverNode.IsLeaderNode = true
 
 		// 移除30秒不活跃的
@@ -60,5 +57,8 @@ func ClusterLeaderSubscribe(message any, _ core.EventArgs) {
 		if configure.GetInt("FSchedule.ReservedTaskCount") > 0 {
 			tasks.Run("ClearHisTaskJob", 1*time.Hour, job.ClearHisTaskJob, context.Background())
 		}
+
+		// 每5秒检查客户端是否永久离线
+		tasks.Run("RemoveClientJob", 5*time.Second, job.RemoveClientJob, context.Background())
 	}
 }

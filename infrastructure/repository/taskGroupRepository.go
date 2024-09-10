@@ -1,8 +1,6 @@
 package repository
 
 import (
-	"FSchedule/domain"
-	"FSchedule/domain/client"
 	"FSchedule/domain/enum/executeStatus"
 	"FSchedule/domain/enum/scheduleStatus"
 	"FSchedule/domain/taskGroup"
@@ -12,7 +10,6 @@ import (
 	"github.com/farseer-go/cache"
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs/container"
-	"github.com/farseer-go/fs/core"
 	"github.com/farseer-go/fs/dateTime"
 	"github.com/farseer-go/fs/flog"
 	"github.com/farseer-go/fs/parse"
@@ -63,12 +60,12 @@ func (receiver *taskGroupRepository) Save(do taskGroup.DomainObject) {
 	receiver.CacheManage.SaveItem(do)
 
 	// 发到所有节点上
-	_ = container.Resolve[core.IEvent]("TaskGroupUpdate").Publish(do)
+	//_ = container.Resolve[core.IEvent]("TaskGroupUpdate").Publish(do)
 }
 
 func (receiver *taskGroupRepository) SaveAndTask(do taskGroup.DomainObject) {
 	do.NeedSave = false
-	receiver.Save(do)
+	receiver.CacheManage.SaveItem(do)
 	receiver.SaveTask(do.Task)
 }
 
@@ -105,7 +102,7 @@ func (receiver *taskGroupRepository) Sync() {
 	}
 }
 
-func (receiver *taskGroupRepository) ToListForPage(clientName, taskGroupName string, enable int, taskStatus executeStatus.Enum, taskId, clientId int64, pageSize int, pageIndex int) collections.PageList[taskGroup.DomainObject] {
+func (receiver *taskGroupRepository) ToListForFops(taskGroupName string, enable int, taskStatus executeStatus.Enum, taskId, clientId int64, pageSize int, pageIndex int) collections.List[taskGroup.DomainObject] {
 	lst := receiver.CacheManage.Get()
 	if taskGroupName != "" {
 		lst = lst.Where(func(item taskGroup.DomainObject) bool {
@@ -133,22 +130,8 @@ func (receiver *taskGroupRepository) ToListForPage(clientName, taskGroupName str
 			return item.Task.Id == taskId
 		}).ToList()
 	}
-	if clientName != "" {
 
-		lst = lst.Where(func(item taskGroup.DomainObject) bool {
-			// 先得到当前任务组存在的客户端
-			lstClient := domain.GetClientList(item.Name)
-			// 再判断是否存在指定的客户端名称
-			return lstClient.Where(func(cli *client.DomainObject) bool {
-				return cli.Name == clientName
-			}).Any()
-		}).ToList()
-	}
-
-	// 排序
-	return lst.OrderBy(func(item taskGroup.DomainObject) any {
-		return item.Name
-	}).ToPageList(pageSize, pageIndex)
+	return lst
 }
 
 func (receiver *taskGroupRepository) IsExists(taskGroupName string) bool {

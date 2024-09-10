@@ -3,12 +3,16 @@ package basicapi
 
 import (
 	"FSchedule/application/basicapi/response"
+	"FSchedule/domain/client"
 	"FSchedule/domain/enum/executeStatus"
 	"FSchedule/domain/enum/scheduleStatus"
 	"FSchedule/domain/taskGroup"
 	"fmt"
 	"github.com/farseer-go/collections"
+	"github.com/farseer-go/fs/container"
+	"github.com/farseer-go/fs/core"
 	"github.com/farseer-go/fs/dateTime"
+	"github.com/farseer-go/fs/exception"
 	"github.com/farseer-go/mapper"
 	"strings"
 	"time"
@@ -84,4 +88,23 @@ func TaskPlanList(top int, taskGroupRepository taskGroup.Repository) collections
 		r.Plan = strings.ReplaceAll(r.Plan, "s", "秒")
 		r.Plan = strings.ReplaceAll(r.Plan, "h", "时")
 	})
+}
+
+// Kill任务
+// @post killTask
+func KillTask(taskGroupName string, taskGroupRepository taskGroup.Repository, clientRepository client.Repository, clientCheck client.IClientCheck) {
+	taskGroupDO := taskGroupRepository.ToEntity(taskGroupName)
+	if taskGroupDO.IsNil() {
+		exception.ThrowWebExceptionf(403, "任务组 %s 不存在", taskGroupName)
+	}
+
+	if taskGroupDO.Task.IsFinish() {
+		exception.ThrowWebExceptionf(403, "任务组 %s %d 状态为已完成，无法停止。", taskGroupDO.Name, taskGroupDO.Task.Id)
+	}
+
+	// 通知处理该任务组的服务端，需要调用客户端发起Kill请求
+	taskGroupDO.Task.Kill = true
+	taskGroupRepository.Save(taskGroupDO)
+	// 发到所有节点上
+	_ = container.Resolve[core.IEvent]("TaskGroupUpdate").Publish(taskGroupDO)
 }

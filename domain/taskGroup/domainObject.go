@@ -209,7 +209,7 @@ func (receiver *DomainObject) SyncData() {
 			return
 		}
 		receiver.Data.Keys().Foreach(func(dataKey *string) {
-			if strings.HasSuffix(*dataKey, "Name") && receiver.Data.GetValue(*dataKey) != receiver.Task.Data.GetValue(*dataKey) {
+			if strings.HasSuffix(*dataKey, "ClientName") && receiver.Data.GetValue(*dataKey) != receiver.Task.Data.GetValue(*dataKey) {
 				flog.Warningf("任务组：%s 注意，发现data不一致，TaskId=%d，taskName=%s, 原data:%s，新data：%s , task=%+v", receiver.Name, receiver.Task.Id, receiver.Task.Name, strData, strData2, receiver.Task)
 				return
 			}
@@ -230,7 +230,9 @@ func (receiver *DomainObject) Report(status executeStatus.Enum, data collections
 }
 
 // ReportFail 任务报告，未找到任务
-func (receiver *DomainObject) ReportFail(taskGroupRepository Repository, remark string) {
+func (receiver *DomainObject) ReportFail(remark string, taskGroupRepository Repository) {
+	receiver.ActivateAt = dateTime.Now()
+	receiver.LastRunAt = dateTime.Now()
 	receiver.Task.UpdateTaskStatus(executeStatus.Fail, remark)
 	taskGroupRepository.Save(*receiver)
 }

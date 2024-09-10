@@ -28,6 +28,7 @@ type TaskEO struct {
 	Data           collections.Dictionary[string, string] // 本次执行任务时的Data数据
 	CreateAt       dateTime.DateTime                      // 任务创建时间
 	Remark         string                                 // 备注
+	Kill           bool                                   // FOPS发起停止请求
 }
 
 func NewTaskDO() *TaskEO {
@@ -101,7 +102,7 @@ func (receiver *TaskEO) UpdateTaskStatus(status executeStatus.Enum, remark strin
 
 	// 耗时
 	if status.IsFinish() {
-		receiver.RunSpeed = receiver.RunAt.Sub(receiver.SchedulerAt).Milliseconds()
+		receiver.RunSpeed = receiver.RunAt.Sub(receiver.StartAt).Milliseconds()
 	}
 
 	if remark != "" {

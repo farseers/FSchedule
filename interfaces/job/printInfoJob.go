@@ -2,6 +2,7 @@ package job
 
 import (
 	"FSchedule/domain"
+	"FSchedule/domain/client"
 	"FSchedule/domain/serverNode"
 	"fmt"
 	"github.com/farseer-go/fs/container"
@@ -17,7 +18,10 @@ func PrintInfoJob(context *tasks.TaskContext) {
 		traceContext.Ignore()
 	}
 
-	flog.Printf("%s个客户端（%s个正常），%s个任务组（%s个运行中）\n", flog.Red(domain.ClientCount()), flog.Green(domain.ClientNormalCount()), flog.Red(domain.TaskGroupCount()), flog.Green(domain.TaskGroupEnableCount()))
+	clientCount := container.Resolve[client.Repository]().GetCount()
+	if clientCount > 0 {
+		flog.Printf("%s个客户端，%s个任务组在运行（%s个连接）\n", flog.Red(clientCount), flog.Red(domain.TaskGroupCount()), flog.Green(domain.TaskGroupEnableCount()))
+	}
 	lst := container.Resolve[serverNode.Repository]().ToList()
 
 	// 主节点

@@ -4,24 +4,19 @@ import (
 	"FSchedule/domain/client"
 	"FSchedule/infrastructure/repository/context"
 	"github.com/farseer-go/collections"
-	"github.com/farseer-go/fs/core"
 	"strconv"
 )
 
 const clientCacheKey = "FSchedule_ClientList"
 
 type clientRepository struct {
-	ClientUpdateEventBus core.IEvent `inject:"ClientUpdate"`
 }
 
-func (receiver *clientRepository) Save(do *client.DomainObject) {
+func (receiver *clientRepository) Save(do client.DomainObject) {
 	if do.Id == 0 {
 		return
 	}
-	_ = context.RedisContext("保存客户端").HashSetEntity(clientCacheKey, strconv.FormatInt(do.Id, 10), &do)
-
-	// 发到所有节点上
-	_ = receiver.ClientUpdateEventBus.Publish(do)
+	_ = context.RedisContext("保存客户端").HashSetEntity(clientCacheKey, strconv.FormatInt(do.Id, 10), do)
 }
 
 func (receiver *clientRepository) ToList() collections.List[client.DomainObject] {

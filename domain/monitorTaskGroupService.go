@@ -2,127 +2,110 @@ package domain
 
 import (
 	"FSchedule/domain/client"
-	"FSchedule/domain/enum/clientStatus"
 	"FSchedule/domain/enum/executeStatus"
 	"FSchedule/domain/enum/scheduleStatus"
 	"FSchedule/domain/schedule"
 	"FSchedule/domain/taskGroup"
-	"context"
 	"fmt"
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs/container"
-	"github.com/farseer-go/fs/core"
 	"github.com/farseer-go/fs/flog"
 	"github.com/farseer-go/fs/timingWheel"
-	"time"
+	"github.com/farseer-go/mapper"
+	"github.com/farseer-go/redis"
 )
 
 // 加入到监控的列表
 var taskGroupList = collections.NewDictionary[string, *TaskGroupMonitor]()
 
-// MonitorTaskGroupPush 将最新的任务组信息，推送到监控线程
-func MonitorTaskGroupPush(taskGroupDO *taskGroup.DomainObject) {
-	// 新的任务组不再当前列表，说明被其它节点处理了。
-	if !taskGroupList.ContainsKey(taskGroupDO.Name) {
-		if !taskGroupDO.IsEnable {
-			return
-		}
-		// 加入到任务组监控列表
-		monitor := newMonitor(taskGroupDO)
-		taskGroupList.Add(taskGroupDO.Name, monitor)
-
-		// 找到当前任务组支持的客户端列表，主动通知，更快速接入
-		// 用在将任务组.IsEnable由false改成true时
-		clientList.Values().Foreach(func(clientMonitor **ClientMonitor) {
-			(*clientMonitor).client.Jobs.Foreach(func(job *client.JobVO) {
-				if job.Name == taskGroupDO.Name {
-					monitor.updateClient((*clientMonitor).client)
-				}
-			})
-		})
-		// 开启协程
-		go monitor.Start()
-	} else {
-		taskGroupMonitor := taskGroupList.GetValue(taskGroupDO.Name)
-		// 之前是运行状态，改为停止状态，则需要退出调度线程
-		needKill := taskGroupMonitor.IsEnable && !taskGroupDO.IsEnable
-		*taskGroupMonitor.DomainObject = *taskGroupDO
-		taskGroupMonitor.updateNotice()
-		if needKill {
-			// 强制退出线程
-			taskGroupMonitor.cancelFunc()
-		}
-	}
-}
-
-// ClientUpdate 客户端有更新，推送通知
-func ClientUpdate(clientDO *client.DomainObject) {
-	//flog.Debugf("客户端（%d）更新通知：%s:%d", clientDO.Id, clientDO.Ip, clientDO.Port)
-	for i := 0; i < clientDO.Jobs.Count(); i++ {
-		// 找到客户端支持的任务组
-		jobName := clientDO.Jobs.Index(i).Name
-		for _, taskGroupMonitor := range taskGroupList.ToMap() {
-			if taskGroupMonitor.Name == jobName {
-				taskGroupMonitor.updateClient(clientDO)
-			}
+// 移除任务组监控
+func RemoveMonitorTaskGroup(taskGroupName string) {
+	taskGroupMonitor := taskGroupList.GetValue(taskGroupName)
+	if taskGroupMonitor != nil {
+		flog.Infof("任务组：%s ver:%s 退出调度线程", flog.Blue(taskGroupMonitor.Name), flog.Yellow(taskGroupMonitor.Ver))
+		taskGroupList.Remove(taskGroupName)
+		if taskGroupMonitor.Client != nil {
+			taskGroupMonitor.Client.Close()
+			container.Resolve[client.Repository]().RemoveClient(taskGroupMonitor.Client.Id)
 		}
 	}
 }
 
 // TaskGroupMonitor 等待任务执行
 type TaskGroupMonitor struct {
-	SchedulerEventBus    core.IEvent                                         `inject:"TaskScheduler"` // 任务调度事件
-	FinishEventBus       core.IEvent                                         `inject:"TaskFinish"`    // 任务完成
-	CheckWorkingEventBus core.IEvent                                         `inject:"CheckWorking"`  // 检查进行中的任务
-	ScheduleRepository   schedule.Repository                                 // 锁
-	clients              collections.Dictionary[int64, *client.DomainObject] // 客户端列表
-	updated              chan struct{}                                       // 数据有更新，让流程重置
-	curClient            *client.DomainObject                                // 当前调度的客户端
-	isWorking            bool                                                // 是否进入工作状态
-	waitWork             bool                                                // 进入抢占锁状态
 	*taskGroup.DomainObject
-	ctx        context.Context
-	cancelFunc context.CancelFunc
+	ScheduleRepository schedule.Repository  // 锁
+	Client             *client.DomainObject // 客户端
+	updated            chan struct{}        // 数据有更新，让流程重置
 }
 
-// newMonitor 新建任务组监听器
-func newMonitor(do *taskGroup.DomainObject) *TaskGroupMonitor {
-	ctx, cancelFunc := context.WithCancel(context.Background())
-	return container.ResolveIns(&TaskGroupMonitor{
-		DomainObject: do,
-		updated:      make(chan struct{}, 1000),
-		clients:      collections.NewDictionary[int64, *client.DomainObject](),
-		ctx:          ctx,
-		cancelFunc:   cancelFunc,
-	})
+// MonitorTaskGroupPush 将最新的任务组信息，推送到监控线程
+func MonitorTaskGroupPush(clientDO *client.DomainObject, taskGroupDO *taskGroup.DomainObject) {
+	// 新接入的任务组
+	if !taskGroupList.ContainsKey(taskGroupDO.Name) {
+		// 加入到任务组监控列表
+		taskGroupMonitor := container.ResolveIns(&TaskGroupMonitor{
+			DomainObject: taskGroupDO,
+			updated:      make(chan struct{}, 1000),
+			Client:       clientDO,
+		})
+		taskGroupList.Add(taskGroupDO.Name, taskGroupMonitor)
+
+		// 开启协程
+		go taskGroupMonitor.Start()
+	} else {
+		taskGroupMonitor := taskGroupList.GetValue(taskGroupDO.Name)
+		// 如果是redis推送的，这里的websocketContext = nil
+		if clientDO != nil {
+			taskGroupMonitor.Client = clientDO
+		}
+
+		// 之前是运行状态，改为停止状态，则需要退出调度线程
+		needClose := taskGroupMonitor.IsEnable && !taskGroupDO.IsEnable
+		*taskGroupMonitor.DomainObject = *taskGroupDO
+		taskGroupMonitor.updated <- struct{}{}
+		if needClose {
+			// 强制退出线程
+			taskGroupMonitor.Client.Close()
+		}
+	}
 }
 
 // Start 监听任务组
 func (receiver *TaskGroupMonitor) Start() {
-	// 退出时，移除监控
-	defer func() {
-		receiver.isWorking = false
-		receiver.waitWork = false
-		taskGroupList.Remove(receiver.Name)
-		flog.Infof("任务组：%s ver:%s 退出调度线程", flog.Blue(receiver.Name), flog.Yellow(receiver.Ver))
-	}()
-
 	// 抢占锁，谁抢到，谁负责这个任务组的调度（只允许一个集群节点监控任务组）
-	receiver.waitWork = true
 	receiver.ScheduleRepository.Schedule(receiver.Name, func() {
-		receiver.isWorking = true
+		taskGroupRepository := container.Resolve[taskGroup.Repository]()
+
+		// 退出时，移除监控
+		defer func() {
+			// 如果任务组的状态是进行中，则要强制失败
+			if receiver.Task.ScheduleStatus != scheduleStatus.None && !receiver.Task.IsFinish() {
+				receiver.ReportFail("客户端下线了", taskGroupRepository)
+			}
+			RemoveMonitorTaskGroup(receiver.Name)
+		}()
+
+		// 有可能原节点挂了，由另外节点继续接管，所以需要重新取到最新的对象（因为现在取消了任务组数据的实时订阅发送）
+		*receiver.DomainObject = taskGroupRepository.ToEntity(receiver.Name)
 		flog.Infof("任务组：%s ver:%s 加入调度线程", flog.Blue(receiver.Name), flog.Yellow(receiver.Ver))
 		for {
 			// 清空更新队列
 			receiver.updated = make(chan struct{}, 1000)
 
 			select {
-			case <-receiver.ctx.Done(): // 任务组停止，或删除时退出
+			case <-receiver.Client.Ctx.Done(): // 任务组停止，或删除时退出
 				return
-			default: // 没有停止时，继续往下走
-				if !receiver.IsEnable { // // 当corn格式错误时，会强制设为false，等待手动启动
-					flog.Infof("任务组：%s ver:%s 状态未启用", flog.Blue(receiver.Name), flog.Yellow(receiver.Ver))
+			default:
+				// 在下面子函数中，有可能已捕获到receiver.Client.Ctx.Done()状态，所以这里需要兜底判断关闭状态
+				if receiver.Client.IsClose() {
 					return
+				}
+
+				// 如果任务是停止状态，则等待fops开启后继续执行
+				if !receiver.IsEnable {
+					<-receiver.updated
+					continue
 				}
 			}
 
@@ -131,18 +114,29 @@ func (receiver *TaskGroupMonitor) Start() {
 			case scheduleStatus.None:
 				receiver.waitStart()
 			case scheduleStatus.Scheduling:
+				select {
+				// 任务组停止，或删除时退出
+				case <-receiver.Client.Ctx.Done():
+					return
 				// 等待其它协程更新状态
-				<-receiver.updated
+				case <-receiver.updated:
+				}
 			case scheduleStatus.Fail:
 				receiver.taskFinish()
 			case scheduleStatus.Success:
 				switch receiver.Task.ExecuteStatus {
-				case executeStatus.None:
+				case executeStatus.None, executeStatus.Working:
+					// FOPS发起Kill请求
+					if receiver.Task.Kill {
+						receiver.Client.Kill(receiver.Task.Id)
+					}
+					select {
+					// 任务组停止，或删除时退出
+					case <-receiver.Client.Ctx.Done():
+						return
 					// 等待客户端上报运行状态
-					receiver.waitJobReportWorkStatus()
-				case executeStatus.Working:
-					// 已成功调度到客户端，等待客户端执行完成
-					receiver.waitFinish()
+					case <-receiver.updated:
+					}
 				case executeStatus.Fail, executeStatus.Success:
 					receiver.taskFinish()
 				default:
@@ -163,171 +157,107 @@ func (receiver *TaskGroupMonitor) waitStart() {
 		return
 	}
 
-	// 没有可用客户端，不需要调度
-	if receiver.CanScheduleClient() == 0 {
-		select {
-		case <-receiver.updated:
-			// 有可能enable有变，所以这里要返回出去，让外面来判断
-			return
-		}
-	}
-
+	// 任务组总的有效时间
 	timer := timingWheel.AddTimePrecision(receiver.StartAt.ToTime())
 	select {
-	case <-timer.C: // 开始时间到了，可以开始计算任务执行赶时间
-		receiver.waitScheduler()
+	// 任务组停止，或删除时退出
+	case <-receiver.Client.Ctx.Done():
+		return
 	case <-receiver.updated:
 		timer.Stop()
+	// 开始时间到了，可以开始计算任务执行赶时间
+	case <-timer.C:
+		receiver.waitScheduler()
 	}
 }
 
 // 等待调度
 func (receiver *TaskGroupMonitor) waitScheduler() {
 	// 由于创建锁的时候，需要网络IO开销，所以这里提前100ms进入
-	timer := timingWheel.AddTime(receiver.Task.StartAt.AddMillisecond(-100).ToTime())
+	timer := timingWheel.AddTime(receiver.Task.StartAt.AddMillisecond(-500).ToTime())
 	select {
-	case <-timer.C: // 执行时间到了，准开始调度
-		// 提前了100ms进到这里。
-		receiver.Task.SetScheduling()
-		// 发布调度事件
-		_ = receiver.SchedulerEventBus.Publish(receiver)
+	// 任务组停止，或删除时退出
+	case <-receiver.Client.Ctx.Done():
+		return
 	case <-receiver.updated:
 		timer.Stop()
+	case <-timer.C:
+		// 提前了100ms进到这里。
+		receiver.Task.SetScheduling()
+		// 调度
+		receiver.schedulerEvent()
 	}
 }
 
-// 等待完成
-func (receiver *TaskGroupMonitor) waitFinish() {
-	if receiver.curClient == nil || receiver.curClient.IsNil() || receiver.curClient.IsOffline() {
-		flog.Debugf("任务组：%s 当前客户端已离线", receiver.Name)
-		_ = receiver.CheckWorkingEventBus.Publish(receiver)
+// SchedulerEvent 任务调度
+func (receiver *TaskGroupMonitor) schedulerEvent() {
+	taskGroupRepository := container.Resolve[taskGroup.Repository]()
+	clientRepository := container.Resolve[client.Repository]()
+
+	if !receiver.CanScheduler() {
+		flog.Debugf("任务组：%s 条件不满足无法调度", receiver.Name)
+		receiver.Task.ScheduleFail("条件不满足无法调度")
 		return
 	}
 
-	// 小于10s，则按10s检查一次
-	checkWorkWaitMillisecond := time.Duration(receiver.RunSpeedAvg * 3)
-	if checkWorkWaitMillisecond < 10000 {
-		checkWorkWaitMillisecond = 10000
+	// 轮询的方式取到客户端
+	// 没有可调度的客户端
+	if receiver.Client == nil || receiver.Client.IsClose() {
+		flog.Debugf("任务组：%s 客户端已断开连接，无法调度", receiver.Name)
+		receiver.Task.ScheduleFail("客户端已断开连接，无法调度")
+		//taskGroupRepository.Save(*receiver.DomainObject)
+		return
 	}
-	timer := timingWheel.Add(checkWorkWaitMillisecond * time.Millisecond)
-	select {
-	case <-timer.C: // 每隔60秒，主动向客户端询问任务状态
-		flog.Debugf("任务组：%s 主动向客户端询问任务状态", receiver.Name)
-		_ = receiver.CheckWorkingEventBus.Publish(receiver)
-	case <-receiver.updated:
-		timer.Stop()
+
+	// 请求客户端
+	clientTask := mapper.Single[client.TaskEO](receiver.Task)
+	var err error
+
+	if err = receiver.Client.TrySchedule(clientTask); err == nil {
+		// 调度成功，分配客户端
+		receiver.Task.ScheduleSuccess(mapper.Single[taskGroup.ClientVO](receiver.Client))
+		_ = container.Resolve[redis.IClient]("default").Transaction(func() {
+			taskGroupRepository.SaveAndTask(*receiver.DomainObject)
+			clientRepository.Save(*receiver.Client)
+		})
+		return
 	}
+
+	// 调度失败
+	receiver.Task.ScheduleFail(fmt.Sprintf("请求客户端%s（%d）：%s:%d失败:%s", receiver.Client.Name, receiver.Client.Id, receiver.Client.Ip, receiver.Client.Port, err.Error()))
+	//_ = container.Resolve[redis.IClient]("default").Transaction(func() {
+	//	taskGroupRepository.Save(*receiver.DomainObject)
+	//	clientRepository.Save(*receiver.Client)
+	//})
 }
 
 // 任务完成
 func (receiver *TaskGroupMonitor) taskFinish() {
-	_ = receiver.FinishEventBus.Publish(receiver.DomainObject)
-}
-
-// 检查超时未执行
-func (receiver *TaskGroupMonitor) waitJobReportWorkStatus() {
-	timer := timingWheel.AddTime(receiver.Task.SchedulerAt.AddSeconds(10).ToTime())
-	select {
-	case <-timer.C: // 调度时间超过10s，仍未执行
-		_ = receiver.CheckWorkingEventBus.Publish(receiver)
-	case <-receiver.updated:
-		timer.Stop()
+	// 调度失败后，需要立即重新调度
+	if receiver.Task.ScheduleStatus != scheduleStatus.Fail && !receiver.Task.IsFinish() {
+		return
 	}
-}
 
-// 更新客户端
-func (receiver *TaskGroupMonitor) updateClient(newData *client.DomainObject) {
-	// 状态为不可调度时，则移除列表
-	if newData.IsNotSchedule() {
-		// 移除客户端
-		if receiver.clients.ContainsKey(newData.Id) {
-			receiver.clients.Remove(newData.Id)
+	taskGroupRepository := container.Resolve[taskGroup.Repository]()
+	// 先保存任务内容
+	taskGroupRepository.SaveTask(receiver.Task)
 
-			if receiver.curClient != nil && receiver.curClient.Id == newData.Id {
-				receiver.curClient = nil
-			}
-
-			receiver.updateNotice()
-			flog.Debugf("任务组：%s 移除客户端：%s %d 状态：%s", receiver.Name, newData.Name, newData.Id, newData.Status.String())
-		}
-	} else {
-		if !receiver.clients.ContainsKey(newData.Id) {
-			receiver.clients.Add(newData.Id, newData)
-			receiver.updateNotice()
-			flog.Debugf("任务组：%s 添加客户端：%s %d", receiver.Name, newData.Name, newData.Id)
-		}
+	// 计算下一个周期
+	if receiver.CalculateNextAtByCron() {
+		// 任务初始化
+		receiver.CreateTask()
 	}
-}
-
-// PollingClient 轮询的方式取到客户端
-func (receiver *TaskGroupMonitor) PollingClient() *client.DomainObject {
-	lst := receiver.clients.Values()
-	for ver := receiver.Ver; ver > 0; ver-- {
-		// 使用轮询方式，根据调度时间排序，取最晚没调度的客户端
-		receiver.curClient = lst.Where(func(item *client.DomainObject) bool {
-			return item.Status == clientStatus.Scheduler && item.Jobs.Where(func(jobVO client.JobVO) bool {
-				return jobVO.Name == receiver.Name && jobVO.Ver == ver
-			}).Any()
-		}).OrderBy(func(item *client.DomainObject) any {
-			return item.ScheduleAt.UnixMilli()
-		}).First()
-
-		// 找到了，不用继续往下找
-		if receiver.curClient != nil {
-			break
-		}
-	}
-	return receiver.curClient
-}
-
-// GetClient 获取客户端
-func (receiver *TaskGroupMonitor) GetClient() *client.DomainObject {
-	return receiver.curClient
-}
-
-// CanScheduleClient 能调度的客户端
-func (receiver *TaskGroupMonitor) CanScheduleClient() int {
-	return receiver.clients.Count()
-}
-
-// 通知客户端有更新
-func (receiver *TaskGroupMonitor) updateNotice() {
-	// 进入抢占锁状态且没有在工作，说明没有拿到执行权，不需要更新
-	if !receiver.waitWork || receiver.isWorking {
-		//flog.Debugf("任务组更新通知：%s Ver:%d", taskGroupDO.Name, taskGroupDO.Ver)
-		receiver.updated <- struct{}{}
-	}
-}
-
-// TaskGroupCount 返回当前正在监控的任务组数量
-func TaskGroupCount() int {
-	lstLog := collections.NewList[string]()
-	for _, v := range taskGroupList.ToMap() {
-		if v.clients.Count() > 0 {
-			var curClientId int64
-			if v.curClient != nil {
-				curClientId = v.curClient.Id
-			}
-			lstLog.Add(fmt.Sprintf("任务组：%s，\t状态：%s，客户端%s个，当前客户端：%s", flog.Blue(v.Name), v.Task.ExecuteStatus.String(), flog.Red(v.clients.Count()), flog.Green(curClientId)))
-		}
-	}
-	if lstLog.Count() > 0 {
-		fmt.Sprintln(lstLog.ToString("\n"))
-	}
-	return taskGroupList.Count()
+	taskGroupRepository.SaveAndTask(*receiver.DomainObject)
 }
 
 // TaskGroupEnableCount 返回开启状态的任务组
 func TaskGroupEnableCount() int {
 	return taskGroupList.Values().Where(func(item *TaskGroupMonitor) bool {
-		return item.CanScheduleClient() > 0
+		return !item.Client.IsClose()
 	}).Count()
 }
 
-// 获取任务组接受调度的客户端列表
-func GetClientList(taskGroupName string) collections.List[*client.DomainObject] {
-	if taskGroupList.ContainsKey(taskGroupName) {
-		return taskGroupList.GetValue(taskGroupName).clients.Values()
-	}
-	return collections.NewList[*client.DomainObject]()
+// TaskGroupCount 返回当前正在监控的任务组数量
+func TaskGroupCount() int {
+	return taskGroupList.Count()
 }

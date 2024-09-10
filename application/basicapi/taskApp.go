@@ -103,9 +103,5 @@ func KillTask(taskGroupName string, taskGroupRepository taskGroup.Repository, cl
 	}
 
 	// 通知处理该任务组的服务端，需要调用客户端发起Kill请求
-	taskGroupDO.Task.Kill = true
-	taskGroupRepository.Save(taskGroupDO)
-
-	// 发到所有节点上
-	_ = container.Resolve[core.IEvent]("TaskGroupUpdate").Publish(taskGroupDO)
+	_ = container.Resolve[core.IEvent]("TaskKill").Publish(taskGroupDO)
 }

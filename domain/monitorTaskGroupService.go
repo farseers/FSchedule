@@ -18,6 +18,11 @@ import (
 // 加入到监控的列表
 var taskGroupList = collections.NewDictionary[string, *TaskGroupMonitor]()
 
+// 找到该任务组的监控
+func GetTaskGroupMonitor(taskGroupName string) *TaskGroupMonitor {
+	return taskGroupList.GetValue(taskGroupName)
+}
+
 // 移除任务组监控
 func RemoveMonitorTaskGroup(taskGroupName string) {
 	taskGroupMonitor := taskGroupList.GetValue(taskGroupName)
@@ -132,10 +137,6 @@ func (receiver *TaskGroupMonitor) Start() {
 			case scheduleStatus.Success:
 				switch receiver.Task.ExecuteStatus {
 				case executeStatus.None, executeStatus.Working:
-					// FOPS发起Kill请求
-					if receiver.Task.Kill {
-						receiver.Client.Kill(receiver.Task.Id)
-					}
 					select {
 					// 任务组停止，或删除时退出
 					case <-receiver.Client.Ctx.Done():
@@ -254,6 +255,12 @@ func (receiver *TaskGroupMonitor) taskFinish() {
 		receiver.CreateTask()
 	}
 	taskGroupRepository.SaveAndTask(*receiver.DomainObject)
+}
+
+// 主动通知客户端，停止任务
+func (receiver *TaskGroupMonitor) TaskKill() {
+	// FOPS发起Kill请求
+	receiver.Client.Kill(receiver.Task.Id)
 }
 
 // TaskGroupEnableCount 返回开启状态的任务组

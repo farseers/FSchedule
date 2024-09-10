@@ -39,8 +39,11 @@ func (module Module) PostInitialize() {
 	// 注册选举事件
 	redis.RegisterEvent("default", "ClusterLeader").RegisterSubscribe("选举事件", domainEvent.ClusterLeaderSubscribe)
 
-	// 注册任务组更新通知事件
+	// 注册任务组更新的通知事件
 	redis.RegisterEvent("default", "TaskGroupUpdate").RegisterSubscribe("任务组有更新", domainEvent.TaskGroupUpdateSubscribe)
+
+	// 注册任务停止的通知事件
+	redis.RegisterEvent("default", "TaskKill").RegisterSubscribe("任务停止", domainEvent.TaskKillSubscribe)
 
 	// 队列任务日志
 	queue.Subscribe("TaskLogQueue", "同步日志到数据库", 1000, 5*time.Second, localQueue.TaskLogQueueConsumer)

@@ -28,7 +28,6 @@ type TaskEO struct {
 	Data           collections.Dictionary[string, string] // 本次执行任务时的Data数据
 	CreateAt       dateTime.DateTime                      // 任务创建时间
 	Remark         string                                 // 备注
-	Kill           bool                                   // FOPS发起停止请求
 }
 
 func NewTaskDO() *TaskEO {

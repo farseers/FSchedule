@@ -126,6 +126,7 @@ func (receiver *DomainObject) ActivateClient() {
 					clientRepository.RemoveClient(receiver.Id)
 					return
 				}
+				clientDO.(*DomainObject).ActivateAt = dateTime.Now()
 				clientRepository.Save(*clientDO.(*DomainObject))
 			}
 		}

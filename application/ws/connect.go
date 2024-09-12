@@ -4,7 +4,6 @@ package ws
 import (
 	"FSchedule/domain"
 	"FSchedule/domain/client"
-	"FSchedule/domain/schedule"
 	"FSchedule/domain/taskGroup"
 	"FSchedule/domain/taskLog"
 	"fmt"
@@ -37,7 +36,7 @@ const tokenName = "FSS-ACCESS-TOKEN"
 
 // 客户端请求任务组分派任务，客户端每个任务单独连接
 // @ws connect
-func Connect(wsContext *websocket.Context[request], clientRepository client.Repository, taskGroupRepository taskGroup.Repository, taskLogRepository taskLog.Repository, scheduleRepository schedule.Repository) {
+func Connect(wsContext *websocket.Context[request], clientRepository client.Repository, taskGroupRepository taskGroup.Repository, taskLogRepository taskLog.Repository) {
 	// 新的客户端、先做注册
 	req := wsContext.Receiver()
 	addr := strings.Split(wsContext.HttpContext.URI.RemoteAddr, ":")
@@ -45,7 +44,7 @@ func Connect(wsContext *websocket.Context[request], clientRepository client.Repo
 	req.Registry.ClientPort = parse.ToInt(addr[1])
 
 	// 客户端注册
-	domain.Registry(wsContext.BaseContext, req.Registry, clientRepository, taskGroupRepository, scheduleRepository)
+	domain.Registry(wsContext.BaseContext, req.Registry, clientRepository, taskGroupRepository)
 
 	for {
 		req = wsContext.Receiver()

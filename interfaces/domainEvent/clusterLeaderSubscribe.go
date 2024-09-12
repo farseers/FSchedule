@@ -59,6 +59,6 @@ func ClusterLeaderSubscribe(message any, _ core.EventArgs) {
 		}
 
 		// 每5秒检查客户端是否永久离线
-		tasks.Run("RemoveClientJob", 5*time.Second, job.RemoveClientJob, context.Background())
+		tasks.Run("SyncClientJob", 5*time.Second, job.RemoveClientJob, context.Background())
 	}
 }

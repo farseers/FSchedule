@@ -92,7 +92,7 @@ func TaskPlanList(top int, taskGroupRepository taskGroup.Repository) collections
 
 // Kill任务
 // @post killTask
-func KillTask(taskGroupName string, taskGroupRepository taskGroup.Repository, clientRepository client.Repository, clientCheck client.IClientCheck) {
+func KillTask(taskGroupName string, taskGroupRepository taskGroup.Repository, clientRepository client.Repository) {
 	taskGroupDO := taskGroupRepository.ToEntity(taskGroupName)
 	if taskGroupDO.IsNil() {
 		exception.ThrowWebExceptionf(403, "任务组 %s 不存在", taskGroupName)

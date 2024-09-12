@@ -3,41 +3,45 @@ package client
 import (
 	"FSchedule/domain/enum/clientStatus"
 	"context"
-	"github.com/farseer-go/collections"
+	"github.com/farseer-go/fs/container"
 	"github.com/farseer-go/fs/dateTime"
 	"github.com/farseer-go/fs/flog"
+	"github.com/farseer-go/fs/timingWheel"
 	"github.com/farseer-go/webapi/websocket"
+	"time"
 )
 
 type DomainObject struct {
-	Id               int64                   // 客户端ID
-	Name             string                  // 客户端名称
-	Ip               string                  // 客户端IP
-	Port             int                     // 客户端端口
-	ActivateAt       dateTime.DateTime       // 活动时间
-	ScheduleAt       dateTime.DateTime       // 任务调度时间
-	Status           clientStatus.Enum       // 客户端状态
-	QueueCount       int                     // 排队中的任务数量
-	WorkCount        int                     // 正在处理的任务数量
-	ErrorCount       int                     // 错误次数
-	Jobs             collections.List[JobVO] // 客户端支持的任务
-	websocketContext *websocket.BaseContext  // 客户端
-	Ctx              context.Context         // 用于通知应用端是否断开连接
+	Id               string                 // 客户端ID
+	Name             string                 // 客户端名称
+	Ip               string                 // 客户端IP
+	Port             int                    // 客户端端口
+	ActivateAt       dateTime.DateTime      // 活动时间
+	ScheduleAt       dateTime.DateTime      // 任务调度时间
+	Status           clientStatus.Enum      // 客户端状态
+	QueueCount       int                    // 排队中的任务数量
+	WorkCount        int                    // 正在处理的任务数量
+	ErrorCount       int                    // 错误次数
+	Job              JobVO                  // 客户端支持的任务
+	websocketContext *websocket.BaseContext // 客户端
+	Ctx              context.Context        // 用于通知应用端是否断开连接
 }
 
 // Registry 注册客户端
-func (receiver *DomainObject) Registry(websocketContext *websocket.BaseContext, vo JobVO) {
+func (receiver *DomainObject) Registry(websocketContext *websocket.BaseContext, clientRepository Repository) {
 	receiver.websocketContext = websocketContext
 	receiver.Ctx = websocketContext.Ctx
 
 	receiver.ActivateAt = dateTime.Now()
 	receiver.Status = clientStatus.Online
-	receiver.Jobs.Add(vo)
+
+	// 定时保存客户端信息
+	receiver.ActivateClient(clientRepository)
 }
 
 // IsNil 判断注册的客户端是否有效
 func (receiver *DomainObject) IsNil() bool {
-	return receiver.Id == 0 || receiver.Name == "" || receiver.Port == 0
+	return receiver.Id == "" || receiver.Name == "" || receiver.Ip == "" || receiver.Port == 0
 }
 
 // IsOffline 判断客户端是否下线
@@ -96,4 +100,29 @@ func (receiver *DomainObject) Close() {
 // 客户端是否关闭
 func (receiver *DomainObject) IsClose() bool {
 	return receiver.websocketContext == nil || receiver.websocketContext.IsClose()
+}
+
+// 定时同步客户端信息
+func (receiver *DomainObject) ActivateClient(clientRepository Repository) {
+	flog.Infof("客户端：%s(%s)，%s 连接成功", receiver.Id, receiver.Name, receiver.Job.Name)
+	// 定时保存客户端信息
+	go func() {
+		defer flog.Infof("客户端：%s(%s)，%s 断开连接", receiver.Id, receiver.Name, receiver.Job.Name)
+		for {
+			select {
+			case <-receiver.Ctx.Done():
+				clientList.Delete(receiver.Id)
+				container.Resolve[Repository]().RemoveClient(receiver.Id)
+				return
+			case <-timingWheel.Add(5 * time.Second).C:
+				clientDO, _ := clientList.Load(receiver.Id)
+				if clientDO == nil {
+					clientList.Delete(receiver.Id)
+					container.Resolve[Repository]().RemoveClient(receiver.Id)
+					return
+				}
+				clientRepository.Save(*clientDO.(*DomainObject))
+			}
+		}
+	}()
 }

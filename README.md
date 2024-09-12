@@ -30,6 +30,7 @@ FSchedule将调度、控制权放到服务端，由服务端统一调度。可�
 2. 检查集群各节点状态
 3. 计算任务组的平均耗时
 4. 自动清除历史任务记录
+5. 检查离线客户端
 
 ## 架构设计
 ![架构设计](https://farseer-go.github.io/doc/fSchedule/images/1.png)

@@ -1,8 +1,8 @@
 package infrastructure
 
 import (
+	"FSchedule/domain/schedule"
 	"FSchedule/domain/serverNode"
-	"FSchedule/infrastructure/http"
 	"FSchedule/infrastructure/localQueue"
 	"FSchedule/infrastructure/repository"
 	"FSchedule/infrastructure/repository/context"
@@ -11,6 +11,7 @@ import (
 	"github.com/farseer-go/eventBus"
 	"github.com/farseer-go/fs"
 	"github.com/farseer-go/fs/container"
+	"github.com/farseer-go/fs/core"
 	"github.com/farseer-go/fs/modules"
 	"github.com/farseer-go/fs/timingWheel"
 	"github.com/farseer-go/linkTrace"
@@ -48,10 +49,16 @@ func (module Module) PostInitialize() {
 	// 队列任务日志
 	queue.Subscribe("TaskLogQueue", "同步日志到数据库", 1000, 5*time.Second, localQueue.TaskLogQueueConsumer)
 
-	// 注册客户端http
-	http.InitHttp()
-
 	fs.AddInitCallback("注册节点信息", func() {
 		container.Resolve[serverNode.Repository]().Save(serverNode.New())
+	})
+
+	fs.AddInitCallback("选举", func() {
+		// 抢占锁，谁抢到，谁就是master
+		go container.Resolve[schedule.Repository]().Election(func() {
+			// 推送当前选举结果
+			_ = container.Resolve[core.IEvent]("ClusterLeader").Publish(core.AppId)
+			<-fs.Context.Done()
+		})
 	})
 }

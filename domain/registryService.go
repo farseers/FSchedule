@@ -2,21 +2,15 @@ package domain
 
 import (
 	"FSchedule/domain/client"
-	"FSchedule/domain/schedule"
 	"FSchedule/domain/taskGroup"
+	"fmt"
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs/exception"
 	"github.com/farseer-go/mapper"
 	"github.com/farseer-go/webapi/websocket"
 )
 
-type RegistryResponse struct {
-	ClientIp   string // 客户端IP
-	ClientPort int    // 客户端端口
-}
-
 type RegistryDTO struct {
-	ClientId   int64    // 客户端ID
 	ClientName string   // 客户端名称
 	ClientIp   string   // 客户端IP
 	ClientPort int      // 客户端端口
@@ -32,9 +26,9 @@ type RegistryDTO struct {
 }
 
 // Registry 客户端注册
-func Registry(websocketContext *websocket.BaseContext, dto RegistryDTO, clientRepository client.Repository, taskGroupRepository taskGroup.Repository, scheduleRepository schedule.Repository) RegistryResponse {
-	if dto.ClientId == 0 || dto.ClientName == "" || dto.Job.Name == "" {
-		exception.ThrowWebExceptionf(403, "客户端ID=%d、ClientName=%s、JobName=%s，未完整传入", dto.ClientId, dto.ClientName, dto.Job.Name)
+func Registry(websocketContext *websocket.BaseContext, dto RegistryDTO, clientRepository client.Repository, taskGroupRepository taskGroup.Repository) {
+	if dto.ClientName == "" || dto.Job.Name == "" {
+		exception.ThrowWebExceptionf(403, "ClientName=%s、JobName=%s，未完整传入", dto.ClientName, dto.Job.Name)
 	}
 
 	// 确认cron格式是否正确
@@ -57,29 +51,17 @@ func Registry(websocketContext *websocket.BaseContext, dto RegistryDTO, clientRe
 		}
 	}
 
-	// 加锁，防止同一个客户端有多个任务组时，会丢失任务组列表
-	scheduleRepository.RegistryLock(dto.ClientId).GetLockRun(func() {
-		// 更新客户端
-		clientDO := clientRepository.ToEntity(dto.ClientId)
-		// 新注册的客户端
-		if clientDO.IsNil() {
-			clientDO = client.DomainObject{
-				Id:   dto.ClientId,
-				Name: dto.ClientName,
-				Ip:   dto.ClientIp,
-				Port: dto.ClientPort,
-				Jobs: collections.NewList[client.JobVO](),
-			}
-		}
-		clientDO.Registry(websocketContext, mapper.Single[client.JobVO](dto.Job))
-		clientRepository.Save(clientDO)
-		go ActivateClient(websocketContext, clientDO.Id, clientRepository, scheduleRepository)
-		// 将任务组接入监控
-		MonitorTaskGroupPush(&clientDO, &taskGroupDO)
-	})
-
-	return RegistryResponse{
-		ClientIp:   dto.ClientIp,
-		ClientPort: dto.ClientPort,
+	clientDO := &client.DomainObject{
+		Id:   fmt.Sprintf("%s:%d", dto.ClientIp, dto.ClientPort),
+		Ip:   dto.ClientIp,
+		Port: dto.ClientPort,
+		Name: dto.ClientName,
+		Job:  mapper.Single[client.JobVO](dto.Job),
 	}
+
+	clientDO.Registry(websocketContext, clientRepository)
+	clientRepository.Save(*clientDO)
+
+	// 将任务组接入监控
+	MonitorTaskGroupPush(clientDO, &taskGroupDO)
 }

@@ -108,9 +108,7 @@ func SetEnable(taskGroupName string, enable bool, taskGroupRepository taskGroup.
 func getTaskGroupClientList(taskGroupName string, lstClient collections.List[client.DomainObject]) collections.List[client.DomainObject] {
 	// 筛选包含任务组的客户端
 	lstClient = lstClient.Where(func(item client.DomainObject) bool {
-		return item.Jobs.Where(func(jobVO client.JobVO) bool {
-			return jobVO.Name == taskGroupName
-		}).Any()
+		return item.Job.Name == taskGroupName
 	}).ToList()
 
 	return lstClient.OrderBy(func(item client.DomainObject) any {

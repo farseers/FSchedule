@@ -31,7 +31,6 @@ func RemoveMonitorTaskGroup(taskGroupName string) {
 		taskGroupList.Remove(taskGroupName)
 		if taskGroupMonitor.Client != nil {
 			taskGroupMonitor.Client.Close()
-			container.Resolve[client.Repository]().RemoveClient(taskGroupMonitor.Client.Id)
 		}
 	}
 }
@@ -108,10 +107,6 @@ func (receiver *TaskGroupMonitor) Start() {
 			case <-receiver.Client.Ctx.Done(): // 任务组停止，或删除时退出
 				return
 			default:
-				// 在下面子函数中，有可能已捕获到receiver.Client.Ctx.Done()状态，所以这里需要兜底判断关闭状态
-				//if receiver.Client.IsClose() {
-				//	return
-				//}
 				// 如果任务是停止状态，则等待fops开启后继续执行
 				if !receiver.IsEnable {
 					// 如果任务是完成状态，则重新初始化
@@ -202,7 +197,7 @@ func (receiver *TaskGroupMonitor) waitScheduler() {
 // SchedulerEvent 任务调度
 func (receiver *TaskGroupMonitor) schedulerEvent() {
 	taskGroupRepository := container.Resolve[taskGroup.Repository]()
-	//clientRepository := container.Resolve[client.Repository]()
+	clientRepository := container.Resolve[client.Repository]()
 
 	if !receiver.CanScheduler() {
 		flog.Debugf("任务组：%s 条件不满足无法调度", receiver.Name)
@@ -215,30 +210,28 @@ func (receiver *TaskGroupMonitor) schedulerEvent() {
 	if receiver.Client == nil || receiver.Client.IsClose() {
 		flog.Debugf("任务组：%s 客户端已断开连接，无法调度", receiver.Name)
 		receiver.Task.ScheduleFail("客户端已断开连接，无法调度")
-		//taskGroupRepository.Save(*receiver.DomainObject)
 		return
 	}
 
 	// 请求客户端
-	clientTask := mapper.Single[client.TaskEO](receiver.Task)
 	var err error
-
+	clientTask := mapper.Single[client.TaskEO](receiver.Task)
 	if err = receiver.Client.TrySchedule(clientTask); err == nil {
 		// 调度成功，分配客户端
 		receiver.Task.ScheduleSuccess(mapper.Single[taskGroup.ClientVO](receiver.Client))
 		_ = container.Resolve[redis.IClient]("default").Transaction(func() {
 			taskGroupRepository.SaveAndTask(*receiver.DomainObject)
-			//clientRepository.Save(*receiver.Client)
+			clientRepository.Save(*receiver.Client)
 		})
 		return
 	}
 
 	// 调度失败
 	receiver.Task.ScheduleFail(fmt.Sprintf("请求客户端%s（%d）：%s:%d失败:%s", receiver.Client.Name, receiver.Client.Id, receiver.Client.Ip, receiver.Client.Port, err.Error()))
-	//_ = container.Resolve[redis.IClient]("default").Transaction(func() {
-	//	taskGroupRepository.Save(*receiver.DomainObject)
-	//	clientRepository.Save(*receiver.Client)
-	//})
+	_ = container.Resolve[redis.IClient]("default").Transaction(func() {
+		taskGroupRepository.Save(*receiver.DomainObject)
+		clientRepository.Save(*receiver.Client)
+	})
 }
 
 // 任务完成

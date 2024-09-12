@@ -6,9 +6,12 @@ import (
 
 var clientList = sync.Map{}
 
-func GetClient(clientId string) *DomainObject {
-	if clientDO, exists := clientList.Load(clientId); exists {
-		return clientDO.(*DomainObject)
-	}
-	return nil
+// 统计客户端数量
+func GetClientCount() int {
+	count := 0
+	clientList.Range(func(key, value any) bool {
+		count++
+		return true
+	})
+	return count
 }

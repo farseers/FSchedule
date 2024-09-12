@@ -18,7 +18,7 @@ func PrintInfoJob(context *tasks.TaskContext) {
 		traceContext.Ignore()
 	}
 
-	clientCount := container.Resolve[client.Repository]().GetCount()
+	clientCount := client.GetClientCount()
 	if clientCount > 0 {
 		flog.Printf("%s个客户端，%s个任务组在运行（%s个连接）\n", flog.Red(clientCount), flog.Red(domain.TaskGroupCount()), flog.Green(domain.TaskGroupEnableCount()))
 	}

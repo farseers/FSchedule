@@ -25,6 +25,7 @@ type DomainObject struct {
 	Job              JobVO                  // 客户端支持的任务
 	websocketContext *websocket.BaseContext // 客户端
 	Ctx              context.Context        // 用于通知应用端是否断开连接
+	IsMaster         bool                   // 是否为主客户端
 }
 
 // Registry 注册客户端

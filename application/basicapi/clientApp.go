@@ -9,5 +9,8 @@ import (
 // 客户端列表
 // @get list
 func ClientList(clientRepository client.Repository) collections.List[client.DomainObject] {
-	return clientRepository.ToList()
+	lst := clientRepository.ToList().OrderBy(func(item client.DomainObject) any {
+		return item.Job.Name + item.Id
+	}).ToList()
+	return lst
 }

@@ -111,7 +111,7 @@ func getTaskGroupClientList(taskGroupName string, lstClient collections.List[cli
 		return item.Job.Name == taskGroupName
 	}).ToList()
 
-	return lstClient.OrderBy(func(item client.DomainObject) any {
-		return int(item.Status)
+	return lstClient.OrderByDescending(func(item client.DomainObject) any {
+		return item.IsMaster
 	}).ToList()
 }

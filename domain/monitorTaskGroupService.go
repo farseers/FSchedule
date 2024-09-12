@@ -197,7 +197,7 @@ func (receiver *TaskGroupMonitor) waitScheduler() {
 // SchedulerEvent 任务调度
 func (receiver *TaskGroupMonitor) schedulerEvent() {
 	taskGroupRepository := container.Resolve[taskGroup.Repository]()
-	clientRepository := container.Resolve[client.Repository]()
+	//clientRepository := container.Resolve[client.Repository]()
 
 	if !receiver.CanScheduler() {
 		flog.Debugf("任务组：%s 条件不满足无法调度", receiver.Name)
@@ -221,7 +221,7 @@ func (receiver *TaskGroupMonitor) schedulerEvent() {
 		receiver.Task.ScheduleSuccess(mapper.Single[taskGroup.ClientVO](receiver.Client))
 		_ = container.Resolve[redis.IClient]("default").Transaction(func() {
 			taskGroupRepository.SaveAndTask(*receiver.DomainObject)
-			clientRepository.Save(*receiver.Client)
+			//clientRepository.Save(*receiver.Client)
 		})
 		return
 	}
@@ -230,7 +230,7 @@ func (receiver *TaskGroupMonitor) schedulerEvent() {
 	receiver.Task.ScheduleFail(fmt.Sprintf("请求客户端%s（%d）：%s:%d失败:%s", receiver.Client.Name, receiver.Client.Id, receiver.Client.Ip, receiver.Client.Port, err.Error()))
 	_ = container.Resolve[redis.IClient]("default").Transaction(func() {
 		taskGroupRepository.Save(*receiver.DomainObject)
-		clientRepository.Save(*receiver.Client)
+		//clientRepository.Save(*receiver.Client)
 	})
 }
 

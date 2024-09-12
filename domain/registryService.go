@@ -60,7 +60,6 @@ func Registry(websocketContext *websocket.BaseContext, dto RegistryDTO, clientRe
 	}
 
 	clientDO.Registry(websocketContext, clientRepository)
-	clientRepository.Save(*clientDO)
 
 	// 将任务组接入监控
 	MonitorTaskGroupPush(clientDO, &taskGroupDO)

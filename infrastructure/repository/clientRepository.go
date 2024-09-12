@@ -4,8 +4,6 @@ import (
 	"FSchedule/domain/client"
 	"FSchedule/infrastructure/repository/context"
 	"github.com/farseer-go/collections"
-	"github.com/farseer-go/fs/container"
-	"github.com/farseer-go/redis"
 )
 
 const clientCacheKey = "FSchedule_ClientList"
@@ -37,18 +35,4 @@ func (receiver *clientRepository) ToList() collections.List[client.DomainObject]
 
 func (receiver *clientRepository) RemoveClient(clientId string) {
 	_, _ = context.RedisContext("移除客户端").HashDel(clientCacheKey, clientId)
-}
-
-func (receiver *clientRepository) GetCount() int64 {
-	count := context.RedisContext("获取客户端数量").HashCount(clientCacheKey)
-	return int64(count)
-}
-
-func (receiver *clientRepository) Sync(lst collections.List[client.DomainObject]) {
-	_ = container.Resolve[redis.IClient]("default").Transaction(func() {
-		_, _ = context.RedisContext("清除客户端").Del(clientCacheKey)
-		lst.Foreach(func(clientDO *client.DomainObject) {
-			_ = context.RedisContext("同步客户端").HashSetEntity(clientCacheKey, clientDO.Id, clientDO)
-		})
-	})
 }

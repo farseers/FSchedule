@@ -104,6 +104,7 @@ func (receiver *DomainObject) IsClose() bool {
 
 // 定时同步客户端信息
 func (receiver *DomainObject) ActivateClient(clientRepository Repository) {
+	clientList.Store(receiver.Id, receiver)
 	flog.Infof("客户端：%s(%s)，%s 连接成功", receiver.Id, receiver.Name, receiver.Job.Name)
 	// 定时保存客户端信息
 	go func() {

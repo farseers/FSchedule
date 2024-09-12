@@ -28,7 +28,7 @@ type DomainObject struct {
 }
 
 // Registry 注册客户端
-func (receiver *DomainObject) Registry(websocketContext *websocket.BaseContext, clientRepository Repository) {
+func (receiver *DomainObject) Registry(websocketContext *websocket.BaseContext) {
 	receiver.websocketContext = websocketContext
 	receiver.Ctx = websocketContext.Ctx
 
@@ -36,7 +36,7 @@ func (receiver *DomainObject) Registry(websocketContext *websocket.BaseContext, 
 	receiver.Status = clientStatus.Online
 
 	// 定时保存客户端信息
-	receiver.ActivateClient(clientRepository)
+	receiver.ActivateClient()
 }
 
 // IsNil 判断注册的客户端是否有效
@@ -103,7 +103,9 @@ func (receiver *DomainObject) IsClose() bool {
 }
 
 // 定时同步客户端信息
-func (receiver *DomainObject) ActivateClient(clientRepository Repository) {
+func (receiver *DomainObject) ActivateClient() {
+	clientRepository := container.Resolve[Repository]()
+
 	clientList.Store(receiver.Id, receiver)
 	clientRepository.Save(*receiver)
 	flog.Infof("客户端：%s(%s)，%s 连接成功", receiver.Id, receiver.Name, receiver.Job.Name)
@@ -115,13 +117,13 @@ func (receiver *DomainObject) ActivateClient(clientRepository Repository) {
 			select {
 			case <-receiver.Ctx.Done():
 				clientList.Delete(receiver.Id)
-				container.Resolve[Repository]().RemoveClient(receiver.Id)
+				clientRepository.RemoveClient(receiver.Id)
 				return
 			case <-timingWheel.Add(5 * time.Second).C:
 				clientDO, _ := clientList.Load(receiver.Id)
 				if clientDO == nil {
 					clientList.Delete(receiver.Id)
-					container.Resolve[Repository]().RemoveClient(receiver.Id)
+					clientRepository.RemoveClient(receiver.Id)
 					return
 				}
 				clientRepository.Save(*clientDO.(*DomainObject))

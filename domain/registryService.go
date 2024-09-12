@@ -59,7 +59,7 @@ func Registry(websocketContext *websocket.BaseContext, dto RegistryDTO, clientRe
 		Job:  mapper.Single[client.JobVO](dto.Job),
 	}
 
-	clientDO.Registry(websocketContext, clientRepository)
+	clientDO.Registry(websocketContext)
 
 	// 将任务组接入监控
 	MonitorTaskGroupPush(clientDO, &taskGroupDO)

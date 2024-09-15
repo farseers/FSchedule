@@ -7,7 +7,7 @@ WebApi:
 FSchedule:
   Server:
     Token: ""
-  DataSyncTime: 60
+  DataSyncTime: 20
   ReservedTaskCount: 1000
 Fops:
   Server: "https://fops.fsgit.cc"

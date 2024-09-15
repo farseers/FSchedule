@@ -27,7 +27,6 @@ func TaskGroupUpdateSubscribe(message any, _ core.EventArgs) {
 			// 主动通知客户端，停止任务
 			taskGroupMonitor.TaskKill()
 		}
-
 		taskGroupMonitor.DomainObject.Data = taskGroupDO.Data
 		taskGroupMonitor.DomainObject.Caption = taskGroupDO.Caption
 		taskGroupMonitor.DomainObject.StartAt = taskGroupDO.StartAt

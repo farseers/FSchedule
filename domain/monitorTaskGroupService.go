@@ -263,6 +263,7 @@ func (receiver *TaskGroupMonitor) TaskKill() {
 
 // 通知
 func (receiver *TaskGroupMonitor) Notify() {
+	flog.Infof("任务组：%s 收到手动更新请求", receiver.Name)
 	receiver.updated <- struct{}{}
 }
 

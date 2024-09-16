@@ -86,6 +86,7 @@ func (receiver *TaskGroupMonitor) Start() {
 			// 如果任务组的状态是进行中，则要强制失败
 			if receiver.Task.ScheduleStatus != scheduleStatus.None && !receiver.Task.IsFinish() {
 				receiver.ReportFail("客户端下线了", taskGroupRepository)
+				receiver.taskFinish()
 			}
 			RemoveMonitorTaskGroup(receiver.Name)
 		}()

@@ -13,6 +13,7 @@ import (
 	"github.com/farseer-go/fs/core"
 	"github.com/farseer-go/fs/exception"
 	"github.com/farseer-go/mapper"
+	"strings"
 )
 
 // 任务组列表
@@ -69,6 +70,9 @@ func TaskGroupUpdate(req request.TaskGroupUpdateRequest, taskGroupRepository tas
 	_, err := taskGroup.StandardParser.Parse(req.Cron)
 	if err != nil {
 		exception.ThrowWebExceptionf(403, "任务组:%s %s，Cron格式[%s]错误:%s", req.Name, req.Caption, req.Cron, err.Error())
+	}
+	if strings.Split(req.Cron, " ")[0] == "*" {
+		exception.ThrowWebExceptionf(403, "任务组:%s %s，cron:%s 第1位，不能是*，请用0代替", req.Name, req.Caption, req.Cron)
 	}
 
 	// 判断任务组是否存在

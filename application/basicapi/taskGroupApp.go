@@ -18,7 +18,7 @@ import (
 
 // 任务组列表
 // @get list
-func TaskGroupList(clientName, taskGroupName string, enable int, taskStatus executeStatus.Enum, taskId, clientId int64, pageSize int, pageIndex int, taskGroupRepository taskGroup.Repository, clientRepository client.Repository) collections.PageList[response.TaskGroupResponse] {
+func TaskGroupList(clientName, taskGroupName string, enable int, taskStatus executeStatus.Enum, taskId int64, clientId string, pageSize int, pageIndex int, taskGroupRepository taskGroup.Repository, clientRepository client.Repository) collections.PageList[response.TaskGroupResponse] {
 	if pageSize < 1 {
 		pageSize = 20
 	}

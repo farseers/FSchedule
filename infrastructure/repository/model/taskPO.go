@@ -17,9 +17,10 @@ type TaskPO struct {
 	StartAt        time.Time                              `gorm:"type:timestamp;size:6;not null;comment:开始时间"`
 	RunAt          time.Time                              `gorm:"type:timestamp;size:6;not null;comment:实际执行时间"`
 	RunSpeed       int64                                  `gorm:"type:bigint;not null;comment:运行耗时"`
-	ClientId       int64                                  `gorm:"type:bigint;not null;comment:客户端Id"`
-	ClientIp       string                                 `gorm:"size:32;not null;comment:客户端IP"`
 	ClientName     string                                 `gorm:"size:64;not null;comment:客户端名称"`
+	ClientId       string                                 `gorm:"size:32;not null;comment:客户端Id"`
+	ClientIp       string                                 `gorm:"size:32;not null;comment:客户端IP"`
+	ClientPort     int                                    `gorm:"type:int;not null;comment:客户端Port"`
 	Progress       int                                    `gorm:"type:int;not null;comment:进度0-100"`
 	ExecuteStatus  executeStatus.Enum                     `gorm:"type:tinyint;not null;comment:执行状态;"`
 	ScheduleStatus scheduleStatus.Enum                    `gorm:"type:tinyint;not null;comment:调度状态;"`

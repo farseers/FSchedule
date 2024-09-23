@@ -20,7 +20,7 @@ type Repository interface {
 	Sync()
 
 	// *******************仪表盘使用*********************
-	ToListForFops(taskGroupName string, enable int, taskStatus executeStatus.Enum, taskId, clientId int64, pageSize int, pageIndex int) collections.List[DomainObject]
+	ToListForFops(taskGroupName string, enable int, taskStatus executeStatus.Enum, taskId int64, clientId string, pageSize int, pageIndex int) collections.List[DomainObject]
 	IsExists(taskGroupName string) bool // 任务组是否存在
 	Delete(taskGroupName string)        // 删除
 	GetTaskGroupCount() int64           // 任务组数量

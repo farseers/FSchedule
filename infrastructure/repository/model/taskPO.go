@@ -14,8 +14,6 @@ type TaskPO struct {
 	Name           string                                 `gorm:"size:64;not null;comment:任务组名称;"`
 	Ver            int                                    `gorm:"type:int;not null;comment:版本"`
 	Caption        string                                 `gorm:"size:32;not null;comment:任务组标题"`
-	StartAt        time.Time                              `gorm:"type:timestamp;size:6;not null;comment:开始时间"`
-	RunAt          time.Time                              `gorm:"type:timestamp;size:6;not null;comment:实际执行时间"`
 	RunSpeed       int64                                  `gorm:"type:bigint;not null;comment:运行耗时"`
 	ClientName     string                                 `gorm:"size:64;not null;comment:客户端名称"`
 	ClientId       string                                 `gorm:"size:32;not null;comment:客户端Id"`
@@ -26,8 +24,11 @@ type TaskPO struct {
 	ScheduleStatus scheduleStatus.Enum                    `gorm:"type:tinyint;not null;comment:调度状态;"`
 	SchedulerAt    time.Time                              `gorm:"type:timestamp;size:6;not null;comment:调度时间"`
 	Data           collections.Dictionary[string, string] `gorm:"type:string;size:2048;json;not null;comment:本次执行任务时的Data数据"`
-	CreateAt       time.Time                              `gorm:"type:timestamp;size:6;not null;comment:任务创建时间;"`
 	Remark         string                                 `gorm:"size:1024;not null;comment:备注"`
+	StartAt        time.Time                              `gorm:"type:timestamp;size:6;not null;comment:开始时间"`
+	RunAt          time.Time                              `gorm:"type:timestamp;size:6;not null;comment:实际执行时间"`
+	FinishAt       time.Time                              `gorm:"type:timestamp;size:6;not null;comment:完成时间;"`
+	CreateAt       time.Time                              `gorm:"type:timestamp;size:6;not null;comment:任务创建时间;"`
 }
 
 // 创建索引

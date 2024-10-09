@@ -17,8 +17,6 @@ type TaskEO struct {
 	Name           string                                 // 实现Job的特性名称（客户端识别哪个实现类）
 	Ver            int                                    // 版本
 	Caption        string                                 // 任务组标题
-	StartAt        dateTime.DateTime                      // 开始时间（计划时间）
-	RunAt          dateTime.DateTime                      // 实际执行时间（含结束时间）
 	RunSpeed       int64                                  // 运行耗时
 	Client         ClientVO                               // 客户端
 	Progress       int                                    // 进度0-100
@@ -26,12 +24,11 @@ type TaskEO struct {
 	ExecuteStatus  executeStatus.Enum                     // 执行结果
 	SchedulerAt    dateTime.DateTime                      // 调度时间
 	Data           collections.Dictionary[string, string] // 本次执行任务时的Data数据
-	CreateAt       dateTime.DateTime                      // 任务创建时间
 	Remark         string                                 // 备注
-}
-
-func NewTaskDO() *TaskEO {
-	return &TaskEO{}
+	CreateAt       dateTime.DateTime                      // 任务创建时间
+	StartAt        dateTime.DateTime                      // 开始时间（计划时间）
+	RunAt          dateTime.DateTime                      // 实际执行时间
+	FinishAt       dateTime.DateTime                      // 完成时间
 }
 
 // SetJobName 更新了JobName，则要立即更新Task的JobName
@@ -97,11 +94,11 @@ func (receiver *TaskEO) UpdateTaskStatus(status executeStatus.Enum, remark strin
 		remark = fmt.Sprintf("回调的状态设置不正确：%d", status)
 	}
 
-	receiver.RunAt = dateTime.Now()
+	receiver.FinishAt = dateTime.Now()
 
 	// 耗时
 	if status.IsFinish() {
-		receiver.RunSpeed = receiver.RunAt.Sub(receiver.StartAt).Milliseconds()
+		receiver.RunSpeed = receiver.FinishAt.Sub(receiver.RunAt).Milliseconds()
 	}
 
 	if remark != "" {

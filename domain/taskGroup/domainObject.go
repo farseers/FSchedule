@@ -65,8 +65,6 @@ func (receiver *DomainObject) UpdateVer(name string, caption string, ver int, st
 				return
 			} else {
 				receiver.NextAt = dateTime.New(cornSchedule.Next(time.Now()))
-				receiver.ActivateAt = dateTime.Now()
-				receiver.LastRunAt = dateTime.Now()
 			}
 		}
 	}
@@ -122,8 +120,6 @@ func (receiver *DomainObject) Update() {
 func (receiver *DomainObject) CreateTask() {
 	if receiver.Task.IsFinish() {
 		receiver.RunCount++
-		receiver.LastRunAt = dateTime.Now()
-		receiver.ActivateAt = dateTime.Now()
 		receiver.LastExecuteStatus = receiver.Task.ExecuteStatus
 	}
 	receiver.Task = TaskEO{
@@ -220,7 +216,6 @@ func (receiver *DomainObject) SyncData() {
 
 // Report 任务报告
 func (receiver *DomainObject) Report(status executeStatus.Enum, data collections.Dictionary[string, string], progress int, nextTimespan int64, remark string, taskGroupRepository Repository) {
-	receiver.ActivateAt = dateTime.Now()
 	receiver.LastRunAt = dateTime.Now()
 	receiver.Task.UpdateTask(status, data, progress, remark)
 	receiver.SyncData()
@@ -231,7 +226,6 @@ func (receiver *DomainObject) Report(status executeStatus.Enum, data collections
 
 // ReportFail 任务报告，未找到任务
 func (receiver *DomainObject) ReportFail(remark string, taskGroupRepository Repository) {
-	receiver.ActivateAt = dateTime.Now()
 	receiver.LastRunAt = dateTime.Now()
 	receiver.Task.UpdateTaskStatus(executeStatus.Fail, remark)
 	taskGroupRepository.Save(*receiver)

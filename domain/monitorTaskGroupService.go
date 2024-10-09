@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs/container"
+	"github.com/farseer-go/fs/dateTime"
 	"github.com/farseer-go/fs/flog"
 	"github.com/farseer-go/fs/timingWheel"
 	"github.com/farseer-go/mapper"
@@ -119,6 +120,7 @@ func (receiver *TaskGroupMonitor) Start() {
 		for {
 			// 清空更新队列
 			receiver.updated = make(chan struct{}, 1000)
+			receiver.ActivateAt = dateTime.Now()
 
 			select {
 			case <-receiver.Client.Ctx.Done(): // 任务组停止，或删除时退出

@@ -93,10 +93,8 @@ func TaskGroupUpdate(req request.TaskGroupUpdateRequest, taskGroupRepository tas
 // 任务组删除
 // @post delete
 func TaskGroupDelete(taskGroupName string, taskGroupRepository taskGroup.Repository) {
-	// 判断任务组是否存在
-	exception.ThrowWebExceptionBool(!taskGroupRepository.IsExists(taskGroupName), 403, "任务组不存在")
 	taskGroupRepository.Delete(taskGroupName)
-	domain.RemoveMonitorTaskGroup(taskGroupName)
+	domain.RemoveMonitorTaskGroupName(taskGroupName)
 }
 
 // 设置任务组状态

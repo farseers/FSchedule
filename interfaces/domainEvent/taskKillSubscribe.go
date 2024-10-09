@@ -21,7 +21,8 @@ func TaskKillSubscribe(message any, _ core.EventArgs) {
 	}
 
 	// 通知处理该任务组的服务端，需要调用客户端发起Kill请求
-	if taskGroupMonitor := domain.GetTaskGroupMonitor(taskGroupDO.Name); taskGroupMonitor != nil {
+	domain.GetTaskGroupMonitorByName(taskGroupDO.Name).Foreach(func(item **domain.TaskGroupMonitor) {
+		taskGroupMonitor := *item
 		taskGroupMonitor.TaskKill()
-	}
+	})
 }

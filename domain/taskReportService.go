@@ -8,10 +8,9 @@ import (
 )
 
 // TaskReport 客户端回调
-// @post taskReport
-func TaskReportService(dto client.TaskReportVO, taskGroupRepository taskGroup.Repository) {
+func TaskReportService(clientId string, dto client.TaskReportVO, taskGroupRepository taskGroup.Repository) {
 	var taskGroupDO *taskGroup.DomainObject
-	taskGroupMonitor := GetTaskGroupMonitor(dto.Name)
+	taskGroupMonitor := GetTaskGroupMonitor(clientId)
 	if taskGroupMonitor != nil {
 		taskGroupDO = taskGroupMonitor.DomainObject
 	} else {

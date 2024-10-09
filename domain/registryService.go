@@ -3,7 +3,6 @@ package domain
 import (
 	"FSchedule/domain/client"
 	"FSchedule/domain/taskGroup"
-	"fmt"
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs/exception"
 	"github.com/farseer-go/mapper"
@@ -26,7 +25,7 @@ type RegistryDTO struct {
 }
 
 // Registry 客户端注册
-func Registry(websocketContext *websocket.BaseContext, dto RegistryDTO, clientRepository client.Repository, taskGroupRepository taskGroup.Repository) {
+func Registry(websocketContext *websocket.BaseContext, clientId string, dto RegistryDTO, clientRepository client.Repository, taskGroupRepository taskGroup.Repository) {
 	if dto.ClientName == "" || dto.Job.Name == "" {
 		exception.ThrowWebExceptionf(403, "ClientName=%s、JobName=%s，未完整传入", dto.ClientName, dto.Job.Name)
 	}
@@ -52,7 +51,7 @@ func Registry(websocketContext *websocket.BaseContext, dto RegistryDTO, clientRe
 	}
 
 	clientDO := &client.DomainObject{
-		Id:   fmt.Sprintf("%s:%d", dto.ClientIp, dto.ClientPort),
+		Id:   clientId,
 		Ip:   dto.ClientIp,
 		Port: dto.ClientPort,
 		Name: dto.ClientName,

@@ -19,20 +19,37 @@ import (
 var taskGroupList = collections.NewDictionary[string, *TaskGroupMonitor]()
 
 // 找到该任务组的监控
-func GetTaskGroupMonitor(taskGroupName string) *TaskGroupMonitor {
-	return taskGroupList.GetValue(taskGroupName)
+func GetTaskGroupMonitor(clientId string) *TaskGroupMonitor {
+	return taskGroupList.GetValue(clientId)
 }
 
-// 移除任务组监控
-func RemoveMonitorTaskGroup(taskGroupName string) {
-	taskGroupMonitor := GetTaskGroupMonitor(taskGroupName)
+// 找到该任务组的监控
+func GetTaskGroupMonitorByName(taskGroupName string) collections.List[*TaskGroupMonitor] {
+	lst := taskGroupList.Values()
+	lst.RemoveAll(func(item *TaskGroupMonitor) bool {
+		return item.Name != taskGroupName
+	})
+	return lst
+}
+
+// 移除单个客户端任务组监控
+func RemoveMonitorClient(clientId string) {
+	taskGroupMonitor := GetTaskGroupMonitor(clientId)
 	if taskGroupMonitor != nil {
 		flog.Infof("任务组：%s ver:%s 退出调度线程", flog.Blue(taskGroupMonitor.Name), flog.Yellow(taskGroupMonitor.Ver))
-		taskGroupList.Remove(taskGroupName)
+		taskGroupList.Remove(clientId)
 		if taskGroupMonitor.Client != nil {
 			taskGroupMonitor.Client.Close()
 		}
 	}
+}
+
+// 移除任务组监控
+func RemoveMonitorTaskGroupName(taskGroupName string) {
+	GetTaskGroupMonitorByName(taskGroupName).Foreach(func(item **TaskGroupMonitor) {
+		// 找到所有客户端，然后删除
+		RemoveMonitorClient((*item).Client.Id)
+	})
 }
 
 // TaskGroupMonitor 等待任务执行
@@ -45,25 +62,21 @@ type TaskGroupMonitor struct {
 
 // MonitorTaskGroupPush 将最新的任务组信息，推送到监控线程
 func MonitorTaskGroupPush(clientDO *client.DomainObject, taskGroupDO *taskGroup.DomainObject) {
+	taskGroupMonitor := GetTaskGroupMonitor(clientDO.Id)
+
 	// 新接入的任务组
-	if !taskGroupList.ContainsKey(taskGroupDO.Name) {
+	if taskGroupMonitor == nil {
 		// 加入到任务组监控列表
-		taskGroupMonitor := container.ResolveIns(&TaskGroupMonitor{
+		taskGroupMonitor = container.ResolveIns(&TaskGroupMonitor{
 			DomainObject: taskGroupDO,
 			updated:      make(chan struct{}, 1000),
 			Client:       clientDO,
 		})
-		taskGroupList.Add(taskGroupDO.Name, taskGroupMonitor)
+		taskGroupList.Add(clientDO.Id, taskGroupMonitor)
 
 		// 开启协程
 		go taskGroupMonitor.Start()
 	} else {
-		taskGroupMonitor := GetTaskGroupMonitor(taskGroupDO.Name)
-		// 如果是redis推送的，这里的websocketContext = nil
-		if clientDO != nil {
-			taskGroupMonitor.Client = clientDO
-		}
-
 		// 之前是运行状态，改为停止状态，则需要退出调度线程
 		needKill := taskGroupMonitor.IsEnable && !taskGroupDO.IsEnable
 		*taskGroupMonitor.DomainObject = *taskGroupDO
@@ -88,7 +101,7 @@ func (receiver *TaskGroupMonitor) Start() {
 				receiver.ReportFail("客户端下线了", taskGroupRepository)
 				receiver.taskFinish()
 			}
-			RemoveMonitorTaskGroup(receiver.Name)
+			RemoveMonitorClient(receiver.Client.Id)
 		}()
 
 		// 有可能原节点挂了，由另外节点继续接管，所以需要重新取到最新的对象（因为现在取消了任务组数据的实时订阅发送）

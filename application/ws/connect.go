@@ -42,16 +42,17 @@ func Connect(wsContext *websocket.Context[request], clientRepository client.Repo
 	addr := strings.Split(wsContext.HttpContext.URI.RemoteAddr, ":")
 	req.Registry.ClientIp = addr[0]
 	req.Registry.ClientPort = parse.ToInt(addr[1])
+	clientId := fmt.Sprintf("%s:%d", req.Registry.ClientIp, req.Registry.ClientPort)
 
 	// 客户端注册
-	domain.Registry(wsContext.BaseContext, req.Registry, clientRepository, taskGroupRepository)
+	domain.Registry(wsContext.BaseContext, clientId, req.Registry, clientRepository, taskGroupRepository)
 
 	for {
 		req = wsContext.Receiver()
 		exception.Try(func() {
 			switch req.Type {
 			case 0: // 客户端回调
-				domain.TaskReportService(req.TaskReport, taskGroupRepository)
+				domain.TaskReportService(clientId, req.TaskReport, taskGroupRepository)
 			case 1: // 日志上报
 				taskLogDO := taskLog.NewDO(req.Log.Name, req.Log.Caption, req.Log.Ver, req.Log.TaskId, req.Log.Data, req.Log.LogLevel, req.Log.Content, req.Log.CreateAt)
 				taskLogRepository.Add(taskLogDO)

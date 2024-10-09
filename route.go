@@ -4,7 +4,6 @@ package main
 import (
 	"FSchedule/application/basicapi"
 	"FSchedule/application/ws"
-	"FSchedule/domain"
 	"github.com/farseer-go/webapi"
 	"github.com/farseer-go/webapi/context"
 )
@@ -25,5 +24,4 @@ var route = []webapi.Route{
 	{"POST", "/basicapi/taskGroup/delete", basicapi.TaskGroupDelete, "", []context.IFilter{}, []string{"taskGroupName", ""}},
 	{"POST", "/basicapi/taskGroup/setEnable", basicapi.SetEnable, "", []context.IFilter{}, []string{"taskGroupName", "enable", ""}},
 	{"WS", "/ws/connect", ws.Connect, "", []context.IFilter{}, []string{"wsContext", "", "", ""}},
-	{"POST", "/taskReport", domain.TaskReportService, "", []context.IFilter{}, []string{"dto", ""}},
 }

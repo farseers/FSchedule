@@ -122,7 +122,7 @@ func (receiver *DomainObject) ActivateClient() {
 				return
 			case <-timingWheel.Add(5 * time.Second).C:
 				clientDO, _ := clientList.Load(receiver.Id)
-				if clientDO == nil {
+				if clientDO == nil || clientDO.(*DomainObject).IsClose() {
 					clientList.Delete(receiver.Id)
 					clientRepository.RemoveClient(receiver.Id)
 					return

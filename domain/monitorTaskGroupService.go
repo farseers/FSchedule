@@ -95,8 +95,9 @@ func (receiver *TaskGroupMonitor) Start() {
 		*receiver.DomainObject = taskGroupRepository.ToEntity(receiver.Name)
 		receiver.Client.IsMaster = true
 
+		//clientRepository := container.Resolve[client.Repository]()
 		// 重新连接进来时，有可能上一次的任务执行了一半。因此这里要做检查
-		if receiver.Task.ScheduleStatus == scheduleStatus.Scheduling || receiver.Task.ScheduleStatus == scheduleStatus.Success {
+		if receiver.Task.ScheduleStatus != scheduleStatus.None {
 			receiver.Task.SetFail("客户端重连，强制取消上次未执行的任务")
 			receiver.taskFinish()
 		}

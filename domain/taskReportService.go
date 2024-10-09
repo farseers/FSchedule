@@ -11,7 +11,7 @@ import (
 // @post taskReport
 func TaskReportService(dto client.TaskReportVO, taskGroupRepository taskGroup.Repository) {
 	var taskGroupDO *taskGroup.DomainObject
-	taskGroupMonitor := taskGroupList.GetValue(dto.Name)
+	taskGroupMonitor := GetTaskGroupMonitor(dto.Name)
 	if taskGroupMonitor != nil {
 		taskGroupDO = taskGroupMonitor.DomainObject
 	} else {

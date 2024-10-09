@@ -25,7 +25,7 @@ func GetTaskGroupMonitor(taskGroupName string) *TaskGroupMonitor {
 
 // 移除任务组监控
 func RemoveMonitorTaskGroup(taskGroupName string) {
-	taskGroupMonitor := taskGroupList.GetValue(taskGroupName)
+	taskGroupMonitor := GetTaskGroupMonitor(taskGroupName)
 	if taskGroupMonitor != nil {
 		flog.Infof("任务组：%s ver:%s 退出调度线程", flog.Blue(taskGroupMonitor.Name), flog.Yellow(taskGroupMonitor.Ver))
 		taskGroupList.Remove(taskGroupName)
@@ -58,7 +58,7 @@ func MonitorTaskGroupPush(clientDO *client.DomainObject, taskGroupDO *taskGroup.
 		// 开启协程
 		go taskGroupMonitor.Start()
 	} else {
-		taskGroupMonitor := taskGroupList.GetValue(taskGroupDO.Name)
+		taskGroupMonitor := GetTaskGroupMonitor(taskGroupDO.Name)
 		// 如果是redis推送的，这里的websocketContext = nil
 		if clientDO != nil {
 			taskGroupMonitor.Client = clientDO

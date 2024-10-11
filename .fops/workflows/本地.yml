@@ -1,6 +1,6 @@
 name: build
 jobs:
-  clusterId: [1]
+  clusterId: 1
   build:
     runs-on: steden88/cicd:3.0-npm # 工作流运行的环境
     env:

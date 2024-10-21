@@ -11,8 +11,6 @@ jobs:
       - name: 安装GO
         uses: setup-go@v1
         with:
-          goVersion: go1.22.5
-          goDownload:
 
       - name: 拉取应用Git
         uses: checkout@v1

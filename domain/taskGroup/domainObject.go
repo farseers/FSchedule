@@ -3,14 +3,15 @@ package taskGroup
 import (
 	"FSchedule/domain/enum/executeStatus"
 	"FSchedule/domain/enum/scheduleStatus"
+	"strings"
+	"time"
+
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs/dateTime"
 	"github.com/farseer-go/fs/exception"
 	"github.com/farseer-go/fs/flog"
 	"github.com/farseer-go/fs/sonyflake"
 	"github.com/robfig/cron/v3"
-	"strings"
-	"time"
 )
 
 var StandardParser = cron.NewParser(cron.Second | cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow | cron.Descriptor)
@@ -133,8 +134,9 @@ func (receiver *DomainObject) CreateTask() {
 		Progress:       0,
 		ScheduleStatus: scheduleStatus.None,
 		ExecuteStatus:  executeStatus.None,
-		CreateAt:       dateTime.Now(),
 		SchedulerAt:    dateTime.Now(),
+		FinishAt:       dateTime.Now(),
+		CreateAt:       dateTime.Now(),
 		Data:           receiver.Data,
 	}
 }

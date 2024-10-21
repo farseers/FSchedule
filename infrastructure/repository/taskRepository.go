@@ -7,6 +7,9 @@ import (
 	"FSchedule/infrastructure/repository/context"
 	"FSchedule/infrastructure/repository/model"
 	_ "embed"
+	"sync"
+	"time"
+
 	"github.com/farseer-go/cache"
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs/container"
@@ -14,8 +17,6 @@ import (
 	"github.com/farseer-go/fs/parse"
 	"github.com/farseer-go/mapper"
 	"github.com/farseer-go/redis"
-	"sync"
-	"time"
 )
 
 var lock = &sync.Mutex{}
@@ -64,6 +65,9 @@ func (receiver *taskRepository) syncTask(taskGroupName string) {
 			po := mapper.Single[model.TaskPO](&do)
 			if po.CreateAt.Year() < 2000 {
 				po.CreateAt = time.Date(2000, 0, 1, 0, 0, 0, 0, time.Local)
+			}
+			if po.FinishAt.Year() < 2000 {
+				po.FinishAt = time.Date(2000, 0, 1, 0, 0, 0, 0, time.Local)
 			}
 			if po.SchedulerAt.Year() < 2000 {
 				po.SchedulerAt = time.Date(2000, 0, 1, 0, 0, 0, 0, time.Local)

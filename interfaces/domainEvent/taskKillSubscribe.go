@@ -4,8 +4,8 @@ import (
 	"FSchedule/domain"
 	"FSchedule/domain/taskGroup"
 
-	"github.com/bytedance/sonic"
 	"github.com/farseer-go/fs/core"
+	"github.com/farseer-go/fs/snc"
 	"github.com/farseer-go/fs/trace"
 )
 
@@ -16,7 +16,7 @@ func TaskKillSubscribe(message any, _ core.EventArgs) {
 	}
 
 	var taskGroupDO taskGroup.DomainObject
-	err := sonic.Unmarshal([]byte(message.(string)), &taskGroupDO)
+	err := snc.Unmarshal([]byte(message.(string)), &taskGroupDO)
 	if err != nil {
 		return
 	}

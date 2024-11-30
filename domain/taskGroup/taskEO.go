@@ -4,6 +4,7 @@ import (
 	"FSchedule/domain/enum/executeStatus"
 	"FSchedule/domain/enum/scheduleStatus"
 	"fmt"
+
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs/dateTime"
 	"github.com/farseer-go/fs/flog"
@@ -110,6 +111,6 @@ func (receiver *TaskEO) UpdateTaskStatus(status executeStatus.Enum, remark strin
 		receiver.Progress = 100
 	}
 	if traceContext := trace.CurTraceContext.Get(); traceContext != nil {
-		receiver.TraceId = traceContext.GetTraceId()
+		receiver.TraceId = traceContext.TraceId
 	}
 }

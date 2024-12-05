@@ -7,6 +7,8 @@ import (
 	"FSchedule/domain/schedule"
 	"FSchedule/domain/taskGroup"
 	"fmt"
+	"time"
+
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs/container"
 	"github.com/farseer-go/fs/dateTime"
@@ -142,10 +144,20 @@ func (receiver *TaskGroupMonitor) Start() {
 			case scheduleStatus.None:
 				receiver.waitStart()
 			case scheduleStatus.Scheduling:
+				timer := timingWheel.Add(5 * time.Second)
 				select {
 				// 任务组停止，或删除时退出
 				case <-receiver.Client.Ctx.Done():
+					flog.Warningf("任务组：%s ver:%s 在等待调度时，客户端断开连接，强制将任务标记为失败", flog.Blue(receiver.Name), flog.Yellow(receiver.Ver))
+					receiver.Task.ScheduleFail("客户端断开连接")
+					receiver.taskFinish()
 					return
+				// 5秒没反应，则认为调度超时
+				case <-timer.C:
+					timer.Stop()
+					flog.Warningf("任务组：%s ver:%s 在等待调度时，客户端5秒内没反应，强制将任务标记为失败", flog.Blue(receiver.Name), flog.Yellow(receiver.Ver))
+					receiver.Task.ScheduleFail("调度超时")
+					receiver.taskFinish()
 				// 等待其它协程更新状态
 				case <-receiver.updated:
 				}
@@ -157,6 +169,9 @@ func (receiver *TaskGroupMonitor) Start() {
 					select {
 					// 任务组停止，或删除时退出
 					case <-receiver.Client.Ctx.Done():
+						flog.Warningf("任务组：%s ver:%s 在执行任务时，客户端断开连接，强制将任务标记为失败", flog.Blue(receiver.Name), flog.Yellow(receiver.Ver))
+						receiver.Task.SetFail("客户端断开连接")
+						receiver.taskFinish()
 						return
 					// 等待客户端上报运行状态
 					case <-receiver.updated:
@@ -246,7 +261,7 @@ func (receiver *TaskGroupMonitor) schedulerEvent() {
 	}
 
 	// 调度失败
-	receiver.Task.ScheduleFail(fmt.Sprintf("请求客户端%s（%d）：%s:%d失败:%s", receiver.Client.Name, receiver.Client.Id, receiver.Client.Ip, receiver.Client.Port, err.Error()))
+	receiver.Task.ScheduleFail(fmt.Sprintf("请求客户端%s（%s）：%s:%d失败:%s", receiver.Client.Name, receiver.Client.Id, receiver.Client.Ip, receiver.Client.Port, err.Error()))
 	_ = container.Resolve[redis.IClient]("default").Transaction(func() {
 		taskGroupRepository.Save(*receiver.DomainObject)
 		//clientRepository.Save(*receiver.Client)

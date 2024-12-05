@@ -3,12 +3,13 @@ package client
 import (
 	"FSchedule/domain/enum/clientStatus"
 	"context"
+	"time"
+
 	"github.com/farseer-go/fs/container"
 	"github.com/farseer-go/fs/dateTime"
 	"github.com/farseer-go/fs/flog"
 	"github.com/farseer-go/fs/timingWheel"
 	"github.com/farseer-go/webapi/websocket"
-	"time"
 )
 
 type DomainObject struct {
@@ -54,7 +55,7 @@ func (receiver *DomainObject) IsOffline() bool {
 func (receiver *DomainObject) TrySchedule(task TaskEO) error {
 	// 向客户端发起调度请求
 	if err := receiver.websocketContext.Send(map[string]any{"Type": 0, "Task": task}); err != nil {
-		flog.Warningf("任务组：%s %d 向客户端%s（%d）：%s:%d 调度失败：%s", task.Name, task.Id, receiver.Name, receiver.Id, receiver.Ip, receiver.Port, err.Error())
+		flog.Warningf("任务组：%s %d 向客户端%s（%s）：%s:%d 调度失败：%s", task.Name, task.Id, receiver.Name, receiver.Id, receiver.Ip, receiver.Port, err.Error())
 		receiver.scheduleFail()
 		return err
 	}
@@ -70,7 +71,7 @@ func (receiver *DomainObject) TrySchedule(task TaskEO) error {
 // 通知客户端，停止任务
 func (receiver *DomainObject) Kill(taskId int64) {
 	if err := receiver.websocketContext.Send(map[string]any{"Type": 1, "Task": TaskEO{Id: taskId}}); err != nil {
-		flog.Warningf("向客户端%s（%d）：%s:%d 停止任务时失败：%s", receiver.Name, receiver.Id, receiver.Ip, receiver.Port, err.Error())
+		flog.Warningf("向客户端%s（%s）：%s:%d 停止任务时失败：%s", receiver.Name, receiver.Id, receiver.Ip, receiver.Port, err.Error())
 	}
 }
 
@@ -88,7 +89,7 @@ func (receiver *DomainObject) scheduleFail() {
 	now := dateTime.Now()
 	if receiver.ErrorCount >= 5 && now.Sub(receiver.ActivateAt).Seconds() >= 30 {
 		receiver.Status = clientStatus.Offline
-		flog.Warningf("客户端%s（%d）：%s:%d 调度失败%d次且超过30秒没有活动，状态变更为：%s", receiver.Name, receiver.Id, receiver.Ip, receiver.Port, receiver.ErrorCount, receiver.Status.String())
+		flog.Warningf("客户端%s（%s）：%s:%d 调度失败%d次且超过30秒没有活动，状态变更为：%s", receiver.Name, receiver.Id, receiver.Ip, receiver.Port, receiver.ErrorCount, receiver.Status.String())
 		receiver.Close()
 	}
 }

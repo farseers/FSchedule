@@ -38,8 +38,8 @@ func GetTaskGroupMonitorByName(taskGroupName string) collections.List[*TaskGroup
 // 移除单个客户端任务组监控
 func RemoveMonitorClient(clientId string) {
 	taskGroupMonitor := GetTaskGroupMonitor(clientId)
+	taskGroupList.Remove(clientId)
 	if taskGroupMonitor != nil {
-		taskGroupList.Remove(clientId)
 		if taskGroupMonitor.Client != nil {
 			taskGroupMonitor.Client.Close()
 			taskGroupMonitor.Client = nil

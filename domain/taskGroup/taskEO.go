@@ -86,8 +86,13 @@ func (receiver *TaskEO) UpdateTask(status executeStatus.Enum, data collections.D
 
 // UpdateTask 更新任务
 func (receiver *TaskEO) UpdateTaskStatus(status executeStatus.Enum, remark string) {
+
 	switch status {
 	case executeStatus.Fail, executeStatus.Working, executeStatus.Success:
+		// 之前是none，现在是working，说明是第一次开始执行
+		if receiver.ExecuteStatus == executeStatus.None && status == executeStatus.Working {
+			receiver.RunAt = dateTime.Now()
+		}
 		receiver.ExecuteStatus = status
 	default:
 		receiver.ExecuteStatus = executeStatus.Fail
@@ -99,6 +104,10 @@ func (receiver *TaskEO) UpdateTaskStatus(status executeStatus.Enum, remark strin
 
 	// 耗时
 	if status.IsFinish() {
+		// 这里赋值是作为一个兜底。否则会出现receiver.RunAt与CreateAt时间相同时，计算RunSpeed超长
+		if receiver.RunAt.Before(receiver.StartAt) {
+			receiver.RunAt = receiver.StartAt
+		}
 		receiver.RunSpeed = receiver.FinishAt.Sub(receiver.RunAt).Milliseconds()
 	}
 

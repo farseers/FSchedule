@@ -39,10 +39,10 @@ func GetTaskGroupMonitorByName(taskGroupName string) collections.List[*TaskGroup
 func RemoveMonitorClient(clientId string) {
 	taskGroupMonitor := GetTaskGroupMonitor(clientId)
 	if taskGroupMonitor != nil {
-		flog.Infof("任务组：%s ver:%s 退出调度线程", flog.Blue(taskGroupMonitor.Name), flog.Yellow(taskGroupMonitor.Ver))
 		taskGroupList.Remove(clientId)
 		if taskGroupMonitor.Client != nil {
 			taskGroupMonitor.Client.Close()
+			taskGroupMonitor.Client = nil
 		}
 	}
 }
@@ -104,7 +104,13 @@ func (receiver *TaskGroupMonitor) Start() {
 				receiver.ReportFail("客户端下线了", taskGroupRepository)
 				receiver.taskFinish()
 			}
-			RemoveMonitorClient(receiver.Client.Id)
+			if receiver.Client == nil {
+				flog.Errorf("任务组：%s ver:%s 退出调度线程时 client = nil", flog.Blue(receiver.Name), flog.Yellow(receiver.Ver))
+			} else {
+				receiver.Client.IsMaster = false
+				flog.Infof("任务组：%s ver:%s 客户端：%s 退出调度线程", flog.Blue(receiver.Name), flog.Yellow(receiver.Ver), receiver.Client.Id)
+				RemoveMonitorClient(receiver.Client.Id)
+			}
 		}()
 
 		// 有可能原节点挂了，由另外节点继续接管，所以需要重新取到最新的对象（因为现在取消了任务组数据的实时订阅发送）
@@ -155,7 +161,7 @@ func (receiver *TaskGroupMonitor) Start() {
 				// 5秒没反应，则认为调度超时
 				case <-timer.C:
 					timer.Stop()
-					flog.Warningf("任务组：%s ver:%s 在等待调度时，客户端5秒内没反应，强制将任务标记为失败", flog.Blue(receiver.Name), flog.Yellow(receiver.Ver))
+					flog.Warningf("任务组：%s ver:%s 在等待调度时，客户端5秒内没反应，强制将任务标记为调度超时", flog.Blue(receiver.Name), flog.Yellow(receiver.Ver))
 					receiver.Task.ScheduleFail("调度超时")
 					receiver.taskFinish()
 				// 等待其它协程更新状态

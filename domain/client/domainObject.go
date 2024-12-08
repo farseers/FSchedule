@@ -113,7 +113,7 @@ func (receiver *DomainObject) ActivateClient() {
 	flog.Infof("客户端：%s(%s)，%s 连接成功", receiver.Id, receiver.Name, receiver.Job.Name)
 
 	// 定时保存客户端信息
-	go func() {
+	go func(receiver *DomainObject) {
 		defer flog.Infof("客户端：%s(%s)，%s 断开连接", receiver.Id, receiver.Name, receiver.Job.Name)
 		for {
 			select {
@@ -132,5 +132,5 @@ func (receiver *DomainObject) ActivateClient() {
 				clientRepository.Save(*clientDO.(*DomainObject))
 			}
 		}
-	}()
+	}(receiver)
 }

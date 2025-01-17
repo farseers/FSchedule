@@ -16,6 +16,7 @@ require (
 	github.com/farseer-go/redis v0.15.0
 	github.com/farseer-go/tasks v0.15.0
 	github.com/farseer-go/webapi v0.15.0
+	github.com/farseer-go/monitor v0.15.0
 	github.com/robfig/cron/v3 v3.0.1
 )
 

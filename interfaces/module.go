@@ -6,8 +6,10 @@ import (
 	"context"
 	"time"
 
+	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs"
 	"github.com/farseer-go/fs/modules"
+	"github.com/farseer-go/monitor"
 	"github.com/farseer-go/tasks"
 	"github.com/farseer-go/webapi"
 )
@@ -16,7 +18,7 @@ type Module struct {
 }
 
 func (module Module) DependsModule() []modules.FarseerModule {
-	return []modules.FarseerModule{webapi.Module{}, application.Module{}}
+	return []modules.FarseerModule{webapi.Module{}, application.Module{}, monitor.Module{}}
 }
 
 func (module Module) PostInitialize() {
@@ -28,5 +30,10 @@ func (module Module) PostInitialize() {
 	// 10秒更新一次服务端信息
 	fs.AddInitCallback("启动 【每10秒更新节点活跃时间】任务", func() {
 		tasks.Run("ServerNodeJob", 10*time.Second, job.ServerActivateJob, context.Background())
+	})
+
+	// 监控任务组超时
+	monitor.AddMonitor(1*time.Minute, func() collections.Dictionary[string, any] {
+		return job.TaskGroupMonitor()
 	})
 }

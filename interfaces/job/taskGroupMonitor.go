@@ -9,7 +9,6 @@ import (
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs/container"
 	"github.com/farseer-go/fs/dateTime"
-	"github.com/farseer-go/fs/flog"
 )
 
 // TaskGroupMonitor 监控任务组超时
@@ -28,13 +27,13 @@ func TaskGroupMonitor() collections.Dictionary[string, any] {
 		// 超时未执行
 		case executeStatus.None:
 			if item.Task.StartAt.Before(dateTime.Now()) {
-				lstStr.Add(fmt.Sprintf("%s(%s)，超时%s未执行。", item.Caption, item.Caption, (time.Duration(dateTime.Now().Sub(item.Task.StartAt).Seconds()) * time.Second).String()))
+				lstStr.Add(fmt.Sprintf("%s(%s)，超时%s未执行。", item.Caption, item.Name, (time.Duration(dateTime.Now().Sub(item.Task.StartAt).Seconds()) * time.Second).String()))
 			}
 		// 执行超时
 		case executeStatus.Working:
 			executeTime := (time.Duration(dateTime.Now().Sub(item.Task.SchedulerAt).Seconds()) * time.Second)
 			if float64(executeTime.Milliseconds())*1.3 > float64(item.RunSpeedAvg) {
-				lstStr.Add(fmt.Sprintf("%s(%s)，执行了%s。", item.Caption, item.Caption, executeTime.String()))
+				lstStr.Add(fmt.Sprintf("%s(%s)，执行了%s。", item.Caption, item.Name, executeTime.String()))
 			}
 
 		}
@@ -43,6 +42,5 @@ func TaskGroupMonitor() collections.Dictionary[string, any] {
 	if lstStr.Count() > 0 {
 		dic.Add("fschedule_timeout", lstStr.ToString(""))
 	}
-	flog.Info(lstStr.ToString("\n"))
 	return dic
 }

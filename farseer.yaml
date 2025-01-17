@@ -11,7 +11,7 @@ FSchedule:
   ReservedTaskCount: 1000
 Fops:
   Server: "https://fops.fsgit.cc"
-  WsServer: "wss://fops.test188.cc"
+  WsServer: "wss://fops.fsgit.cc"
 LinkTrace:
   Enable: true
   PrintLog: false

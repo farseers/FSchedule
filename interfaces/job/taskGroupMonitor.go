@@ -9,6 +9,7 @@ import (
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs/container"
 	"github.com/farseer-go/fs/dateTime"
+	"github.com/farseer-go/fs/flog"
 )
 
 // TaskGroupMonitor 监控任务组超时
@@ -42,5 +43,6 @@ func TaskGroupMonitor() collections.Dictionary[string, any] {
 	if lstStr.Count() > 0 {
 		dic.Add("fschedule_timeout", lstStr.ToString(""))
 	}
+	flog.Info(lstStr.ToString("\n"))
 	return dic
 }

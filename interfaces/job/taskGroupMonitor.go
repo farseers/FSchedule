@@ -9,10 +9,12 @@ import (
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs/container"
 	"github.com/farseer-go/fs/dateTime"
+	"github.com/farseer-go/fs/flog"
 )
 
 // TaskGroupMonitor 监控任务组超时
 func TaskGroupMonitor() collections.Dictionary[string, any] {
+	flog.Info("监控任务组超时")
 	// 发送消息
 	dic := collections.NewDictionary[string, any]()
 

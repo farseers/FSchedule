@@ -2,12 +2,14 @@ package interfaces
 
 import (
 	"FSchedule/application"
+	"FSchedule/domain/schedule"
 	"FSchedule/interfaces/job"
 	"context"
 	"time"
 
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs"
+	"github.com/farseer-go/fs/container"
 	"github.com/farseer-go/fs/modules"
 	"github.com/farseer-go/monitor"
 	"github.com/farseer-go/tasks"
@@ -32,8 +34,11 @@ func (module Module) PostInitialize() {
 		tasks.Run("ServerNodeJob", 10*time.Second, job.ServerActivateJob, context.Background())
 	})
 
-	// 监控任务组超时
-	monitor.AddMonitor(1*time.Minute, func() collections.Dictionary[string, any] {
-		return job.TaskGroupMonitor()
+	// 抢占锁，谁抢到，谁负责这个任务组监控（只允许一个集群节点监控任务组）
+	container.Resolve[schedule.Repository]().Schedule("TaskGroupMonitor", func() {
+		// 监控任务组超时
+		monitor.AddMonitor(1*time.Minute, func() collections.Dictionary[string, any] {
+			return job.TaskGroupMonitor()
+		})
 	})
 }

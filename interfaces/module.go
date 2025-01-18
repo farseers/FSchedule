@@ -42,5 +42,6 @@ func (module Module) PostInitialize() {
 		monitor.AddMonitor(1*time.Minute, func() collections.Dictionary[string, any] {
 			return job.TaskGroupMonitor()
 		})
+		<-fs.Context.Done()
 	})
 }

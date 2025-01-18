@@ -4,7 +4,6 @@ import (
 	"FSchedule/domain/enum/executeStatus"
 	"FSchedule/domain/taskGroup"
 	"fmt"
-	"time"
 
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs/container"
@@ -33,8 +32,8 @@ func TaskGroupMonitor() collections.Dictionary[string, any] {
 		switch item.Task.ExecuteStatus {
 		// 超时未执行
 		case executeStatus.None:
-			if item.Task.StartAt.Before(dateTime.Now()) {
-				lstUnWork.Add(fmt.Sprintf("%s(%s)\r\n超时%s未执行。\r\n", item.Caption, item.Name, (time.Duration(dateTime.Now().Sub(item.Task.StartAt).Seconds()) * time.Second).String()))
+			if difference := dateTime.Now().Sub(item.Task.StartAt); difference.Seconds() > 5 {
+				lstUnWork.Add(fmt.Sprintf("%s(%s)\r\n超时%s未执行。\r\n", item.Caption, item.Name, difference.String()))
 			}
 		// 执行超时
 		case executeStatus.Working:

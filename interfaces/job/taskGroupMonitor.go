@@ -27,26 +27,30 @@ func TaskGroupMonitor() collections.Dictionary[string, any] {
 		return item.Task.StartAt.UnixNano()
 	}).ToList()
 
-	lstStr := collections.NewList[string]()
+	lstUnWork := collections.NewList[string]()
+	lstTimeout := collections.NewList[string]()
 	lst.Foreach(func(item *taskGroup.DomainObject) {
 		switch item.Task.ExecuteStatus {
 		// 超时未执行
 		case executeStatus.None:
 			if item.Task.StartAt.Before(dateTime.Now()) {
-				lstStr.Add(fmt.Sprintf("%s(%s)\r\n超时%s未执行。\r\n", item.Caption, item.Name, (time.Duration(dateTime.Now().Sub(item.Task.StartAt).Seconds()) * time.Second).String()))
+				lstUnWork.Add(fmt.Sprintf("%s(%s)\r\n超时%s未执行。\r\n", item.Caption, item.Name, (time.Duration(dateTime.Now().Sub(item.Task.StartAt).Seconds()) * time.Second).String()))
 			}
 		// 执行超时
 		case executeStatus.Working:
 			executeTime := (time.Duration(dateTime.Now().Sub(item.Task.SchedulerAt).Seconds()) * time.Second)
-			if float64(executeTime.Milliseconds())*1.3 > float64(item.RunSpeedAvg) {
-				lstStr.Add(fmt.Sprintf("%s(%s)\r\n执行了%s。\r\n", item.Caption, item.Name, executeTime.String()))
+			if float64(executeTime.Milliseconds())*1.5 > float64(item.RunSpeedAvg) {
+				lstTimeout.Add(fmt.Sprintf("%s(%s)\r\n执行了%s。\r\n", item.Caption, item.Name, executeTime.String()))
 			}
-
 		}
 	})
 
-	if lstStr.Count() > 0 {
-		dic.Add("fschedule_timeout", lstStr.ToString("\r\n"))
+	if lstUnWork.Count() > 0 {
+		dic.Add("fschedule_unwork", lstUnWork.ToString("\r\n"))
+	}
+
+	if lstTimeout.Count() > 0 {
+		dic.Add("fschedule_timeout", lstTimeout.ToString("\r\n"))
 	}
 	return dic
 }

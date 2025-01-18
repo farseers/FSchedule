@@ -36,7 +36,7 @@ func (module Module) PostInitialize() {
 	})
 
 	// 抢占锁，谁抢到，谁负责这个任务组监控（只允许一个集群节点监控任务组）
-	container.Resolve[schedule.Repository]().Monitor(func() {
+	go container.Resolve[schedule.Repository]().Monitor(func() {
 		flog.Infof("开启监控任务组超时监测")
 		// 监控任务组超时
 		monitor.AddMonitor(1*time.Minute, func() collections.Dictionary[string, any] {

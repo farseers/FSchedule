@@ -33,13 +33,13 @@ func TaskGroupMonitor() collections.Dictionary[string, any] {
 		// 超时未执行
 		case executeStatus.None:
 			if item.Task.StartAt.Before(dateTime.Now()) {
-				lstStr.Add(fmt.Sprintf("%s(%s)，超时%s未执行。", item.Caption, item.Name, (time.Duration(dateTime.Now().Sub(item.Task.StartAt).Seconds()) * time.Second).String()))
+				lstStr.Add(fmt.Sprintf("%s(%s)\r\n超时%s未执行。\r\n", item.Caption, item.Name, (time.Duration(dateTime.Now().Sub(item.Task.StartAt).Seconds()) * time.Second).String()))
 			}
 		// 执行超时
 		case executeStatus.Working:
 			executeTime := (time.Duration(dateTime.Now().Sub(item.Task.SchedulerAt).Seconds()) * time.Second)
 			if float64(executeTime.Milliseconds())*1.3 > float64(item.RunSpeedAvg) {
-				lstStr.Add(fmt.Sprintf("%s(%s)，执行了%s。", item.Caption, item.Name, executeTime.String()))
+				lstStr.Add(fmt.Sprintf("%s(%s)\r\n执行了%s。\r\n", item.Caption, item.Name, executeTime.String()))
 			}
 
 		}

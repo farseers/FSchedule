@@ -9,19 +9,23 @@ import (
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs/container"
 	"github.com/farseer-go/fs/dateTime"
-	"github.com/farseer-go/fs/flog"
 )
 
 // TaskGroupMonitor 监控任务组超时
 func TaskGroupMonitor() collections.Dictionary[string, any] {
-	flog.Info("监控任务组超时")
 	// 发送消息
 	dic := collections.NewDictionary[string, any]()
 
 	taskGroupRepository := container.Resolve[taskGroup.Repository]()
 	lst := taskGroupRepository.ToList()
 	// 状态为可用、非完成状态、并按开始时间排序
-	lst = lst.Where(func(item taskGroup.DomainObject) bool { return item.IsEnable && !item.Task.IsFinish() }).ToList()
+	lst = lst.Where(func(item taskGroup.DomainObject) bool {
+		return item.IsEnable && !item.Task.IsFinish()
+	}).OrderBy(func(item taskGroup.DomainObject) any {
+		return item.Name
+	}).OrderBy(func(item taskGroup.DomainObject) any {
+		return item.Task.StartAt.UnixNano()
+	}).ToList()
 
 	lstStr := collections.NewList[string]()
 	lst.Foreach(func(item *taskGroup.DomainObject) {

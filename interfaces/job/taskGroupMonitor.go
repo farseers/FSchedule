@@ -46,7 +46,7 @@ func TaskGroupMonitor() collections.Dictionary[string, any] {
 	})
 
 	if lstStr.Count() > 0 {
-		dic.Add("fschedule_timeout", lstStr.ToString(""))
+		dic.Add("fschedule_timeout", lstStr.ToString("\r\n"))
 	}
 	return dic
 }

@@ -2,10 +2,11 @@ package repository
 
 import (
 	"FSchedule/infrastructure/repository/context"
-	"github.com/farseer-go/fs/core"
-	"github.com/farseer-go/fs/parse"
 	"strconv"
 	"time"
+
+	"github.com/farseer-go/fs/core"
+	"github.com/farseer-go/fs/parse"
 )
 
 type scheduleRepository struct {
@@ -21,6 +22,10 @@ func (receiver *scheduleRepository) Election(fn func()) {
 
 func (receiver *scheduleRepository) Schedule(taskGroupName string, fn func()) {
 	context.RedisContext("任务组锁").Election("FSchedule_Schedule:"+taskGroupName, fn)
+}
+
+func (receiver *scheduleRepository) Monitor(fn func()) {
+	context.RedisContext("监控任务组超时锁").Election("FSchedule_TaskGroupMonitor", fn)
 }
 
 func (receiver *scheduleRepository) GetLeaderId() int64 {

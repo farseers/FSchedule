@@ -38,8 +38,10 @@ func TaskGroupMonitor() collections.Dictionary[string, any] {
 			}
 		// 执行超时
 		case executeStatus.Working:
-			executeTime := (time.Duration(dateTime.Now().Sub(item.Task.SchedulerAt).Seconds()) * time.Second)
-			if float64(executeTime.Milliseconds())*1.5 > float64(item.RunSpeedAvg) {
+			// 执行的时间
+			executeTime := dateTime.Now().Sub(item.Task.SchedulerAt)
+			// 比平均时间多1.5倍，且大于1分钟，则告警
+			if difference := float64(executeTime.Milliseconds()) - float64(item.RunSpeedAvg)*1.5; difference > 60000 {
 				lstTimeout.Add(fmt.Sprintf("%s(%s)\r\n执行了%s。\r\n", item.Caption, item.Name, executeTime.String()))
 			}
 		}

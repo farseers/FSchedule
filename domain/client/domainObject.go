@@ -62,7 +62,7 @@ func (receiver *DomainObject) TrySchedule(task TaskEO) error {
 
 	// 更新客户端状态
 	receiver.ScheduleAt = dateTime.Now()
-	receiver.ActivateAt = dateTime.Now()
+	//receiver.ActivateAt = dateTime.Now()
 	receiver.ErrorCount = 0
 	receiver.Status = clientStatus.Scheduler
 	return nil
@@ -128,6 +128,16 @@ func (receiver *DomainObject) ActivateClient() {
 					clientRepository.RemoveClient(receiver.Id)
 					return
 				}
+
+				// 发送心跳
+				if err := receiver.websocketContext.Send(map[string]any{"Type": -1}); err != nil {
+					flog.Warningf("向客户端%s（%s）：%s:%d 发送心跳时失败：%s", receiver.Name, receiver.Id, receiver.Ip, receiver.Port, err.Error())
+					clientList.Delete(receiver.Id)
+					clientRepository.RemoveClient(receiver.Id)
+					receiver.websocketContext.Close()
+					return
+				}
+
 				clientDO.(*DomainObject).ActivateAt = dateTime.Now()
 				clientRepository.Save(*clientDO.(*DomainObject))
 			}

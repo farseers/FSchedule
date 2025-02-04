@@ -202,16 +202,16 @@ func (receiver *DomainObject) SyncData() {
 			return
 		}
 
-		if receiver.Data.Count() != receiver.Task.Data.Count() {
-			flog.Warningf("任务组：%s 注意，发现data数量不一致，TaskId=%d，taskName=%s, 原data:%s，新data：%s", receiver.Name, receiver.Task.Id, receiver.Task.Name, strData, strData2)
-			return
-		}
-		receiver.Data.Keys().Foreach(func(dataKey *string) {
-			if strings.HasSuffix(*dataKey, "ClientName") && receiver.Data.GetValue(*dataKey) != receiver.Task.Data.GetValue(*dataKey) {
-				flog.Warningf("任务组：%s 注意，发现data不一致，TaskId=%d，taskName=%s, 原data:%s，新data：%s , task=%+v", receiver.Name, receiver.Task.Id, receiver.Task.Name, strData, strData2, receiver.Task)
-				return
-			}
-		})
+		// if receiver.Data.Count() != receiver.Task.Data.Count() {
+		// 	flog.Warningf("任务组：%s 注意，发现data数量不一致，TaskId=%d，taskName=%s, 原data:%s，新data：%s", receiver.Name, receiver.Task.Id, receiver.Task.Name, strData, strData2)
+		// 	return
+		// }
+		// receiver.Data.Keys().Foreach(func(dataKey *string) {
+		// 	if strings.HasSuffix(*dataKey, "ClientName") && receiver.Data.GetValue(*dataKey) != receiver.Task.Data.GetValue(*dataKey) {
+		// 		flog.Warningf("任务组：%s 注意，发现data不一致，TaskId=%d，taskName=%s, 原data:%s，新data：%s , task=%+v", receiver.Name, receiver.Task.Id, receiver.Task.Name, strData, strData2, receiver.Task)
+		// 		return
+		// 	}
+		// })
 		receiver.Data = receiver.Task.Data
 	}
 }

@@ -152,12 +152,6 @@ func (receiver *TaskGroupMonitor) Start() {
 			case scheduleStatus.Scheduling:
 				timer := timingWheel.Add(5 * time.Second)
 				select {
-				// 任务组停止，或删除时退出
-				case <-receiver.Client.Ctx.Done():
-					flog.Warningf("任务组：%s ver:%s 在等待调度时，客户端断开连接，强制将任务标记为失败", flog.Blue(receiver.Name), flog.Yellow(receiver.Ver))
-					receiver.Task.ScheduleFail("客户端断开连接")
-					receiver.taskFinish()
-					return
 				// 5秒没反应，则认为调度超时
 				case <-timer.C:
 					timer.Stop()
@@ -213,6 +207,8 @@ func (receiver *TaskGroupMonitor) waitStart() {
 	// 开始时间到了，可以开始计算任务执行赶时间
 	case <-timer.C:
 		receiver.waitScheduler()
+	// 如果receiver.StartAt时间过长，将导致时间计算不精准，这里做一个保护，相当于x分钟后，重新计算等待时间
+	case <-time.After(3 * time.Minute):
 	}
 }
 

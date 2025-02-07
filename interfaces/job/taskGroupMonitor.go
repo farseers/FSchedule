@@ -7,6 +7,7 @@ import (
 
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs/container"
+	"github.com/farseer-go/fs/core"
 	"github.com/farseer-go/fs/dateTime"
 )
 
@@ -34,6 +35,8 @@ func TaskGroupMonitor() collections.Dictionary[string, any] {
 		case executeStatus.None:
 			if difference := dateTime.Now().Sub(item.Task.StartAt); difference.Seconds() > 5 {
 				lstUnWork.Add(fmt.Sprintf("%s(%s)\r\n超时%s未执行。\r\n", item.Caption, item.Name, difference.String()))
+				// 发到所有节点上，主动通知到任务组监控，用于激活任务
+				_ = container.Resolve[core.IEvent]("TaskGroupUpdate").Publish(*item)
 			}
 		// 执行超时
 		case executeStatus.Working:

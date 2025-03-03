@@ -5,6 +5,9 @@ import (
 	"FSchedule/domain/taskGroup"
 	"FSchedule/interfaces/job"
 	"context"
+	"time"
+
+	"github.com/farseer-go/fs/color"
 	"github.com/farseer-go/fs/configure"
 	"github.com/farseer-go/fs/container"
 	"github.com/farseer-go/fs/core"
@@ -12,14 +15,13 @@ import (
 	"github.com/farseer-go/fs/parse"
 	"github.com/farseer-go/redis"
 	"github.com/farseer-go/tasks"
-	"time"
 )
 
 // ClusterLeaderSubscribe 选举事件
 func ClusterLeaderSubscribe(message any, _ core.EventArgs) {
 	leaderId := parse.Convert(message, int64(0))
 
-	flog.Infof("选举%s为Master节点", flog.Red(leaderId))
+	flog.Infof("选举%s为Master节点", color.Red(leaderId))
 
 	// 当前节点是leader
 	if leaderId == core.AppId {

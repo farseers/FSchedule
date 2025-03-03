@@ -2,6 +2,8 @@ package job
 
 import (
 	"FSchedule/domain/serverNode"
+
+	"github.com/farseer-go/fs/color"
 	"github.com/farseer-go/fs/container"
 	"github.com/farseer-go/fs/dateTime"
 	"github.com/farseer-go/fs/flog"
@@ -19,7 +21,7 @@ func ServerNodeTimeoutJob(context *tasks.TaskContext) {
 	repository.ToList().Foreach(func(serverNodeDO *serverNode.DomainObject) {
 		if dateTime.Since(serverNodeDO.ActivateAt).Seconds() >= 30 {
 			repository.Remove(serverNodeDO.Id)
-			flog.Infof("集群节点：%s %s:%d 不再活跃，移出集群", flog.Green(serverNodeDO.Id), flog.Yellow(serverNodeDO.Ip), serverNodeDO.Port)
+			flog.Infof("集群节点：%s %s:%d 不再活跃，移出集群", color.Green(serverNodeDO.Id), color.Yellow(serverNodeDO.Ip), serverNodeDO.Port)
 		}
 	})
 }

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/farseer-go/collections"
+	"github.com/farseer-go/fs/color"
 	"github.com/farseer-go/fs/container"
 	"github.com/farseer-go/fs/dateTime"
 	"github.com/farseer-go/fs/flog"
@@ -105,10 +106,10 @@ func (receiver *TaskGroupMonitor) Start() {
 				receiver.taskFinish()
 			}
 			if receiver.Client == nil {
-				flog.Errorf("任务组：%s ver:%s 退出调度线程时 client = nil", flog.Blue(receiver.Name), flog.Yellow(receiver.Ver))
+				flog.Errorf("任务组：%s ver:%s 退出调度线程时 client = nil", color.Blue(receiver.Name), color.Yellow(receiver.Ver))
 			} else {
 				receiver.Client.IsMaster = false
-				flog.Infof("任务组：%s ver:%s 客户端：%s 退出调度线程", flog.Blue(receiver.Name), flog.Yellow(receiver.Ver), receiver.Client.Id)
+				flog.Infof("任务组：%s ver:%s 客户端：%s 退出调度线程", color.Blue(receiver.Name), color.Yellow(receiver.Ver), receiver.Client.Id)
 				RemoveMonitorClient(receiver.Client.Id)
 			}
 		}()
@@ -124,7 +125,7 @@ func (receiver *TaskGroupMonitor) Start() {
 			receiver.taskFinish()
 		}
 
-		flog.Infof("任务组：%s ver:%s 加入调度线程", flog.Blue(receiver.Name), flog.Yellow(receiver.Ver))
+		flog.Infof("任务组：%s ver:%s 加入调度线程", color.Blue(receiver.Name), color.Yellow(receiver.Ver))
 		for {
 			// 清空更新队列
 			receiver.updated = make(chan struct{}, 1000)
@@ -155,7 +156,7 @@ func (receiver *TaskGroupMonitor) Start() {
 				// 5秒没反应，则认为调度超时
 				case <-timer.C:
 					timer.Stop()
-					flog.Warningf("任务组：%s ver:%s 在等待调度时，客户端5秒内没反应，强制将任务标记为调度超时", flog.Blue(receiver.Name), flog.Yellow(receiver.Ver))
+					flog.Warningf("任务组：%s ver:%s 在等待调度时，客户端5秒内没反应，强制将任务标记为调度超时", color.Blue(receiver.Name), color.Yellow(receiver.Ver))
 					receiver.Task.ScheduleFail("调度超时")
 					receiver.taskFinish()
 				// 等待其它协程更新状态
@@ -169,7 +170,7 @@ func (receiver *TaskGroupMonitor) Start() {
 					select {
 					// 任务组停止，或删除时退出
 					case <-receiver.Client.Ctx.Done():
-						flog.Warningf("任务组：%s ver:%s 在执行任务时，客户端断开连接，强制将任务标记为失败", flog.Blue(receiver.Name), flog.Yellow(receiver.Ver))
+						flog.Warningf("任务组：%s ver:%s 在执行任务时，客户端断开连接，强制将任务标记为失败", color.Blue(receiver.Name), color.Yellow(receiver.Ver))
 						receiver.Task.SetFail("客户端断开连接")
 						receiver.taskFinish()
 						return
@@ -179,7 +180,7 @@ func (receiver *TaskGroupMonitor) Start() {
 				case executeStatus.Fail, executeStatus.Success:
 					receiver.taskFinish()
 				default:
-					flog.Warningf("任务组：%s ver:%s 出现未知执行状态：%d 将强制设为失败状态", flog.Blue(receiver.Name), flog.Yellow(receiver.Ver), receiver.Task.ExecuteStatus)
+					flog.Warningf("任务组：%s ver:%s 出现未知执行状态：%d 将强制设为失败状态", color.Blue(receiver.Name), color.Yellow(receiver.Ver), receiver.Task.ExecuteStatus)
 					receiver.Task.SetFail(fmt.Sprintf("出现未知执行状态：%d", receiver.Task.ExecuteStatus))
 					receiver.taskFinish()
 				}

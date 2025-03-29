@@ -37,7 +37,7 @@ require (
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.9 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
-	github.com/shopspring/decimal v1.4.0 // indirect
+	github.com/govalues/decimal v0.1.36 // indirect
 	github.com/timandy/routine v1.1.4 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	golang.org/x/arch v0.12.0 // indirect

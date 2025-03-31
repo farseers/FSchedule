@@ -124,7 +124,7 @@ func (receiver *taskRepository) TodayFailCount() int64 {
 
 func (receiver *taskRepository) toTaskPageListTaskEO(page collections.PageList[model.TaskPO]) collections.PageList[taskGroup.TaskEO] {
 	lst := mapper.ToList[taskGroup.TaskEO](page.List)
-	return collections.NewPageList[taskGroup.TaskEO](lst, page.RecordCount)
+	return collections.NewPageList(lst, page.RecordCount)
 }
 
 func (receiver *taskRepository) GetStatCount() collections.List[taskGroup.StatTaskEO] {

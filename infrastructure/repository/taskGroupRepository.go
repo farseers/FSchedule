@@ -7,16 +7,18 @@ import (
 	"FSchedule/infrastructure/repository/context"
 	"FSchedule/infrastructure/repository/model"
 	_ "embed"
+	"strings"
+	"time"
+
 	"github.com/farseer-go/cache"
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs/container"
 	"github.com/farseer-go/fs/dateTime"
 	"github.com/farseer-go/fs/flog"
 	"github.com/farseer-go/fs/parse"
+	"github.com/farseer-go/fs/trace"
 	"github.com/farseer-go/mapper"
 	"github.com/farseer-go/redis"
-	"strings"
-	"time"
 )
 
 type taskGroupRepository struct {
@@ -72,34 +74,41 @@ func (receiver *taskGroupRepository) SaveAndTask(do taskGroup.DomainObject) {
 func (receiver *taskGroupRepository) Sync() {
 	lst := receiver.CacheManage.Get()
 
-	for i := 0; i < lst.Count(); i++ {
-		do := lst.Index(i)
-		po := mapper.Single[model.TaskGroupPO](&do)
-
-		if po.StartAt.Year() < 2000 {
-			flog.Warningf("任务组：%s StartAt字段时间不正确 %s", do.Name, po.StartAt.String())
-			po.StartAt = time.Now()
-		}
-
-		if po.ActivateAt.Year() < 2000 {
-			flog.Warningf("任务组：%s ActivateAt字段时间不正确 %s", do.Name, po.ActivateAt.String())
-			po.ActivateAt = time.Now()
-		}
-
-		if po.LastRunAt.Year() < 2000 {
-			flog.Warningf("任务组：%s LastRunAt字段时间不正确 %s", do.Name, po.LastRunAt.String())
-			po.LastRunAt = time.Now()
-		}
-
-		if po.NextAt.Year() < 2000 {
-			flog.Warningf("任务组：%s NextAt字段时间不正确 %s", do.Name, po.NextAt.String())
-			po.NextAt = time.Now()
-		}
-		_ = context.MysqlContextIns("更新任务组").TaskGroup.UpdateOrInsert(po, "name")
-
-		// 同步任务
-		receiver.taskRepository.syncTask(po.Name)
+	// 忽略明细
+	traceContext := trace.CurTraceContext.Get()
+	if traceContext == nil {
+		traceContext = trace.NewTraceContext()
 	}
+	traceContext.IgnoreDetail(func() {
+		for i := 0; i < lst.Count(); i++ {
+			do := lst.Index(i)
+			po := mapper.Single[model.TaskGroupPO](&do)
+
+			if po.StartAt.Year() < 2000 {
+				flog.Warningf("任务组：%s StartAt字段时间不正确 %s", do.Name, po.StartAt.String())
+				po.StartAt = time.Now()
+			}
+
+			if po.ActivateAt.Year() < 2000 {
+				flog.Warningf("任务组：%s ActivateAt字段时间不正确 %s", do.Name, po.ActivateAt.String())
+				po.ActivateAt = time.Now()
+			}
+
+			if po.LastRunAt.Year() < 2000 {
+				flog.Warningf("任务组：%s LastRunAt字段时间不正确 %s", do.Name, po.LastRunAt.String())
+				po.LastRunAt = time.Now()
+			}
+
+			if po.NextAt.Year() < 2000 {
+				flog.Warningf("任务组：%s NextAt字段时间不正确 %s", do.Name, po.NextAt.String())
+				po.NextAt = time.Now()
+			}
+			_ = context.MysqlContextIns("更新任务组").TaskGroup.UpdateOrInsert(po, "name")
+
+			// 同步任务
+			receiver.taskRepository.syncTask(po.Name)
+		}
+	})
 }
 
 func (receiver *taskGroupRepository) ToListForFops(taskGroupName string, enable int, taskStatus executeStatus.Enum, taskId int64, clientId string, pageSize int, pageIndex int) collections.List[taskGroup.DomainObject] {

@@ -7,13 +7,14 @@ import (
 	"FSchedule/domain/taskGroup"
 	"FSchedule/domain/taskLog"
 	"fmt"
+	"strings"
+
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs/core"
 	"github.com/farseer-go/fs/core/eumLogLevel"
 	"github.com/farseer-go/fs/exception"
 	"github.com/farseer-go/fs/parse"
 	"github.com/farseer-go/webapi/websocket"
-	"strings"
 )
 
 type request struct {
@@ -37,7 +38,7 @@ const tokenName = "FSS-ACCESS-TOKEN"
 // 客户端请求任务组分派任务，客户端每个任务单独连接
 // @ws connect
 func Connect(wsContext *websocket.Context[request], clientRepository client.Repository, taskGroupRepository taskGroup.Repository, taskLogRepository taskLog.Repository) {
-	// 新的客户端、先做注册
+	// 新的客户端连接进来，首先会接收一个注册请求
 	req := wsContext.Receiver()
 	addr := strings.Split(wsContext.HttpContext.URI.RemoteAddr, ":")
 	req.Registry.ClientIp = addr[0]

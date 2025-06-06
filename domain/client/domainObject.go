@@ -7,6 +7,7 @@ import (
 
 	"github.com/farseer-go/fs/container"
 	"github.com/farseer-go/fs/dateTime"
+	"github.com/farseer-go/fs/exception"
 	"github.com/farseer-go/fs/flog"
 	"github.com/farseer-go/fs/timingWheel"
 	"github.com/farseer-go/webapi/websocket"
@@ -130,11 +131,16 @@ func (receiver *DomainObject) ActivateClient() {
 				}
 
 				// 发送心跳
-				if err := receiver.websocketContext.Send(map[string]any{"Type": -1}); err != nil {
-					flog.Warningf("向客户端%s（%s）：%s:%d 发送心跳时失败：%s", receiver.Name, receiver.Id, receiver.Ip, receiver.Port, err.Error())
-					clientList.Delete(receiver.Id)
-					clientRepository.RemoveClient(receiver.Id)
-					receiver.websocketContext.Close()
+				if err := exception.TryCatch(func() {
+					if err := receiver.websocketContext.Send(map[string]any{"Type": -1}); err != nil {
+						flog.Warningf("向客户端%s（%s）：%s:%d 发送心跳时失败：%s", receiver.Name, receiver.Id, receiver.Ip, receiver.Port, err.Error())
+						clientList.Delete(receiver.Id)
+						clientRepository.RemoveClient(receiver.Id)
+						receiver.websocketContext.Close()
+						return
+					}
+				}); err != nil {
+					//flog.Warningf("客户端%s（%s）：%s:%d 断开连接", receiver.Name, receiver.Id, receiver.Ip, receiver.Port)
 					return
 				}
 

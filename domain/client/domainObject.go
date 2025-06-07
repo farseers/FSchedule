@@ -105,7 +105,7 @@ func (receiver *DomainObject) IsClose() bool {
 	return receiver.websocketContext == nil || receiver.websocketContext.IsClose()
 }
 
-// 定时同步客户端信息
+// 心跳检查客户端
 func (receiver *DomainObject) ActivateClient() {
 	clientRepository := container.Resolve[Repository]()
 
@@ -132,15 +132,13 @@ func (receiver *DomainObject) ActivateClient() {
 
 				// 发送心跳
 				if err := exception.TryCatch(func() {
-					if err := receiver.websocketContext.Send(map[string]any{"Type": -1}); err != nil {
-						flog.Warningf("向客户端%s（%s）：%s:%d 发送心跳时失败：%s", receiver.Name, receiver.Id, receiver.Ip, receiver.Port, err.Error())
-						clientList.Delete(receiver.Id)
-						clientRepository.RemoveClient(receiver.Id)
-						receiver.websocketContext.Close()
-						return
-					}
+					err := receiver.websocketContext.Send(map[string]any{"Type": -1})
+					exception.ThrowRefuseExceptionError(err)
 				}); err != nil {
-					//flog.Warningf("客户端%s（%s）：%s:%d 断开连接", receiver.Name, receiver.Id, receiver.Ip, receiver.Port)
+					//flog.Warningf("向客户端%s（%s）：%s:%d 发送心跳时失败：%s", receiver.Name, receiver.Id, receiver.Ip, receiver.Port, err.Error())
+					clientList.Delete(receiver.Id)
+					clientRepository.RemoveClient(receiver.Id)
+					receiver.websocketContext.Close()
 					return
 				}
 

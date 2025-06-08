@@ -25,8 +25,8 @@ type DomainObject struct {
 	WorkCount        int                    // 正在处理的任务数量
 	ErrorCount       int                    // 错误次数
 	Job              JobVO                  // 客户端支持的任务
-	websocketContext *websocket.BaseContext // 客户端
-	Ctx              context.Context        // 用于通知应用端是否断开连接
+	websocketContext *websocket.BaseContext `json:"-"` // 客户端
+	Ctx              context.Context        `json:"-"` // 用于通知应用端是否断开连接
 	IsMaster         bool                   // 是否为主客户端
 }
 

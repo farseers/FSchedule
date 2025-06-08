@@ -7,13 +7,11 @@ import (
 	"FSchedule/domain/taskGroup"
 	"FSchedule/domain/taskLog"
 	"fmt"
-	"strings"
 
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs/core"
 	"github.com/farseer-go/fs/core/eumLogLevel"
 	"github.com/farseer-go/fs/exception"
-	"github.com/farseer-go/fs/parse"
 	"github.com/farseer-go/webapi/websocket"
 )
 
@@ -40,9 +38,7 @@ const tokenName = "FSS-ACCESS-TOKEN"
 func Connect(wsContext *websocket.Context[request], clientRepository client.Repository, taskGroupRepository taskGroup.Repository, taskLogRepository taskLog.Repository) {
 	// 新的客户端连接进来，首先会接收一个注册请求
 	req := wsContext.Receiver()
-	addr := strings.Split(wsContext.HttpContext.URI.RemoteAddr, ":")
-	req.Registry.ClientIp = addr[0]
-	req.Registry.ClientPort = parse.ToInt(addr[1])
+	req.Registry.ClientIp, req.Registry.ClientPort = wsContext.HttpContext.URI.GetRealIpPort()
 	clientId := fmt.Sprintf("%s:%d", req.Registry.ClientIp, req.Registry.ClientPort)
 
 	// 客户端注册

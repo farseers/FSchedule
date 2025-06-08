@@ -43,6 +43,8 @@ func RemoveMonitorClient(clientId string) {
 	if taskGroupMonitor != nil {
 		if taskGroupMonitor.Client != nil {
 			taskGroupMonitor.Client.Close()
+			taskGroupMonitor.Client.IsMaster = false
+			container.Resolve[client.Repository]().Save(*taskGroupMonitor.Client)
 			taskGroupMonitor.Client = nil
 		}
 	}
@@ -108,7 +110,6 @@ func (receiver *TaskGroupMonitor) Start() {
 			if receiver.Client == nil {
 				flog.Errorf("任务组：%s ver:%s 退出调度线程时 client = nil", color.Blue(receiver.Name), color.Yellow(receiver.Ver))
 			} else {
-				receiver.Client.IsMaster = false
 				flog.Infof("任务组：%s ver:%s 客户端：%s 退出调度线程", color.Blue(receiver.Name), color.Yellow(receiver.Ver), receiver.Client.Id)
 				RemoveMonitorClient(receiver.Client.Id)
 			}
@@ -117,8 +118,8 @@ func (receiver *TaskGroupMonitor) Start() {
 		// 有可能原节点挂了，由另外节点继续接管，所以需要重新取到最新的对象（因为现在取消了任务组数据的实时订阅发送）
 		*receiver.DomainObject = taskGroupRepository.ToEntity(receiver.Name)
 		receiver.Client.IsMaster = true
+		container.Resolve[client.Repository]().Save(*receiver.Client)
 
-		//clientRepository := container.Resolve[client.Repository]()
 		// 重新连接进来时，有可能上一次的任务执行了一半。因此这里要做检查
 		if receiver.Task.ScheduleStatus != scheduleStatus.None {
 			receiver.Task.SetFail("客户端重连，强制取消上次未执行的任务")

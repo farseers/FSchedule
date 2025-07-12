@@ -60,9 +60,6 @@ func (receiver *taskGroupRepository) ToEntity(taskGroupName string) taskGroup.Do
 func (receiver *taskGroupRepository) Save(do taskGroup.DomainObject) {
 	do.NeedSave = false
 	receiver.CacheManage.SaveItem(do)
-
-	// 发到所有节点上
-	//_ = container.Resolve[core.IEvent]("TaskGroupUpdate").Publish(do)
 }
 
 func (receiver *taskGroupRepository) SaveAndTask(do taskGroup.DomainObject) {

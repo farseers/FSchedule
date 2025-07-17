@@ -83,7 +83,7 @@ FSchedule2.0采用go语言设计，编译后是一个二进制的可执行文件
 ## docker（推荐）
 ```shell
 docker run --name fschedule -p 8886:8886 -d \
--e Database_default="DataType=mysql,PoolMaxSize=50,PoolMinSize=1,ConnectionString=root:123456@tcp(127.0.0.1:3306)/fschedule?charset=utf8&parseTime=True&loc=Local" \
+-e Database_default="DataType=mysql,PoolMaxSize=5,PoolMinSize=1,ConnectionString=root:123456@tcp(127.0.0.1:3306)/fschedule?charset=utf8&parseTime=True&loc=Local" \
 -e Redis_default="Server=127.0.0.1:6379,DB=14,Password=123456,ConnectTimeout=600000,SyncTimeout=10000,ResponseTimeout=10000" \
 steden88/fschedule:latest
 ```
@@ -98,17 +98,17 @@ steden88/fschedule:latest
 ## 集群部署
 ```shell
 docker run --name fschedule1 -p 80:8886 -d \
--e Database_default="DataType=mysql,PoolMaxSize=50,PoolMinSize=1,ConnectionString=root:123456@tcp(127.0.0.1:3306)/fschedule?charset=utf8&parseTime=True&loc=Local" \
+-e Database_default="DataType=mysql,PoolMaxSize=5,PoolMinSize=1,ConnectionString=root:123456@tcp(127.0.0.1:3306)/fschedule?charset=utf8&parseTime=True&loc=Local" \
 -e Redis_default="Server=127.0.0.1:6379,DB=14,Password=123456,ConnectTimeout=600000,SyncTimeout=10000,ResponseTimeout=10000" \
 steden88/fschedule:latest
 
 docker run --name fschedule2 -p 81:8886 -d \
--e Database_default="DataType=mysql,PoolMaxSize=50,PoolMinSize=1,ConnectionString=root:123456@tcp(127.0.0.1:3306)/fschedule?charset=utf8&parseTime=True&loc=Local" \
+-e Database_default="DataType=mysql,PoolMaxSize=5,PoolMinSize=1,ConnectionString=root:123456@tcp(127.0.0.1:3306)/fschedule?charset=utf8&parseTime=True&loc=Local" \
 -e Redis_default="Server=127.0.0.1:6379,DB=14,Password=123456,ConnectTimeout=600000,SyncTimeout=10000,ResponseTimeout=10000" \
 steden88/fschedule:latest
 
 docker run --name fschedule3 -p 82:8886 -d \
--e Database_default="DataType=mysql,PoolMaxSize=50,PoolMinSize=1,ConnectionString=root:123456@tcp(127.0.0.1:3306)/fschedule?charset=utf8&parseTime=True&loc=Local" \
+-e Database_default="DataType=mysql,PoolMaxSize=5,PoolMinSize=1,ConnectionString=root:123456@tcp(127.0.0.1:3306)/fschedule?charset=utf8&parseTime=True&loc=Local" \
 -e Redis_default="Server=127.0.0.1:6379,DB=14,Password=123456,ConnectTimeout=600000,SyncTimeout=10000,ResponseTimeout=10000" \
 steden88/fschedule:latest
 ```

@@ -116,6 +116,9 @@ func (receiver *TaskGroupMonitor) Start() {
 		}()
 
 		// 有可能原节点挂了，由另外节点继续接管，所以需要重新取到最新的对象（因为现在取消了任务组数据的实时订阅发送）
+		if receiver.DomainObject == nil { // 这里有可能为nil
+			return
+		}
 		*receiver.DomainObject = taskGroupRepository.ToEntity(receiver.Name)
 		receiver.Client.IsMaster = true
 		container.Resolve[client.Repository]().Save(*receiver.Client)

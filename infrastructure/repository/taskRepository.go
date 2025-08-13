@@ -53,9 +53,22 @@ func (receiver *taskRepository) SaveTask(taskEO taskGroup.TaskEO) {
 	getCacheManager(taskEO.Name).SaveItem(taskEO)
 }
 
-func (receiver *taskRepository) syncTask(taskGroupName string) {
+func (receiver *taskRepository) RemoveCache(taskGroupName string, lstSave collections.List[model.TaskPO]) {
+	if lstSave.Count() == 0 {
+		return
+	}
+	cacheManager := getCacheManager(taskGroupName)
+	// 清除缓存
+	lstSave.Foreach(func(po *model.TaskPO) {
+		cacheManager.Remove(po.Id)
+	})
+}
+
+// 获取要保存到数据库的任务列表
+func (receiver *taskRepository) getSaveTaskList(taskGroupName string) collections.List[model.TaskPO] {
 	cacheManager := getCacheManager(taskGroupName)
 	lst := cacheManager.Get()
+	lstSave := collections.NewList[model.TaskPO]()
 	for i := 0; i < lst.Count(); i++ {
 		do := lst.Index(i)
 		// 保存成功后，已完成的任务，且最后运行时间大于1分钟的，移除列表
@@ -72,11 +85,11 @@ func (receiver *taskRepository) syncTask(taskGroupName string) {
 			if po.SchedulerAt.Year() < 2000 {
 				po.SchedulerAt = time.Date(2000, 0, 1, 0, 0, 0, 0, time.Local)
 			}
-			if context.MysqlContextIns("添加或更新任务Task").Task.UpdateOrInsert(po, "Id") == nil {
-				cacheManager.Remove(po.Id)
-			}
+			lstSave.Add(po)
 		}
 	}
+
+	return lstSave
 }
 
 func (receiver *taskRepository) DeleteTask(taskGroupName string) {

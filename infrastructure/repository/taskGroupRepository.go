@@ -13,6 +13,7 @@ import (
 	"github.com/farseer-go/cache"
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs/container"
+	"github.com/farseer-go/fs/core"
 	"github.com/farseer-go/fs/dateTime"
 	"github.com/farseer-go/fs/flog"
 	"github.com/farseer-go/fs/parse"
@@ -76,7 +77,11 @@ func (receiver *taskGroupRepository) Sync() {
 	if traceContext == nil {
 		traceContext = trace.NewTraceContext()
 	}
+
+	lstSave := collections.NewList[model.TaskPO]()
+	lstSaveId := collections.NewList[int64]()
 	traceContext.IgnoreDetail(func() {
+		// 遍历任务组，然后获取需要保存到数据库的任务
 		for i := 0; i < lst.Count(); i++ {
 			do := lst.Index(i)
 			po := mapper.Single[model.TaskGroupPO](&do)
@@ -102,8 +107,25 @@ func (receiver *taskGroupRepository) Sync() {
 			}
 			_ = context.MysqlContextIns("更新任务组").TaskGroup.UpdateOrInsert(po, "name")
 
-			// 同步任务
-			receiver.taskRepository.syncTask(po.Name)
+			// 获取要保存到数据库的任务列表
+			lstSave.AddList(receiver.taskRepository.getSaveTaskList(po.Name))
+		}
+
+		// 批量清除和写入任务到数据库
+		if lstSave.Count() > 0 {
+			container.Resolve[core.ITransaction]("default").Transaction(func() {
+				context.MysqlContextIns("先清除数据").Task.Where("id in ?", lstSaveId.ToArray()).Delete()
+				context.MysqlContextIns("再重新批量写入").Task.InsertList(lstSave, 1000)
+			})
+		}
+
+		// 将当前已保存的任务，清除缓存
+		for i := 0; i < lst.Count(); i++ {
+			do := lst.Index(i)
+			curSaveList := lstSave.Where(func(item model.TaskPO) bool {
+				return item.Name == do.Name
+			}).ToList()
+			receiver.taskRepository.RemoveCache(do.Name, curSaveList)
 		}
 	})
 }

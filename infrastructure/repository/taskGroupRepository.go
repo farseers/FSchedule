@@ -71,7 +71,8 @@ func (receiver *taskGroupRepository) SaveAndTask(do taskGroup.DomainObject) {
 func (receiver *taskGroupRepository) Sync() {
 	lst := receiver.CacheManage.Get()
 
-	lstSave := collections.NewList[model.TaskPO]()
+	lstSaveTaskGroup := collections.NewList[model.TaskGroupPO]()
+	lstSaveTask := collections.NewList[model.TaskPO]()
 	//lstSaveId := collections.NewList[int64]()
 	// 遍历任务组，然后获取需要保存到数据库的任务
 	for i := 0; i < lst.Count(); i++ {
@@ -97,30 +98,33 @@ func (receiver *taskGroupRepository) Sync() {
 			flog.Warningf("任务组：%s NextAt字段时间不正确 %s", do.Name, po.NextAt.String())
 			po.NextAt = time.Now()
 		}
-		_ = context.MysqlContextIns("更新任务组").TaskGroup.UpdateOrInsert(po, "name")
+		lstSaveTaskGroup.Add(po)
+		//_ = context.MysqlContextIns("更新任务组").TaskGroup.UpdateOrInsert(po, "name")
 
 		// 获取要保存到数据库的任务列表
-		lstSave.AddList(receiver.taskRepository.getSaveTaskList(po.Name))
+		lstSaveTask.AddList(receiver.taskRepository.getSaveTaskList(po.Name))
 	}
 
-	if lstSave.Count() > 0 {
-		// 批量清除和写入任务到数据库
-		container.Resolve[core.ITransaction]("default").Transaction(func() {
-			//context.MysqlContextIns("先清除数据").Task.Where("id in ?", lstSaveId.ToArray()).Delete()
-			context.MysqlContextIns("再重新批量写入").Task.UpdateOrInsertListByPrimary(lstSave)
-		})
+	container.Resolve[core.ITransaction]("default").Transaction(func() {
+		// 更新任务组
+		context.MysqlContextIns("批量更新任务组列表").TaskGroup.UpdateOrInsertListByPrimary(lstSaveTaskGroup)
 
-		// 将当前已保存的任务，清除缓存
-		container.Resolve[redis.IClient]("default").Pipeline(func() {
-			for i := 0; i < lst.Count(); i++ {
-				do := lst.Index(i)
-				curSaveList := lstSave.Where(func(item model.TaskPO) bool {
-					return item.Name == do.Name
-				}).ToList()
-				receiver.taskRepository.RemoveCache(do.Name, curSaveList)
-			}
-		})
-	}
+		// 写入任务列表
+		if lstSaveTask.Count() > 0 {
+			context.MysqlContextIns("批量更新任务列表").Task.UpdateOrInsertListByPrimary(lstSaveTask)
+
+			// 将当前已保存的任务，清除缓存
+			container.Resolve[redis.IClient]("default").Pipeline(func() {
+				for i := 0; i < lst.Count(); i++ {
+					do := lst.Index(i)
+					curSaveList := lstSaveTask.Where(func(item model.TaskPO) bool {
+						return item.Name == do.Name
+					}).ToList()
+					receiver.taskRepository.RemoveCache(do.Name, curSaveList)
+				}
+			})
+		}
+	})
 }
 
 func (receiver *taskGroupRepository) ToListForFops(taskGroupName string, enable int, taskStatus executeStatus.Enum, taskId int64, clientId string, pageSize int, pageIndex int) collections.List[taskGroup.DomainObject] {

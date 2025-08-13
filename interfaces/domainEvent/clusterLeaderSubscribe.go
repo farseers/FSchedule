@@ -41,9 +41,7 @@ func ClusterLeaderSubscribe(message any, _ core.EventArgs) {
 		if sec := configure.GetInt("FSchedule.DataSyncTime"); sec > 0 {
 			tasks.Run("taskGroupSync", time.Duration(sec)*time.Second, func(context *tasks.TaskContext) {
 				// 使用事务同步任务到数据库
-				container.Resolve[core.ITransaction]("default").Transaction(func() {
-					container.Resolve[taskGroup.Repository]().Sync()
-				})
+				container.Resolve[taskGroup.Repository]().Sync()
 			}, context.Background())
 		}
 

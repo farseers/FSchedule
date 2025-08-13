@@ -72,7 +72,7 @@ func (receiver *taskGroupRepository) Sync() {
 	lst := receiver.CacheManage.Get()
 
 	lstSave := collections.NewList[model.TaskPO]()
-	lstSaveId := collections.NewList[int64]()
+	//lstSaveId := collections.NewList[int64]()
 	// 遍历任务组，然后获取需要保存到数据库的任务
 	for i := 0; i < lst.Count(); i++ {
 		do := lst.Index(i)
@@ -103,21 +103,23 @@ func (receiver *taskGroupRepository) Sync() {
 		lstSave.AddList(receiver.taskRepository.getSaveTaskList(po.Name))
 	}
 
-	// 批量清除和写入任务到数据库
 	if lstSave.Count() > 0 {
+		// 批量清除和写入任务到数据库
 		container.Resolve[core.ITransaction]("default").Transaction(func() {
-			context.MysqlContextIns("先清除数据").Task.Where("id in ?", lstSaveId.ToArray()).Delete()
-			context.MysqlContextIns("再重新批量写入").Task.InsertList(lstSave, 1000)
+			//context.MysqlContextIns("先清除数据").Task.Where("id in ?", lstSaveId.ToArray()).Delete()
+			context.MysqlContextIns("再重新批量写入").Task.UpdateOrInsertListByPrimary(lstSave)
 		})
-	}
 
-	// 将当前已保存的任务，清除缓存
-	for i := 0; i < lst.Count(); i++ {
-		do := lst.Index(i)
-		curSaveList := lstSave.Where(func(item model.TaskPO) bool {
-			return item.Name == do.Name
-		}).ToList()
-		receiver.taskRepository.RemoveCache(do.Name, curSaveList)
+		// 将当前已保存的任务，清除缓存
+		container.Resolve[redis.IClient]("default").Pipeline(func() {
+			for i := 0; i < lst.Count(); i++ {
+				do := lst.Index(i)
+				curSaveList := lstSave.Where(func(item model.TaskPO) bool {
+					return item.Name == do.Name
+				}).ToList()
+				receiver.taskRepository.RemoveCache(do.Name, curSaveList)
+			}
+		})
 	}
 }
 

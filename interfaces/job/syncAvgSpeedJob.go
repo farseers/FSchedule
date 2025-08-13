@@ -4,7 +4,6 @@ import (
 	"FSchedule/domain/taskGroup"
 
 	"github.com/farseer-go/fs/container"
-	"github.com/farseer-go/fs/core"
 	"github.com/farseer-go/tasks"
 )
 
@@ -20,7 +19,7 @@ func SyncAvgSpeedJob(context *tasks.TaskContext) {
 				repository.Save(do)
 
 				// 发到所有节点上
-				_ = container.Resolve[core.IEvent]("TaskGroupUpdate").Publish(do)
+				//_ = container.Resolve[core.IEvent]("TaskGroupUpdate").Publish(do)
 			}
 		}
 	})

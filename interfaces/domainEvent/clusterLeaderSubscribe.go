@@ -55,7 +55,7 @@ func ClusterLeaderSubscribe(message any, _ core.EventArgs) {
 
 		// 自动清除历史任务记录
 		if configure.GetInt("FSchedule.ReservedTaskCount") > 0 {
-			tasks.Run("ClearHisTaskJob", 1*time.Hour, job.ClearHisTaskJob, context.Background())
+			tasks.RunNow("ClearHisTaskJob", 1*time.Hour, job.ClearHisTaskJob, context.Background())
 		}
 
 		// 每5秒检查客户端是否永久离线

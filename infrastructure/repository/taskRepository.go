@@ -122,8 +122,26 @@ func (receiver *taskRepository) TaskClearFinish(taskGroupName string, taskId int
 func (receiver *taskRepository) ToTaskFinishList(taskGroupName string, top int) collections.List[taskGroup.TaskEO] {
 	lstPO := context.MysqlContextIns("获取已完成的任务Task").Task.Where("name = ? and (execute_status = ? or execute_status = ?)", taskGroupName, executeStatus.Success, executeStatus.Fail).Desc("create_at").Limit(top).ToList()
 	return mapper.ToList[taskGroup.TaskEO](lstPO)
-
 }
+
+// 获取已完成的任务TaskId
+func (receiver *taskRepository) GetLastFinishTaskId(reservedTaskCount int) map[string]int64 {
+	var m map[string]int64
+	sql := `WITH ranked_tasks AS (
+			SELECT
+				id,
+				name,
+				ROW_NUMBER() OVER (PARTITION BY name ORDER BY create_at DESC) AS row_num
+			FROM fschedule_task
+			WHERE execute_status IN (2, 3)
+			)
+			SELECT name, id AS cutoff_id
+			FROM ranked_tasks
+			WHERE row_num = ?;`
+	context.MysqlContextIns("获取已完成的任务TaskId").ExecuteSqlToMap(&m, sql, reservedTaskCount+1)
+	return m
+}
+
 func (receiver *taskRepository) ToTaskFinishPageList(pageSize int, pageIndex int) collections.PageList[taskGroup.TaskEO] {
 	page := context.MysqlContextIns("获取已完成的任务Task").Task.Where("(execute_status = ? or execute_status = ?) and (create_at >= ?)", executeStatus.Fail, executeStatus.Success, time.Now().Add(-24*time.Hour)).
 		Desc("run_at").ToPageList(pageSize, pageIndex)

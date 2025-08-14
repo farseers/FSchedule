@@ -5,6 +5,7 @@ import (
 
 	"github.com/farseer-go/fs/configure"
 	"github.com/farseer-go/fs/container"
+	"github.com/farseer-go/fs/exception"
 	"github.com/farseer-go/tasks"
 )
 
@@ -14,7 +15,8 @@ func ClearHisTaskJob(context *tasks.TaskContext) {
 	taskGroupRepository := container.Resolve[taskGroup.Repository]()
 
 	// 获取每个任务组，reservedTaskCount之后的TaskId，用于删除
-	groupFinishTask := taskGroupRepository.GetLastFinishTaskId(reservedTaskCount)
+	groupFinishTask, err := taskGroupRepository.GetLastFinishTaskId(reservedTaskCount)
+	exception.ThrowRefuseExceptionError(err)
 	for taskGroupName, taskId := range groupFinishTask {
 		// 清除历史记录
 		taskGroupRepository.TaskClearFinish(taskGroupName, taskId)

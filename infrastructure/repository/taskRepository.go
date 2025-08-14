@@ -125,7 +125,7 @@ func (receiver *taskRepository) ToTaskFinishList(taskGroupName string, top int) 
 }
 
 // 获取已完成的任务TaskId
-func (receiver *taskRepository) GetLastFinishTaskId(reservedTaskCount int) map[string]int64 {
+func (receiver *taskRepository) GetLastFinishTaskId(reservedTaskCount int) (map[string]int64, error) {
 	var m map[string]int64
 	sql := `WITH ranked_tasks AS (
 			SELECT
@@ -138,8 +138,8 @@ func (receiver *taskRepository) GetLastFinishTaskId(reservedTaskCount int) map[s
 			SELECT name, id AS cutoff_id
 			FROM ranked_tasks
 			WHERE row_num = ?;`
-	context.MysqlContextIns("获取已完成的任务TaskId").ExecuteSqlToMap(&m, sql, reservedTaskCount+1)
-	return m
+	_, err := context.MysqlContextIns("获取已完成的任务TaskId").ExecuteSqlToMap(&m, sql, reservedTaskCount+1)
+	return m, err
 }
 
 func (receiver *taskRepository) ToTaskFinishPageList(pageSize int, pageIndex int) collections.PageList[taskGroup.TaskEO] {

@@ -8,12 +8,14 @@ import (
 	"FSchedule/domain/client"
 	"FSchedule/domain/enum/executeStatus"
 	"FSchedule/domain/taskGroup"
+	"strings"
+
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs/container"
 	"github.com/farseer-go/fs/core"
+	"github.com/farseer-go/fs/dateTime"
 	"github.com/farseer-go/fs/exception"
 	"github.com/farseer-go/mapper"
-	"strings"
 )
 
 // 任务组列表
@@ -103,6 +105,21 @@ func SetEnable(taskGroupName string, enable bool, taskGroupRepository taskGroup.
 	taskGroupDO := taskGroupRepository.ToEntity(taskGroupName)
 	taskGroupDO.SetEnable(enable)
 	taskGroupRepository.Save(taskGroupDO)
+	// 发到所有节点上
+	_ = container.Resolve[core.IEvent]("TaskGroupUpdate").Publish(taskGroupDO)
+}
+
+// 任务组立即执行
+// @post executeNow
+func TaskGroupExecuteNow(taskGroupName string, taskGroupRepository taskGroup.Repository) {
+	// 判断任务组是否存在
+	taskGroupDO := taskGroupRepository.ToEntity(taskGroupName)
+	exception.ThrowWebExceptionBool(taskGroupDO.IsNil(), 403, "任务组不存在")
+
+	// 修改 nextAt 字段为当前时间
+	taskGroupDO.NextAt = dateTime.Now()
+	taskGroupRepository.Save(taskGroupDO)
+
 	// 发到所有节点上
 	_ = container.Resolve[core.IEvent]("TaskGroupUpdate").Publish(taskGroupDO)
 }

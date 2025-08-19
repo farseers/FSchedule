@@ -36,7 +36,8 @@ type DomainObject struct {
 }
 
 func New(name string, caption string, ver int, strCron string, data collections.Dictionary[string, string], startAt int64, enable bool) DomainObject {
-	do := DomainObject{Ver: ver - 1}
+	// ver - 1，保证UpdateVer的逻辑认定为新版本
+	do := DomainObject{Ver: ver - 1, IsEnable: true}
 	do.UpdateVer(name, caption, ver, strCron, data, startAt, enable)
 	return do
 }
@@ -51,7 +52,10 @@ func (receiver *DomainObject) UpdateVer(name string, caption string, ver int, st
 		receiver.Cron = strCron
 		receiver.StartAt = dateTime.NewUnix(startAt)
 		receiver.NeedSave = true
-		receiver.IsEnable = enable
+		// 如果任务组已在FOPS停止，则不做变更
+		if receiver.IsEnable {
+			receiver.IsEnable = enable
+		}
 		receiver.Data = data
 
 		if enable {

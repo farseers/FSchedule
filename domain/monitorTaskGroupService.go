@@ -303,7 +303,10 @@ func (receiver *TaskGroupMonitor) TaskKill() {
 // 通知
 func (receiver *TaskGroupMonitor) Notify() {
 	flog.Infof("任务组：%s 收到手动更新请求", receiver.Name)
-	receiver.updated <- struct{}{}
+	// 当客户端IsMaster=true，代表当前任务组正在执行，所以才要发消息，否则会导致chan队列撑满
+	if receiver.Client != nil && receiver.Client.IsMaster {
+		receiver.updated <- struct{}{}
+	}
 }
 
 // TaskGroupEnableCount 返回开启状态的任务组

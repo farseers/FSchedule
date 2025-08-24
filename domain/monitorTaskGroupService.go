@@ -224,21 +224,26 @@ func (receiver *TaskGroupMonitor) waitScheduler() {
 	select {
 	// 任务组停止，或删除时退出
 	case <-receiver.Client.Ctx.Done():
+		timer.Stop()
 		return
 	case <-receiver.updated:
 		timer.Stop()
 	case <-timer.C:
+		timer.Stop()
 		// 提前了100ms进到这里。
 		receiver.Task.SetScheduling()
 		// 调度
 		receiver.schedulerEvent()
+	// 如果receiver.Task.StartAt时间过长，将导致时间计算不精准，这里做一个保护，相当于x分钟后，重新计算等待时间
+	case <-time.After(3 * time.Minute):
+		timer.Stop()
 	}
 }
 
 // SchedulerEvent 任务调度
 func (receiver *TaskGroupMonitor) schedulerEvent() {
 	taskGroupRepository := container.Resolve[taskGroup.Repository]()
-	//clientRepository := container.Resolve[client.Repository]()
+	clientRepository := container.Resolve[client.Repository]()
 
 	if !receiver.CanScheduler() {
 		flog.Debugf("任务组：%s 条件不满足无法调度", receiver.Name)
@@ -246,7 +251,6 @@ func (receiver *TaskGroupMonitor) schedulerEvent() {
 		return
 	}
 
-	// 轮询的方式取到客户端
 	// 没有可调度的客户端
 	if receiver.Client == nil || receiver.Client.IsClose() {
 		flog.Debugf("任务组：%s 客户端已断开连接，无法调度", receiver.Name)
@@ -262,7 +266,7 @@ func (receiver *TaskGroupMonitor) schedulerEvent() {
 		receiver.Task.ScheduleSuccess(mapper.Single[taskGroup.ClientVO](receiver.Client))
 		_ = container.Resolve[redis.IClient]("default").Transaction(func() {
 			taskGroupRepository.SaveAndTask(*receiver.DomainObject)
-			//clientRepository.Save(*receiver.Client)
+			clientRepository.Save(*receiver.Client)
 		})
 		return
 	}
@@ -271,7 +275,7 @@ func (receiver *TaskGroupMonitor) schedulerEvent() {
 	receiver.Task.ScheduleFail(fmt.Sprintf("请求客户端%s（%s）：%s:%d失败:%s", receiver.Client.Name, receiver.Client.Id, receiver.Client.Ip, receiver.Client.Port, err.Error()))
 	_ = container.Resolve[redis.IClient]("default").Transaction(func() {
 		taskGroupRepository.Save(*receiver.DomainObject)
-		//clientRepository.Save(*receiver.Client)
+		clientRepository.Save(*receiver.Client)
 	})
 }
 

@@ -112,6 +112,9 @@ func (receiver *TaskEO) UpdateTaskStatus(status executeStatus.Enum, remark strin
 	}
 
 	if remark != "" {
+		if len(remark) > 2048 {
+			remark = remark[:2048]
+		}
 		receiver.Remark = remark
 	}
 

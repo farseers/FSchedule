@@ -3,9 +3,10 @@ package model
 import (
 	"FSchedule/domain/enum/executeStatus"
 	"FSchedule/domain/enum/scheduleStatus"
+	"time"
+
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/data"
-	"time"
 )
 
 type TaskPO struct {
@@ -24,7 +25,7 @@ type TaskPO struct {
 	ScheduleStatus scheduleStatus.Enum                    `gorm:"type:tinyint;not null;comment:调度状态;"`
 	SchedulerAt    time.Time                              `gorm:"type:timestamp;size:6;not null;comment:调度时间"`
 	Data           collections.Dictionary[string, string] `gorm:"type:string;size:2048;json;not null;comment:本次执行任务时的Data数据"`
-	Remark         string                                 `gorm:"size:1024;not null;comment:备注"`
+	Remark         string                                 `gorm:"size:2048;not null;comment:备注"`
 	StartAt        time.Time                              `gorm:"type:timestamp;size:6;not null;comment:开始时间"`
 	RunAt          time.Time                              `gorm:"type:timestamp;size:6;not null;comment:实际执行时间"`
 	FinishAt       time.Time                              `gorm:"type:timestamp;size:6;not null;comment:完成时间;"`

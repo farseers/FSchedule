@@ -40,6 +40,9 @@ func (receiver *TaskEO) SetJobName(name string) {
 // SetFail 设为失败
 func (receiver *TaskEO) SetFail(remark string) {
 	receiver.ExecuteStatus = executeStatus.Fail
+	if len(remark) > 2048 {
+		remark = remark[:2048]
+	}
 	receiver.Remark = remark
 }
 
@@ -52,6 +55,9 @@ func (receiver *TaskEO) SetScheduling() {
 func (receiver *TaskEO) ScheduleFail(remark string) {
 	receiver.ScheduleStatus = scheduleStatus.Fail
 	receiver.ExecuteStatus = executeStatus.Fail
+	if len(remark) > 2048 {
+		remark = remark[:2048]
+	}
 	receiver.Remark = remark
 }
 

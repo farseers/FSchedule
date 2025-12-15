@@ -107,11 +107,11 @@ func (receiver *taskGroupRepository) Sync() {
 
 	container.Resolve[core.ITransaction]("default").Transaction(func() {
 		// 更新任务组
-		context.MysqlContextIns("批量更新任务组列表").TaskGroup.UpdateOrInsertListByPrimary(lstSaveTaskGroup)
+		context.MysqlContextIns("批量更新任务组列表").TaskGroup.UpdateOrInsertListByPrimary(lstSaveTaskGroup, 1000)
 
 		// 写入任务列表
 		if lstSaveTask.Count() > 0 {
-			context.MysqlContextIns("批量更新任务列表").Task.UpdateOrInsertListByPrimary(lstSaveTask)
+			context.MysqlContextIns("批量更新任务列表").Task.UpdateOrInsertListByPrimary(lstSaveTask, 1000)
 
 			// 将当前已保存的任务，清除缓存
 			container.Resolve[redis.IClient]("default").Pipeline(func() {

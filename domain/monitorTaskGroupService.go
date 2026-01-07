@@ -85,6 +85,7 @@ func MonitorTaskGroupPush(clientDO *client.DomainObject, taskGroupDO *taskGroup.
 	} else {
 		// 之前是运行状态，改为停止状态，则需要退出调度线程
 		needKill := taskGroupMonitor.IsEnable && !taskGroupDO.IsEnable
+		// todo: 如果当前正在调度中，这里是否会把状态给覆盖掉？
 		*taskGroupMonitor.DomainObject = *taskGroupDO
 		taskGroupMonitor.updated <- struct{}{}
 		if needKill {
@@ -95,6 +96,7 @@ func MonitorTaskGroupPush(clientDO *client.DomainObject, taskGroupDO *taskGroup.
 }
 
 // Start 监听任务组
+// 注意，拿到控制权后，这里的任务组对象则常驻到进程内存，所以外部对任务组的修改，需要通过MonitorTaskGroupPush方法推送进来
 func (receiver *TaskGroupMonitor) Start() {
 	// 抢占锁，谁抢到，谁负责这个任务组的调度（只允许一个集群节点监控任务组）
 	receiver.ScheduleRepository.Schedule(receiver.Name, func() {
@@ -116,14 +118,29 @@ func (receiver *TaskGroupMonitor) Start() {
 		}()
 
 		// 有可能原节点挂了，由另外节点继续接管，所以需要重新取到最新的对象（因为现在取消了任务组数据的实时订阅发送）
-		if receiver.DomainObject == nil { // 这里有可能为nil
+		if receiver.Client == nil { // 这里有可能为nil
+			flog.Warningf("任务组：%s ver:%s 出现了Client = nil，现退出调度", color.Blue(receiver.Name), color.Yellow(receiver.Ver))
 			return
 		}
+
+		// 前面客户端刚退出，又有新的注册进来时，会出现并发导致。在退出时已经把receiver.DomainObject设为nil
+		if receiver.DomainObject == nil {
+			flog.Warningf("任务组：%s ver:%s 客户端：%s  出现了DomainObject = nil，现出新加载到taskGroupList", color.Blue(receiver.Name), color.Yellow(receiver.Ver), receiver.Client.Id)
+			receiver.DomainObject = new(taskGroup.DomainObject)
+		}
+
+		if !taskGroupList.ContainsKey(receiver.Client.Id) {
+			// 这里需要重新加进来，有可能并发的时候，已经退出来了
+			taskGroupList.Add(receiver.Client.Id, receiver)
+			flog.Warningf("任务组：%s ver:%s 客户端：%s  不在taskGroupList列表中，重新加载进来", color.Blue(receiver.Name), color.Yellow(receiver.Ver), receiver.Client.Id)
+		}
+
+		// 第一次进来，重新取最新的数据，这里有个20秒的时间差
 		*receiver.DomainObject = taskGroupRepository.ToEntity(receiver.Name)
 		receiver.Client.IsMaster = true
 		container.Resolve[client.Repository]().Save(*receiver.Client)
 
-		// 重新连接进来时，有可能上一次的任务执行了一半。因此这里要做检查
+		// 重新连接进来时，有可能上一次的任务执行了一半。因此这里要做检查 11399 9890
 		if receiver.Task.ScheduleStatus != scheduleStatus.None {
 			receiver.Task.SetFail("客户端重连，强制取消上次未执行的任务")
 			receiver.taskFinish()

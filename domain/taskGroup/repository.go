@@ -30,6 +30,7 @@ type Repository interface {
 
 type TaskRepository interface {
 	ToTaskSpeedList() collections.List[TaskEO]                           // ToTaskSpeedList 当前任务组下所有任务的执行速度
+	GetTaskGroupAvgSpeed(taskGroupName string) int64                     // GetTaskGroupAvgSpeed 获取指定任务组的平均耗时
 	TaskClearFinish(taskGroupName string, taskId int64)                  // TaskClearFinish 清除成功的任务记录（1天前）
 	GetLastFinishTaskId(reservedTaskCount int) (map[string]int64, error) // 获取已完成的任务TaskId
 	// *******************仪表盘使用*********************

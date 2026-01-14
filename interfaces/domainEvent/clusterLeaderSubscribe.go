@@ -50,8 +50,8 @@ func ClusterLeaderSubscribe(message any, _ core.EventArgs) {
 		// 移除30秒不活跃的
 		tasks.Run("ServerNodeTimeoutJob", 30*time.Second, job.ServerNodeTimeoutJob, context.Background())
 
-		// 计算任务组的平均耗时
-		tasks.Run("SyncAvgSpeedJob", 30*time.Minute, job.SyncAvgSpeedJob, context.Background())
+		// 计算任务组的平均耗时（已废弃：改为每个TaskGroupMonitor独立异步计算，避免并发覆盖问题）
+		// tasks.Run("SyncAvgSpeedJob", 30*time.Minute, job.SyncAvgSpeedJob, context.Background())
 
 		// 自动清除历史任务记录
 		if configure.GetInt("FSchedule.ReservedTaskCount") > 0 {

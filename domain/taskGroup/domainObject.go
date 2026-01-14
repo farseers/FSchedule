@@ -246,3 +246,10 @@ func (receiver *DomainObject) SetEnable(enable bool) {
 func (receiver *DomainObject) NeverSetNextAt() bool {
 	return receiver.NextAt.UnixMilli() == receiver.Task.StartAt.UnixMilli()
 }
+
+// UpdateRunSpeedAvg 更新运行平均耗时（基于最近3天的任务统计）
+func (receiver *DomainObject) UpdateRunSpeedAvg(avgSpeed int64) {
+	if avgSpeed > 0 {
+		receiver.RunSpeedAvg = avgSpeed
+	}
+}

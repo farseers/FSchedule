@@ -114,6 +114,14 @@ func (receiver *taskRepository) ToTaskSpeedList() collections.List[taskGroup.Tas
 	return mapper.ToList[taskGroup.TaskEO](lstPO)
 }
 
+// GetTaskGroupAvgSpeed 获取指定任务组的平均耗时（基于最近3天的成功任务）
+func (receiver *taskRepository) GetTaskGroupAvgSpeed(taskGroupName string) int64 {
+	sql := "SELECT CAST(IFNULL(avg(`run_speed`), 0) as UNSIGNED) FROM `fschedule_task` WHERE name = ? AND execute_status = ? AND create_at >= DATE_SUB(CURDATE(), INTERVAL 3 DAY)"
+	var avgSpeed int64
+	_, _ = context.MysqlContextIns("计算指定任务组平均耗时").ExecuteSqlToValue(&avgSpeed, sql, taskGroupName, executeStatus.Success)
+	return avgSpeed
+}
+
 // TaskClearFinish 清除成功的任务记录（1天前）
 func (receiver *taskRepository) TaskClearFinish(taskGroupName string, taskId int64) {
 	_, _ = context.MysqlContextIns("清除成功的任务记录").Task.Where("name = ? and (execute_status = ? or execute_status = ?) and create_at < ? and Id < ?", taskGroupName, executeStatus.Success, executeStatus.Fail, time.Now().Add(-24*time.Hour), taskId).Delete()

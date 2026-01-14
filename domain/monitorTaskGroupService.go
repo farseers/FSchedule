@@ -64,6 +64,7 @@ type TaskGroupMonitor struct {
 	ScheduleRepository schedule.Repository  // 锁
 	Client             *client.DomainObject // 客户端
 	updated            chan struct{}        // 数据有更新，让流程重置
+	stopAvgCalc        chan struct{}        // 停止平均耗时计算
 }
 
 // MonitorTaskGroupPush 将最新的任务组信息，推送到监控线程
@@ -76,11 +77,12 @@ func MonitorTaskGroupPush(clientDO *client.DomainObject, taskGroupDO *taskGroup.
 		taskGroupMonitor = container.ResolveIns(&TaskGroupMonitor{
 			DomainObject: taskGroupDO,
 			updated:      make(chan struct{}, 1000),
+			stopAvgCalc:  make(chan struct{}),
 			Client:       clientDO,
 		})
 		taskGroupList.Add(clientDO.Id, taskGroupMonitor)
 
-		// 开启协程
+		// 开启协程（注意：StartAvgSpeedCalculator 会在 Start 内部抢到锁后启动）
 		go taskGroupMonitor.Start()
 	} else {
 		// 之前是运行状态，改为停止状态，则需要退出调度线程
@@ -104,6 +106,9 @@ func (receiver *TaskGroupMonitor) Start() {
 
 		// 退出时，移除监控
 		defer func() {
+			// 停止平均耗时计算协程
+			close(receiver.stopAvgCalc)
+
 			// 如果任务组的状态是进行中，则要强制失败
 			if receiver.Task.ScheduleStatus != scheduleStatus.None && !receiver.Task.IsFinish() {
 				receiver.ReportFail("客户端下线了", taskGroupRepository)
@@ -147,6 +152,10 @@ func (receiver *TaskGroupMonitor) Start() {
 		}
 
 		flog.Infof("任务组：%s ver:%s 加入调度线程", color.Blue(receiver.Name), color.Yellow(receiver.Ver))
+
+		// 启动异步统计平均耗时的协程
+		go receiver.StartAvgSpeedCalculator()
+
 		for {
 			// 清空更新队列
 			receiver.updated = make(chan struct{}, 1000)
@@ -340,4 +349,32 @@ func TaskGroupEnableCount() int {
 // TaskGroupCount 返回当前正在监控的任务组数量
 func TaskGroupCount() int {
 	return taskGroupList.Count()
+}
+
+// StartAvgSpeedCalculator 启动异步统计平均耗时的协程
+func (receiver *TaskGroupMonitor) StartAvgSpeedCalculator() {
+	ticker := time.NewTicker(30 * time.Minute) // 每30分钟统计一次
+	defer ticker.Stop()
+
+	taskGroupRepository := container.Resolve[taskGroup.Repository]()
+
+	for {
+		select {
+		case <-receiver.stopAvgCalc:
+			flog.Debugf("任务组：%s 停止平均耗时计算协程", receiver.Name)
+			return
+		case <-receiver.Client.Ctx.Done():
+			flog.Debugf("任务组：%s 客户端断开，停止平均耗时计算协程", receiver.Name)
+			return
+		case <-ticker.C:
+			// 异步计算平均耗时
+			// 获取当前任务组最近3天的平均耗时
+			avgSpeed := taskGroupRepository.GetTaskGroupAvgSpeed(receiver.Name)
+			if avgSpeed > 0 {
+				// 直接更新内存中的对象，不触发保存
+				receiver.UpdateRunSpeedAvg(avgSpeed)
+				flog.Debugf("任务组：%s 更新平均耗时：%d ms", receiver.Name, avgSpeed)
+			}
+		}
+	}
 }

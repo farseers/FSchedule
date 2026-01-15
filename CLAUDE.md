@@ -22,3 +22,8 @@ FSchedule运行的是调度逻辑，到达时间节点时，会通知你的应�
 每个任务组，即taskGroup.DomainObject对象，由monitorTaskGroupService.go负责跟踪。
 
 拿到锁的实例负责同步这个对象到Redis
+
+## 客户端注册
+客户端首次注册进来时，会通过wss调用./application/ws/Connect -> ./domain/MonitorTaskGroupPush 函数
+
+注册后会与服务端保持长连接模式，直接通过wss协议来发送或接收消息，而不需要每次都重新访问ws.Connect函数。

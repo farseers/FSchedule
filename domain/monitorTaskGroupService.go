@@ -246,7 +246,7 @@ func (receiver *TaskGroupMonitor) waitStart() {
 // 等待调度
 func (receiver *TaskGroupMonitor) waitScheduler() {
 	// 由于创建锁的时候，需要网络IO开销，所以这里提前100ms进入
-	timer := timingWheel.AddTime(receiver.Task.StartAt.AddMillisecond(-500).ToTime())
+	timer := timingWheel.AddTime(receiver.Task.StartAt.AddMillisecond(-3000).ToTime())
 	select {
 	// 任务组停止，或删除时退出
 	case <-receiver.Client.Ctx.Done():

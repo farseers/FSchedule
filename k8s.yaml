@@ -83,7 +83,7 @@ metadata:
     traefik.ingress.kubernetes.io/router.tls: "true"
 spec:
   rules:
-    - host: fschedule.fsgit.cc # 内网则可以直接使用Service
+    - host: fschedule.xxx.xxx # 内网则可以直接使用Service
       http:
         paths:
           - path: /

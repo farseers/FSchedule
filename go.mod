@@ -2,8 +2,6 @@ module FSchedule
 
 go 1.23.0
 
-toolchain go1.23.3
-
 require (
 	github.com/farseer-go/cache v0.17.1
 	github.com/farseer-go/collections v0.17.1

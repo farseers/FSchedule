@@ -141,7 +141,7 @@ chmod +x fschedule-server
 
 ## 客户端使用方式
 ### go
-[go接入档](https://farseer-go.gitee.io/#/fSchedule/client/go)
+[go接入文档](https://farseer-go.github.io/doc/#/fSchedule/client/go)
 > 包：`"github.com/farseer-go/fSchedule"`
 >
 > 模块：`fSchedule.Module`

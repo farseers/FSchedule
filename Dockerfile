@@ -1,7 +1,7 @@
 FROM alpine:latest
 WORKDIR /app
 # 复制配置（没有配置需要注释掉）
-COPY /FSchedule/farseer.yaml .
+COPY /FSchedule/config.yaml .
 COPY /FSchedule/FSchedule .
 
 #设置时区

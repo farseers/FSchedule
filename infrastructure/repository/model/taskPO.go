@@ -46,6 +46,7 @@ func (*TaskPO) CreateIndex() map[string]data.IdxField {
 			(execute_status = ? or execute_status = ?) and (create_at >= ?)
 			execute_status = ? and create_at >= ?
 		*/
-		"idx_name_status_create": {false, "create_at desc,execute_status,name"},
+		"idx_name_status_create":   {false, "create_at desc,execute_status,name"},
+		"idx_create_client_status": {false, "create_at, client_name, execute_status"},
 	}
 }

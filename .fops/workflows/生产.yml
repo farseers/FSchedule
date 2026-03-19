@@ -1,6 +1,7 @@
 name: build
 jobs:
   clusterId: 4
+  autoTag: true # 构建成功后,是否为应用自动打上tag
   build:
     runs-on: steden88/cicd:3.0-npm # 工作流运行的环境
     env:

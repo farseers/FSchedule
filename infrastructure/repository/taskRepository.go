@@ -98,7 +98,7 @@ func (receiver *taskRepository) DeleteTask(taskGroupName string) {
 }
 
 func (receiver *taskRepository) ToHistoryTaskList(clientName, taskGroupName string, scheduleStatus scheduleStatus.Enum, executeStatus executeStatus.Enum, taskId string, pageSize int, pageIndex int) collections.PageList[taskGroup.TaskEO] {
-	ts := context.MysqlContextIns("获取任务Task列表").Task.Desc("create_at")
+	ts := context.MysqlContextIns("获取任务Task列表").Task.Desc("start_at")
 	ts = ts.WhereIf(taskGroupName != "", "name = ?", taskGroupName)
 	ts = ts.WhereIf(clientName != "", "client_name = ?", clientName)
 	ts = ts.WhereIf(scheduleStatus > -1, "schedule_status = ?", scheduleStatus)

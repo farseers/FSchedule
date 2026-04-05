@@ -8,14 +8,15 @@ import (
 	"FSchedule/domain/enum/scheduleStatus"
 	"FSchedule/domain/taskGroup"
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs/container"
 	"github.com/farseer-go/fs/core"
 	"github.com/farseer-go/fs/dateTime"
 	"github.com/farseer-go/fs/exception"
 	"github.com/farseer-go/mapper"
-	"strings"
-	"time"
 )
 
 // 任务列表
@@ -28,7 +29,7 @@ func TaskList(clientName, taskGroupName string, scheduleStatus scheduleStatus.En
 		pageIndex = 1
 	}
 	lst := taskGroupRepository.ToHistoryTaskList(clientName, taskGroupName, scheduleStatus, executeStatus, taskId, pageSize, pageIndex)
-	return mapper.ToPageList[response.TaskResponse](lst, func(r *response.TaskResponse, a any) {
+	return mapper.ToPageList(lst, func(r *response.TaskResponse, a any) {
 		r.RunSpeed = (time.Duration(a.(taskGroup.TaskEO).RunSpeed) * time.Millisecond).String()
 	})
 }
@@ -56,7 +57,7 @@ func TaskPlanList(top int, taskGroupRepository taskGroup.Repository) collections
 		return item.Task
 	})
 
-	return mapper.ToList[response.TaskPlanResponse](lstTask, func(r *response.TaskPlanResponse, source any) {
+	return mapper.ToList(lstTask, func(r *response.TaskPlanResponse, source any) {
 		startAt := source.(taskGroup.TaskEO).StartAt
 		schedulerAt := source.(taskGroup.TaskEO).SchedulerAt
 		isAfter := startAt.After(dateTime.Now())

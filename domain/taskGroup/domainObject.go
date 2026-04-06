@@ -74,7 +74,8 @@ func (receiver *DomainObject) UpdateVer(name string, caption string, ver int, st
 		}
 	}
 
-	if enable && receiver.Task.IsNull() {
+	// 仅在服务端未停止该任务组的情况下，才允许客户端触发 CreateTask
+	if enable && receiver.IsEnable && receiver.Task.IsNull() {
 		receiver.CreateTask()
 		receiver.NeedSave = true
 	}

@@ -89,7 +89,21 @@ func MonitorTaskGroupPush(clientDO *client.DomainObject, taskGroupDO *taskGroup.
 		needKill := taskGroupMonitor.IsEnable && !taskGroupDO.IsEnable
 		// todo: 如果当前正在调度中，这里是否会把状态给覆盖掉？
 		*taskGroupMonitor.DomainObject = *taskGroupDO
-		taskGroupMonitor.updated <- struct{}{}
+
+		// 客户端重启后 clientId（IP:Port）相同，但 websocket 连接是新的。
+		// 若旧连接已断开，则用新 clientDO 替换并重新启动调度协程，
+		// 防止旧协程退出后 Client 被置 nil，导致永久无法调度。
+		if taskGroupMonitor.Client == nil || taskGroupMonitor.Client.IsClose() {
+			flog.Infof("任务组：%s 客户端 %s 重连，替换旧连接并重启调度协程", color.Blue(taskGroupDO.Name), clientDO.Id)
+			taskGroupMonitor.Client = clientDO
+			// 重置通道，避免旧信号干扰新协程
+			taskGroupMonitor.updated = make(chan struct{}, 1000)
+			taskGroupMonitor.stopAvgCalc = make(chan struct{})
+			go taskGroupMonitor.Start()
+		} else {
+			taskGroupMonitor.updated <- struct{}{}
+		}
+
 		if needKill {
 			// 主动通知客户端，停止任务
 			taskGroupMonitor.TaskKill()
@@ -117,8 +131,13 @@ func (receiver *TaskGroupMonitor) Start() {
 			if receiver.Client == nil {
 				flog.Errorf("任务组：%s ver:%s 退出调度线程时 client = nil", color.Blue(receiver.Name), color.Yellow(receiver.Ver))
 			} else {
-				flog.Infof("任务组：%s ver:%s 客户端：%s 退出调度线程", color.Blue(receiver.Name), color.Yellow(receiver.Ver), receiver.Client.Id)
-				RemoveMonitorClient(receiver.Client.Id)
+				clientId := receiver.Client.Id
+				flog.Infof("任务组：%s ver:%s 客户端：%s 退出调度线程", color.Blue(receiver.Name), color.Yellow(receiver.Ver), clientId)
+				// 只有当 taskGroupList 里仍然是本 Monitor 时才移除，
+				// 防止把新注册进来的同名客户端 Monitor 误清除
+				if taskGroupList.GetValue(clientId) == receiver {
+					RemoveMonitorClient(clientId)
+				}
 			}
 		}()
 

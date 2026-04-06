@@ -15,6 +15,7 @@ import (
 	"github.com/farseer-go/fs/core"
 	"github.com/farseer-go/fs/dateTime"
 	"github.com/farseer-go/fs/exception"
+	"github.com/farseer-go/fs/parse"
 	"github.com/farseer-go/mapper"
 )
 
@@ -131,6 +132,6 @@ func getTaskGroupClientList(taskGroupName string, lstClient collections.List[cli
 	}).ToList()
 
 	return lstClient.OrderByDescending(func(item client.DomainObject) any {
-		return item.IsMaster
+		return parse.ToString(parse.ToInt(item.IsMaster)) + item.Id
 	}).ToList()
 }

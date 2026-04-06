@@ -38,7 +38,14 @@ const tokenName = "FSS-ACCESS-TOKEN"
 func Connect(wsContext *websocket.Context[request], clientRepository client.Repository, taskGroupRepository taskGroup.Repository, taskLogRepository taskLog.Repository) {
 	// 新的客户端连接进来，首先会接收一个注册请求
 	req := wsContext.Receiver()
-	req.Registry.ClientIp, req.Registry.ClientPort = wsContext.HttpContext.URI.GetRealIpPort()
+
+	var clientIP string
+	clientIP, req.Registry.ClientPort = wsContext.HttpContext.URI.GetRealIpPort()
+	// 受限于代理的一些设置，可能无法获取到真实IP地址，所以优先使用注册请求里传入的IP地址
+	if req.Registry.ClientIp == "" {
+		req.Registry.ClientIp = clientIP
+	}
+
 	clientId := fmt.Sprintf("%s:%d", req.Registry.ClientIp, req.Registry.ClientPort)
 
 	// 客户端注册

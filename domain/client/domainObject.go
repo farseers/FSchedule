@@ -71,8 +71,11 @@ func (receiver *DomainObject) TrySchedule(task TaskEO) error {
 
 // 通知客户端，停止任务
 func (receiver *DomainObject) Kill(taskId int64) {
+	flog.Infof("c")
 	if receiver.websocketContext != nil {
+		flog.Infof("d")
 		if err := receiver.websocketContext.Send(map[string]any{"Type": 1, "Task": TaskEO{Id: taskId}}); err != nil {
+			flog.Infof("e")
 			flog.Warningf("向客户端%s（%s）：%s:%d 停止任务时失败：%s", receiver.Name, receiver.Id, receiver.Ip, receiver.Port, err.Error())
 		}
 	}

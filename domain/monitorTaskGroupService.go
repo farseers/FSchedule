@@ -302,8 +302,10 @@ func (receiver *TaskGroupMonitor) taskFinish() {
 
 // 主动通知客户端，停止任务
 func (receiver *TaskGroupMonitor) TaskKill() {
+	flog.Infof("a")
 	// FOPS发起Kill请求
 	if receiver.Client != nil {
+		flog.Infof("b")
 		receiver.Client.Kill(receiver.Task.Id)
 	}
 }

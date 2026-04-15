@@ -335,6 +335,12 @@ func (receiver *TaskGroupMonitor) taskFinish() {
 	// 先保存任务内容
 	taskGroupRepository.SaveTask(receiver.Task)
 
+	// 任务组已停用，只保存任务结果，不计算下一个周期，避免覆盖停用状态
+	if !receiver.IsEnable {
+		taskGroupRepository.Save(*receiver.DomainObject)
+		return
+	}
+
 	// 计算下一个周期
 	if receiver.CalculateNextAtByCron() {
 		// 任务初始化

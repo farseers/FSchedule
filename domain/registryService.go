@@ -3,8 +3,10 @@ package domain
 import (
 	"FSchedule/domain/client"
 	"FSchedule/domain/taskGroup"
+
 	"github.com/farseer-go/collections"
 	"github.com/farseer-go/fs/exception"
+	"github.com/farseer-go/fs/parse"
 	"github.com/farseer-go/mapper"
 	"github.com/farseer-go/webapi/websocket"
 )
@@ -34,6 +36,21 @@ func Registry(websocketContext *websocket.BaseContext, clientId string, dto Regi
 	_, err := taskGroup.StandardParser.Parse(dto.Job.Cron)
 	if err != nil {
 		exception.ThrowWebExceptionf(403, "任务组:%s %s，Cron格式[%s]错误:%s", dto.Job.Name, dto.Job.Caption, dto.Job.Cron, err.Error())
+	}
+
+	// 确保ID是唯一的
+	if GetTaskGroupMonitor(clientId) != nil {
+		for i := 0; i < 100; i++ {
+			newClientId := clientId + "_" + parse.ToString(i+1)
+			if GetTaskGroupMonitor(newClientId) == nil {
+				clientId = newClientId
+				break
+			}
+		}
+	}
+
+	if GetTaskGroupMonitor(clientId) != nil {
+		exception.ThrowWebExceptionf(403, "任务组:%s %s，客户端ID: %s 重复,无法再注册", dto.Job.Name, dto.Job.Caption, clientId)
 	}
 
 	// 新增 或 修改任务组

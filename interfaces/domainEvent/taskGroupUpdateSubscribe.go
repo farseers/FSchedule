@@ -27,6 +27,7 @@ func TaskGroupUpdateSubscribe(message any, _ core.EventArgs) {
 	lstTaskGroupMonitor := domain.GetTaskGroupMonitorByName(taskGroupDO.Name)
 	if lstTaskGroupMonitor.Count() == 0 {
 		flog.Infof("收到更新请求,任务组: %s ,但当前节点没有任务组的监控列表", taskGroupDO.Name)
+		return
 	}
 
 	lstTaskGroupMonitor.Foreach(func(item **domain.TaskGroupMonitor) {

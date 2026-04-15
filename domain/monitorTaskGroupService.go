@@ -30,17 +30,16 @@ func GetTaskGroupMonitor(clientId string) *TaskGroupMonitor {
 // 找到该任务组的监控
 func GetTaskGroupMonitorByName(taskGroupName string) collections.List[*TaskGroupMonitor] {
 	lst := taskGroupList.Values()
-	lst.RemoveAll(func(item *TaskGroupMonitor) bool {
-		return item.Name != taskGroupName
-	})
-	return lst
+	return lst.Where(func(item *TaskGroupMonitor) bool {
+		return item.Name == taskGroupName
+	}).ToList()
 }
 
 // 移除单个客户端任务组监控
 func RemoveMonitorClient(clientId string) {
-	taskGroupMonitor := GetTaskGroupMonitor(clientId)
-	taskGroupList.Remove(clientId)
-	if taskGroupMonitor != nil {
+	defer taskGroupList.Remove(clientId)
+
+	if taskGroupMonitor := GetTaskGroupMonitor(clientId); taskGroupMonitor != nil {
 		if taskGroupMonitor.Client != nil {
 			taskGroupMonitor.Client.Close()
 			taskGroupMonitor.Client.IsMaster = false
@@ -69,102 +68,53 @@ type TaskGroupMonitor struct {
 
 // MonitorTaskGroupPush 将最新的任务组信息，推送到监控线程
 func MonitorTaskGroupPush(clientDO *client.DomainObject, taskGroupDO *taskGroup.DomainObject) {
-	taskGroupMonitor := GetTaskGroupMonitor(clientDO.Id)
+	// 加入到任务组监控列表
+	taskGroupMonitor := container.ResolveIns(&TaskGroupMonitor{
+		DomainObject: taskGroupDO,
+		updated:      make(chan struct{}, 1000),
+		stopAvgCalc:  make(chan struct{}),
+		Client:       clientDO,
+	})
+	taskGroupList.Add(clientDO.Id, taskGroupMonitor)
 
-	// 新接入的任务组
-	if taskGroupMonitor == nil {
-		// 加入到任务组监控列表
-		taskGroupMonitor = container.ResolveIns(&TaskGroupMonitor{
-			DomainObject: taskGroupDO,
-			updated:      make(chan struct{}, 1000),
-			stopAvgCalc:  make(chan struct{}),
-			Client:       clientDO,
-		})
-		taskGroupList.Add(clientDO.Id, taskGroupMonitor)
-
-		// 开启协程（注意：StartAvgSpeedCalculator 会在 Start 内部抢到锁后启动）
-		go taskGroupMonitor.Start()
-	} else {
-		// 之前是运行状态，改为停止状态，则需要退出调度线程
-		needKill := taskGroupMonitor.IsEnable && !taskGroupDO.IsEnable
-		// todo: 如果当前正在调度中，这里是否会把状态给覆盖掉？
-		*taskGroupMonitor.DomainObject = *taskGroupDO
-
-		// 客户端重启后 clientId（IP:Port）相同，但 websocket 连接是新的。
-		// 若旧连接已断开，则用新 clientDO 替换并重新启动调度协程，
-		// 防止旧协程退出后 Client 被置 nil，导致永久无法调度。
-		if taskGroupMonitor.Client == nil || taskGroupMonitor.Client.IsClose() {
-			flog.Infof("任务组：%s 客户端 %s 重连，替换旧连接并重启调度协程", color.Blue(taskGroupDO.Name), clientDO.Id)
-			taskGroupMonitor.Client = clientDO
-			// 重置通道，避免旧信号干扰新协程
-			taskGroupMonitor.updated = make(chan struct{}, 1000)
-			taskGroupMonitor.stopAvgCalc = make(chan struct{})
-			go taskGroupMonitor.Start()
-		} else {
-			taskGroupMonitor.updated <- struct{}{}
-		}
-
-		if needKill {
-			// 主动通知客户端，停止任务
-			taskGroupMonitor.TaskKill()
-		}
-	}
+	// 开启协程（注意：StartAvgSpeedCalculator 会在 Start 内部抢到锁后启动）
+	go taskGroupMonitor.Start()
 }
 
 // Start 监听任务组
 // 注意，拿到控制权后，这里的任务组对象则常驻到进程内存，所以外部对任务组的修改，需要通过MonitorTaskGroupPush方法推送进来
 func (receiver *TaskGroupMonitor) Start() {
 	// 抢占锁，谁抢到，谁负责这个任务组的调度（只允许一个集群节点监控任务组）
-	receiver.ScheduleRepository.Schedule(receiver.Name, func() {
+	receiver.ScheduleRepository.Schedule(receiver.Client.Ctx, receiver.Name, func() {
 		taskGroupRepository := container.Resolve[taskGroup.Repository]()
 
 		// 退出时，移除监控
 		defer func() {
 			// 停止平均耗时计算协程
 			close(receiver.stopAvgCalc)
+			close(receiver.updated)
 
 			// 如果任务组的状态是进行中，则要强制失败
 			if receiver.Task.ScheduleStatus != scheduleStatus.None && !receiver.Task.IsFinish() {
 				receiver.ReportFail("客户端下线了", taskGroupRepository)
 				receiver.taskFinish()
 			}
+
 			if receiver.Client == nil {
 				flog.Errorf("任务组：%s ver:%s 退出调度线程时 client = nil", color.Blue(receiver.Name), color.Yellow(receiver.Ver))
 			} else {
 				clientId := receiver.Client.Id
 				flog.Infof("任务组：%s ver:%s 客户端：%s 退出调度线程", color.Blue(receiver.Name), color.Yellow(receiver.Ver), clientId)
-				// 只有当 taskGroupList 里仍然是本 Monitor 时才移除，
-				// 防止把新注册进来的同名客户端 Monitor 误清除
-				if taskGroupList.GetValue(clientId) == receiver {
-					RemoveMonitorClient(clientId)
-				}
+				RemoveMonitorClient(clientId)
 			}
 		}()
-
-		// 有可能原节点挂了，由另外节点继续接管，所以需要重新取到最新的对象（因为现在取消了任务组数据的实时订阅发送）
-		if receiver.Client == nil { // 这里有可能为nil
-			flog.Warningf("任务组：%s ver:%s 出现了Client = nil，现退出调度", color.Blue(receiver.Name), color.Yellow(receiver.Ver))
-			return
-		}
-
-		// 前面客户端刚退出，又有新的注册进来时，会出现并发导致。在退出时已经把receiver.DomainObject设为nil
-		if receiver.DomainObject == nil {
-			flog.Warningf("任务组：%s ver:%s 客户端：%s  出现了DomainObject = nil，现出新加载到taskGroupList", color.Blue(receiver.Name), color.Yellow(receiver.Ver), receiver.Client.Id)
-			receiver.DomainObject = new(taskGroup.DomainObject)
-		}
-
-		if !taskGroupList.ContainsKey(receiver.Client.Id) {
-			// 这里需要重新加进来，有可能并发的时候，已经退出来了
-			taskGroupList.Add(receiver.Client.Id, receiver)
-			flog.Warningf("任务组：%s ver:%s 客户端：%s  不在taskGroupList列表中，重新加载进来", color.Blue(receiver.Name), color.Yellow(receiver.Ver), receiver.Client.Id)
-		}
 
 		// 第一次进来，重新取最新的数据，这里有个20秒的时间差
 		*receiver.DomainObject = taskGroupRepository.ToEntity(receiver.Name)
 		receiver.Client.IsMaster = true
 		container.Resolve[client.Repository]().Save(*receiver.Client)
 
-		// 重新连接进来时，有可能上一次的任务执行了一半。因此这里要做检查 11399 9890
+		// 重新连接进来时，有可能上一次的任务执行了一半。因此这里要做检查
 		if receiver.Task.ScheduleStatus != scheduleStatus.None {
 			receiver.Task.SetFail("客户端重连，强制取消上次未执行的任务")
 			receiver.taskFinish()
@@ -275,6 +225,10 @@ func (receiver *TaskGroupMonitor) waitScheduler() {
 		timer.Stop()
 	case <-timer.C:
 		timer.Stop()
+		// 这里必须加个enable判断,因为前面是提前了3秒进来这里的
+		if !receiver.IsEnable {
+			return
+		}
 		// 提前了100ms进到这里。
 		receiver.Task.SetScheduling()
 		// 调度
@@ -335,12 +289,6 @@ func (receiver *TaskGroupMonitor) taskFinish() {
 	// 先保存任务内容
 	taskGroupRepository.SaveTask(receiver.Task)
 
-	// 任务组已停用，只保存任务结果，不计算下一个周期，避免覆盖停用状态
-	if !receiver.IsEnable {
-		taskGroupRepository.Save(*receiver.DomainObject)
-		return
-	}
-
 	// 计算下一个周期
 	if receiver.CalculateNextAtByCron() {
 		// 任务初始化
@@ -384,16 +332,9 @@ func (receiver *TaskGroupMonitor) StartAvgSpeedCalculator() {
 	taskGroupRepository := container.Resolve[taskGroup.Repository]()
 
 	for {
-		if receiver.Client == nil {
-			flog.Debugf("任务组：%s 客户端断开，停止平均耗时计算协程", receiver.Name)
-			return
-		}
 		select {
 		case <-receiver.stopAvgCalc:
 			flog.Debugf("任务组：%s 停止平均耗时计算协程", receiver.Name)
-			return
-		case <-receiver.Client.Ctx.Done():
-			flog.Debugf("任务组：%s 客户端断开，停止平均耗时计算协程", receiver.Name)
 			return
 		case <-ticker.C:
 			// 异步计算平均耗时

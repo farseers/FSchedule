@@ -7,6 +7,8 @@ import (
 	"FSchedule/infrastructure/repository"
 	"FSchedule/infrastructure/repository/context"
 	"FSchedule/interfaces/domainEvent"
+	"time"
+
 	"github.com/farseer-go/data"
 	"github.com/farseer-go/eventBus"
 	"github.com/farseer-go/fs"
@@ -17,7 +19,6 @@ import (
 	"github.com/farseer-go/linkTrace"
 	"github.com/farseer-go/queue"
 	"github.com/farseer-go/redis"
-	"time"
 )
 
 type Module struct {
@@ -55,7 +56,7 @@ func (module Module) PostInitialize() {
 
 	fs.AddInitCallback("选举", func() {
 		// 抢占锁，谁抢到，谁就是master
-		go container.Resolve[schedule.Repository]().Election(func() {
+		go container.Resolve[schedule.Repository]().Election(fs.Context, func() {
 			// 推送当前选举结果
 			_ = container.Resolve[core.IEvent]("ClusterLeader").Publish(core.AppId)
 			<-fs.Context.Done()

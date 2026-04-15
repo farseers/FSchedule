@@ -5,6 +5,7 @@ import (
 	"FSchedule/domain/taskGroup"
 
 	"github.com/farseer-go/fs/core"
+	"github.com/farseer-go/fs/flog"
 	"github.com/farseer-go/fs/snc"
 	"github.com/farseer-go/fs/trace"
 )
@@ -22,7 +23,12 @@ func TaskGroupUpdateSubscribe(message any, _ core.EventArgs) {
 	}
 
 	// 通知处理该任务组的服务端，需要调用客户端发起Kill请求
-	domain.GetTaskGroupMonitorByName(taskGroupDO.Name).Foreach(func(item **domain.TaskGroupMonitor) {
+	lstTaskGroupMonitor := domain.GetTaskGroupMonitorByName(taskGroupDO.Name)
+	if lstTaskGroupMonitor.Count() == 0 {
+		flog.Infof("收到更新请求,但当前节点没有[%s]任务组的监控列表", taskGroupDO.Name)
+	}
+
+	lstTaskGroupMonitor.Foreach(func(item **domain.TaskGroupMonitor) {
 		taskGroupMonitor := *item
 		// 之前是运行状态，改为停止状态，则需要退出调度线程
 		if taskGroupMonitor.IsEnable && !taskGroupDO.IsEnable {

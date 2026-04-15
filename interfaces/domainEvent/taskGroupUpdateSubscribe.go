@@ -40,6 +40,7 @@ func TaskGroupUpdateSubscribe(message any, _ core.EventArgs) {
 		}
 		flog.Infof("收到更新请求,任务组: %s %s", taskGroupMonitor.Name, client)
 
+		flog.Infof("do = %v", taskGroupMonitor.DomainObject == nil)
 		// 之前是运行状态，改为停止状态，则需要退出调度线程
 		if taskGroupMonitor.IsEnable && !taskGroupDO.IsEnable {
 			// 主动通知客户端，停止任务

@@ -19,13 +19,14 @@ func TaskGroupUpdateSubscribe(message any, _ core.EventArgs) {
 	var taskGroupDO taskGroup.DomainObject
 	err := snc.Unmarshal([]byte(message.(string)), &taskGroupDO)
 	if err != nil {
+		flog.Warningf("收到更新请求,任务组: %s 但出错了: %s %s", taskGroupDO.Name, err.Error(), message.(string))
 		return
 	}
 
 	// 通知处理该任务组的服务端，需要调用客户端发起Kill请求
 	lstTaskGroupMonitor := domain.GetTaskGroupMonitorByName(taskGroupDO.Name)
 	if lstTaskGroupMonitor.Count() == 0 {
-		flog.Infof("收到更新请求,但当前节点没有[%s]任务组的监控列表", taskGroupDO.Name)
+		flog.Infof("收到更新请求,任务组: %s ,但当前节点没有任务组的监控列表", taskGroupDO.Name)
 	}
 
 	lstTaskGroupMonitor.Foreach(func(item **domain.TaskGroupMonitor) {

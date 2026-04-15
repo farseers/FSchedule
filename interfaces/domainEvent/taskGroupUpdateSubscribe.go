@@ -34,7 +34,11 @@ func TaskGroupUpdateSubscribe(message any, _ core.EventArgs) {
 
 	lstTaskGroupMonitor.Foreach(func(item **domain.TaskGroupMonitor) {
 		taskGroupMonitor := *item
-		flog.Infof("收到更新请求,任务组: %s %s", taskGroupMonitor.Name, taskGroupMonitor.Client.Id)
+		client := "空"
+		if taskGroupMonitor.Client != nil {
+			client = taskGroupMonitor.Client.Id
+		}
+		flog.Infof("收到更新请求,任务组: %s %s", taskGroupMonitor.Name, client)
 
 		// 之前是运行状态，改为停止状态，则需要退出调度线程
 		if taskGroupMonitor.IsEnable && !taskGroupDO.IsEnable {

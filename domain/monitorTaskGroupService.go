@@ -304,16 +304,19 @@ func (receiver *TaskGroupMonitor) taskFinish() {
 func (receiver *TaskGroupMonitor) TaskKill() {
 	// FOPS发起Kill请求
 	if receiver.Client != nil {
+		flog.Infof("任务组：%s %s 收到Kill请求", receiver.Name, receiver.Client.Id)
 		receiver.Client.Kill(receiver.Task.Id)
 	}
 }
 
 // 通知
 func (receiver *TaskGroupMonitor) Notify() {
-	flog.Infof("任务组：%s %s 收到手动更新请求", receiver.Name, receiver.Client.Id)
 	// 当客户端IsMaster=true，代表当前任务组正在执行，所以才要发消息，否则会导致chan队列撑满
-	if receiver.Client != nil && receiver.Client.IsMaster {
-		receiver.updated <- struct{}{}
+	if receiver.Client != nil {
+		flog.Infof("任务组：%s %s 收到手动更新请求", receiver.Name, receiver.Client.Id)
+		if receiver.Client.IsMaster {
+			receiver.updated <- struct{}{}
+		}
 	}
 }
 

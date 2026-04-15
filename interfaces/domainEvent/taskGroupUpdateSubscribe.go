@@ -26,24 +26,14 @@ func TaskGroupUpdateSubscribe(message any, _ core.EventArgs) {
 	// 通知处理该任务组的服务端，需要调用客户端发起Kill请求
 	lstTaskGroupMonitor := domain.GetTaskGroupMonitorByName(taskGroupDO.Name)
 	if lstTaskGroupMonitor.Count() == 0 {
-		flog.Infof("收到更新请求,任务组: %s ,但当前节点没有任务组的监控列表", taskGroupDO.Name)
+		//flog.Infof("收到更新请求,任务组: %s ,但当前节点没有任务组的监控列表", taskGroupDO.Name)
 		return
 	}
 
-	flog.Infof("收到更新请求,任务组: %s 共%d个客户端", taskGroupDO.Name, lstTaskGroupMonitor.Count())
-
 	for _, taskGroupMonitor := range lstTaskGroupMonitor.ToArray() {
-		client := "空"
-		if taskGroupMonitor.Client != nil {
-			client = taskGroupMonitor.Client.Id
-		}
-		flog.Infof("收到更新请求,任务组: %s %s", taskGroupMonitor.Name, client)
-
-		flog.Infof("do = %v", taskGroupMonitor.DomainObject == nil)
 		// 之前是运行状态，改为停止状态，则需要退出调度线程
 		if taskGroupMonitor.IsEnable && !taskGroupDO.IsEnable {
 			// 主动通知客户端，停止任务
-			flog.Infof("主动通知客户端，停止任务")
 			taskGroupMonitor.TaskKill()
 		}
 

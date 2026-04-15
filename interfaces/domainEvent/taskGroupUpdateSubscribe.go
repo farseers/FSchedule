@@ -32,8 +32,7 @@ func TaskGroupUpdateSubscribe(message any, _ core.EventArgs) {
 
 	flog.Infof("收到更新请求,任务组: %s 共%d个客户端", taskGroupDO.Name, lstTaskGroupMonitor.Count())
 
-	lstTaskGroupMonitor.Foreach(func(item **domain.TaskGroupMonitor) {
-		taskGroupMonitor := *item
+	for _, taskGroupMonitor := range lstTaskGroupMonitor.ToArray() {
 		client := "空"
 		if taskGroupMonitor.Client != nil {
 			client = taskGroupMonitor.Client.Id
@@ -60,5 +59,5 @@ func TaskGroupUpdateSubscribe(message any, _ core.EventArgs) {
 
 		// 通知协议，有更新
 		taskGroupMonitor.Notify()
-	})
+	}
 }

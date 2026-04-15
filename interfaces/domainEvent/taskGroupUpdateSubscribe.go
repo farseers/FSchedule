@@ -30,7 +30,7 @@ func TaskGroupUpdateSubscribe(message any, _ core.EventArgs) {
 		return
 	}
 
-	flog.Infof("收到更新请求,任务组: %s 共%d个客户端", lstTaskGroupMonitor.Count())
+	flog.Infof("收到更新请求,任务组: %s 共%d个客户端", taskGroupDO.Name, lstTaskGroupMonitor.Count())
 
 	lstTaskGroupMonitor.Foreach(func(item **domain.TaskGroupMonitor) {
 		taskGroupMonitor := *item

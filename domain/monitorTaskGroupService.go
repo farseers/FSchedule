@@ -29,10 +29,13 @@ func GetTaskGroupMonitor(clientId string) *TaskGroupMonitor {
 
 // 找到该任务组的监控
 func GetTaskGroupMonitorByName(taskGroupName string) collections.List[*TaskGroupMonitor] {
-	lst := taskGroupList.Values()
-	return lst.Where(func(item *TaskGroupMonitor) bool {
-		return item.Name == taskGroupName
-	}).ToList()
+	lst := collections.NewList[*TaskGroupMonitor]()
+	taskGroupList.Foreach(func(clientId string, taskGroupMonitor *TaskGroupMonitor) {
+		if taskGroupMonitor.Name == taskGroupName {
+			lst.Add(taskGroupMonitor)
+		}
+	})
+	return lst
 }
 
 // 移除单个客户端任务组监控
@@ -305,7 +308,7 @@ func (receiver *TaskGroupMonitor) TaskKill() {
 
 // 通知
 func (receiver *TaskGroupMonitor) Notify() {
-	flog.Infof("任务组：%s 收到手动更新请求", receiver.Name)
+	flog.Infof("任务组：%s %s 收到手动更新请求", receiver.Name, receiver.Client.Id)
 	// 当客户端IsMaster=true，代表当前任务组正在执行，所以才要发消息，否则会导致chan队列撑满
 	if receiver.Client != nil && receiver.Client.IsMaster {
 		receiver.updated <- struct{}{}

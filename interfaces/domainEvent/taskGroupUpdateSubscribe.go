@@ -46,6 +46,7 @@ func TaskGroupUpdateSubscribe(message any, _ core.EventArgs) {
 			flog.Infof("主动通知客户端，停止任务")
 			taskGroupMonitor.TaskKill()
 		}
+
 		flog.Infof("1")
 		taskGroupMonitor.DomainObject.Data = taskGroupDO.Data
 		taskGroupMonitor.DomainObject.Caption = taskGroupDO.Caption

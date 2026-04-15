@@ -47,7 +47,7 @@ func RemoveMonitorClient(clientId string) {
 			taskGroupMonitor.Client.Close()
 			taskGroupMonitor.Client.IsMaster = false
 			container.Resolve[client.Repository]().Save(*taskGroupMonitor.Client)
-			taskGroupMonitor.Client = nil
+			//taskGroupMonitor.Client = nil
 		}
 	}
 }
@@ -303,7 +303,9 @@ func (receiver *TaskGroupMonitor) taskFinish() {
 // 主动通知客户端，停止任务
 func (receiver *TaskGroupMonitor) TaskKill() {
 	// FOPS发起Kill请求
-	receiver.Client.Kill(receiver.Task.Id)
+	if receiver.Client != nil {
+		receiver.Client.Kill(receiver.Task.Id)
+	}
 }
 
 // 通知

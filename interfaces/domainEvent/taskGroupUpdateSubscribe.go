@@ -47,23 +47,19 @@ func TaskGroupUpdateSubscribe(message any, _ core.EventArgs) {
 			taskGroupMonitor.TaskKill()
 		}
 
-		flog.Infof("1")
 		taskGroupMonitor.DomainObject.Data = taskGroupDO.Data
 		taskGroupMonitor.DomainObject.Caption = taskGroupDO.Caption
 		taskGroupMonitor.DomainObject.StartAt = taskGroupDO.StartAt
 
-		flog.Infof("2")
 		// 手动修改了执行时间
 		if taskGroupMonitor.DomainObject.NextAt.ToString("yyyy-MM-dd HH:mm:ss") != taskGroupDO.NextAt.ToString("yyyy-MM-dd HH:mm:ss") {
 			taskGroupMonitor.DomainObject.NextAt = taskGroupDO.NextAt
 			taskGroupMonitor.DomainObject.Task.StartAt = taskGroupDO.NextAt
 		}
 
-		flog.Infof("3")
 		taskGroupMonitor.DomainObject.Cron = taskGroupDO.Cron
 		taskGroupMonitor.DomainObject.IsEnable = taskGroupDO.IsEnable
 
-		flog.Infof("4")
 		// 通知协议，有更新
 		taskGroupMonitor.Notify()
 	}

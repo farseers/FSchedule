@@ -378,6 +378,10 @@ func (receiver *TaskGroupMonitor) StartAvgSpeedCalculator() {
 	taskGroupRepository := container.Resolve[taskGroup.Repository]()
 
 	for {
+		if receiver.Client == nil {
+			flog.Debugf("任务组：%s 客户端断开，停止平均耗时计算协程", receiver.Name)
+			return
+		}
 		select {
 		case <-receiver.stopAvgCalc:
 			flog.Debugf("任务组：%s 停止平均耗时计算协程", receiver.Name)

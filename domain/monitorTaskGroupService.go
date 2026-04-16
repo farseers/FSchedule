@@ -307,6 +307,8 @@ func (receiver *TaskGroupMonitor) TaskKill() {
 		flog.Infof("任务组：%s %s 收到Kill请求", receiver.Name, receiver.Client.Id)
 		receiver.Client.Kill(receiver.Task.Id)
 	}
+	receiver.Task.SetFail("主动停止任务")
+	receiver.taskFinish()
 }
 
 // 通知

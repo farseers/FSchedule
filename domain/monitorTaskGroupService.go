@@ -128,10 +128,22 @@ func (receiver *TaskGroupMonitor) Start() {
 		// 启动异步统计平均耗时的协程
 		go receiver.StartAvgSpeedCalculator()
 
+		// 记录之前的启用状态,用于状态变更时,可以打印日志
+		lastEnable := receiver.IsEnable
 		for {
 			// 清空更新队列
 			receiver.updated = make(chan struct{}, 1000)
 			receiver.ActivateAt = dateTime.Now()
+
+			// 启用状态有变更时,打印日志
+			if lastEnable != receiver.IsEnable {
+				if receiver.IsEnable {
+					flog.Infof("任务组：%s ver:%s 重新启用!", color.Blue(receiver.Name), color.Yellow(receiver.Ver))
+				} else {
+					flog.Infof("任务组：%s ver:%s 任务停止!", color.Blue(receiver.Name), color.Yellow(receiver.Ver))
+				}
+				lastEnable = receiver.IsEnable
+			}
 
 			select {
 			case <-receiver.Client.Ctx.Done(): // 任务组停止，或删除时退出

@@ -332,6 +332,8 @@ func (receiver *TaskGroupMonitor) taskFinish() {
 	if receiver.CalculateNextAtByCron() {
 		taskGroupRepository.SaveTask(receiver.Task)
 	}
+	// 创建下一个 Task，重置调度状态机，防止旧 Task 的 ScheduleStatus/ExecuteStatus 残留导致调度卡死
+	receiver.CreateTask()
 	taskGroupRepository.SaveAndTask(*receiver.DomainObject)
 }
 

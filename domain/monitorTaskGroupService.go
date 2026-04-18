@@ -322,19 +322,15 @@ func (receiver *TaskGroupMonitor) schedulerEvent() {
 
 // 任务完成
 func (receiver *TaskGroupMonitor) taskFinish() {
+	taskGroupRepository := container.Resolve[taskGroup.Repository]()
 	// 调度失败后，需要立即重新调度
-	if receiver.Task.ScheduleStatus != scheduleStatus.Fail && !receiver.Task.IsFinish() {
+	if !receiver.Task.IsFinish() {
 		return
 	}
 
-	taskGroupRepository := container.Resolve[taskGroup.Repository]()
-	// 先保存任务内容
-	taskGroupRepository.SaveTask(receiver.Task)
-
 	// 计算下一个周期
 	if receiver.CalculateNextAtByCron() {
-		// 任务初始化
-		receiver.CreateTask()
+		taskGroupRepository.SaveTask(receiver.Task)
 	}
 	taskGroupRepository.SaveAndTask(*receiver.DomainObject)
 }

@@ -174,25 +174,33 @@ func (receiver *DomainObject) CalculateNextAtByUnix(timespan int64) {
 
 // CalculateNextAtByCron 重新计算下一个执行周期
 func (receiver *DomainObject) CalculateNextAtByCron() bool {
-	// 时间相等，说明客户端没有设置过时间
-	if receiver.NeverSetNextAt() {
-		// 执行结果为失败，且设置了重试。则按重试时间计算下次执行时间。
-		if receiver.Task.ExecuteStatus == executeStatus.Fail && receiver.RetryDelaySecond > 0 {
-			// 失败，则为下一秒在执行
-			receiver.NextAt = dateTime.Now().AddSeconds(receiver.RetryDelaySecond)
-			flog.Debugf("任务组:%s 执行失败，将在%d秒后（%s）继续执行", receiver.Name, receiver.RetryDelaySecond, receiver.NextAt.ToString("yyyy-MM-dd HH:mm:ss"))
-			return true
-		}
-
-		// 按cron设置下一个时间点
-		cornSchedule, err := StandardParser.Parse(receiver.Cron)
-		if err != nil {
-			_ = flog.Errorf("任务组:%s，Cron格式错误:%s，已将任务暂停。", receiver.Name, receiver.Cron)
-			receiver.IsEnable = false
-			return false
-		}
-		receiver.NextAt = dateTime.New(cornSchedule.Next(time.Now()))
+	// 如果是因为调度失败了,则下次执行时间改为500ms后
+	if receiver.Task.ScheduleStatus == scheduleStatus.Fail {
+		receiver.NextAt = dateTime.Now().AddMillisecond(500)
+		return true
 	}
+
+	// 时间不等，说明客户端设置过时间,则使用客户端的时间
+	if !receiver.NeverSetNextAt() {
+		return true
+	}
+
+	// 执行结果为失败，且设置了重试。则按重试时间计算下次执行时间。
+	if receiver.Task.ExecuteStatus == executeStatus.Fail && receiver.RetryDelaySecond > 0 {
+		// 失败，则为下一秒在执行
+		receiver.NextAt = dateTime.Now().AddSeconds(receiver.RetryDelaySecond)
+		flog.Debugf("任务组:%s 执行失败，将在%d秒后（%s）继续执行", receiver.Name, receiver.RetryDelaySecond, receiver.NextAt.ToString("yyyy-MM-dd HH:mm:ss"))
+		return true
+	}
+
+	// 按cron设置下一个时间点
+	cornSchedule, err := StandardParser.Parse(receiver.Cron)
+	if err != nil {
+		_ = flog.Errorf("任务组:%s，Cron格式错误:%s，已将任务暂停。", receiver.Name, receiver.Cron)
+		receiver.IsEnable = false
+		return false
+	}
+	receiver.NextAt = dateTime.New(cornSchedule.Next(time.Now()))
 	return true
 }
 

@@ -73,7 +73,6 @@ func (receiver *taskGroupRepository) Sync() {
 
 	lstSaveTaskGroup := collections.NewList[model.TaskGroupPO]()
 	lstSaveTask := collections.NewList[model.TaskPO]()
-	//lstSaveId := collections.NewList[int64]()
 	// 遍历任务组，然后获取需要保存到数据库的任务
 	for i := 0; i < lst.Count(); i++ {
 		do := lst.Index(i)
@@ -99,7 +98,6 @@ func (receiver *taskGroupRepository) Sync() {
 			po.NextAt = time.Now()
 		}
 		lstSaveTaskGroup.Add(po)
-		//_ = context.MysqlContextIns("更新任务组").TaskGroup.UpdateOrInsert(po, "name")
 
 		// 获取要保存到数据库的任务列表
 		lstSaveTask.AddList(receiver.taskRepository.getSaveTaskList(po.Name))

@@ -71,10 +71,9 @@ func (receiver *taskRepository) getSaveTaskList(taskGroupName string) collection
 	lstSave := collections.NewList[model.TaskPO]()
 	for i := 0; i < lst.Count(); i++ {
 		do := lst.Index(i)
-		// 保存成功后，已完成的任务，且最后运行时间大于1分钟的，移除列表
+		// 保存成功后，已完成的任务，移除列表
 		// 最后运行时间超过1小时的移除。（如果有读取，还是会从数据库重新读的）
-		if (do.IsFinish() && dateTime.Now().Sub(do.RunAt).Seconds() >= float64(30)) ||
-			(dateTime.Now().Sub(do.RunAt).Hours() >= float64(1)) {
+		if do.IsFinish() || (dateTime.Now().Sub(do.RunAt).Hours() >= float64(1)) {
 			po := mapper.Single[model.TaskPO](&do)
 			if po.CreateAt.Year() < 2000 {
 				po.CreateAt = time.Date(2000, 0, 1, 0, 0, 0, 0, time.Local)

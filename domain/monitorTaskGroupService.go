@@ -358,7 +358,6 @@ func (receiver *TaskGroupMonitor) Notify() {
 		defer func() { recover() }()
 		select {
 		case receiver.updated <- struct{}{}:
-			flog.Infof("任务组：%s 收到手动更新请求", receiver.Name)
 		default:
 			// 队列已满，说明已经有更新请求在排队了，无需重复发送
 		}

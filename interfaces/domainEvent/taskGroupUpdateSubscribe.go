@@ -23,6 +23,8 @@ func TaskGroupUpdateSubscribe(message any, _ core.EventArgs) {
 		return
 	}
 
+	flog.Infof("任务组：%s 收到手动更新请求", taskGroupDO.Name)
+
 	// 通知处理该任务组的服务端，需要调用客户端发起Kill请求
 	taskGroupMonitor := domain.GetTaskGroupMonitorMaster(taskGroupDO.Name)
 	// 说明当前没有master

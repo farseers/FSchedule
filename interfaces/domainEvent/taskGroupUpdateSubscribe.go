@@ -32,6 +32,10 @@ func TaskGroupUpdateSubscribe(message any, _ core.EventArgs) {
 		return
 	}
 
+	// 说明task需要更新
+	if !taskGroupDO.Task.IsNull() {
+		taskGroupMonitor.DomainObject.Task = taskGroupDO.Task
+	}
 	taskGroupMonitor.DomainObject.Data = taskGroupDO.Data
 	taskGroupMonitor.DomainObject.Caption = taskGroupDO.Caption
 	taskGroupMonitor.DomainObject.StartAt = taskGroupDO.StartAt
@@ -44,16 +48,14 @@ func TaskGroupUpdateSubscribe(message any, _ core.EventArgs) {
 
 	taskGroupMonitor.DomainObject.Cron = taskGroupDO.Cron
 
-	// 之前是运行状态，改为停止状态，则需要退出调度线程
-	if taskGroupMonitor.IsEnable && !taskGroupDO.IsEnable {
-		// 主动通知客户端，停止任务
-		taskGroupMonitor.TaskKill()
-	}
+	// 先赋值 IsEnable，确保 TaskKill → taskFinish → SaveAndTask 写回 DB 时携带的是最新状态
+	needKill := taskGroupMonitor.IsEnable && !taskGroupDO.IsEnable
 	taskGroupMonitor.DomainObject.IsEnable = taskGroupDO.IsEnable
 
-	// 说明task需要更新
-	if !taskGroupDO.Task.IsNull() {
-		taskGroupMonitor.DomainObject.Task = taskGroupDO.Task
+	// 之前是运行状态，改为停止状态，则需要退出调度线程
+	if needKill {
+		// 主动通知客户端，停止任务
+		taskGroupMonitor.TaskKill()
 	}
 
 	// 通知协议，有更新

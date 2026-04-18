@@ -228,13 +228,6 @@ func (receiver *DomainObject) Report(status executeStatus.Enum, data collections
 	taskGroupRepository.Save(*receiver)
 }
 
-// ReportFail 任务报告，未找到任务
-func (receiver *DomainObject) ReportFail(remark string, taskGroupRepository Repository) {
-	receiver.LastRunAt = dateTime.Now()
-	receiver.Task.UpdateTaskStatus(executeStatus.Fail, remark)
-	taskGroupRepository.Save(*receiver)
-}
-
 // 设置状态
 func (receiver *DomainObject) SetEnable(enable bool) {
 	receiver.IsEnable = enable

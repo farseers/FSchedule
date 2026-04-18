@@ -110,7 +110,7 @@ func (receiver *TaskGroupMonitor) Start() {
 
 			// 如果任务组的状态是进行中，则要强制失败
 			if receiver.Task.ScheduleStatus != scheduleStatus.None && !receiver.Task.IsFinish() {
-				receiver.ReportFail("客户端下线了", taskGroupRepository)
+				receiver.Task.SetFail("客户端下线了")
 				receiver.taskFinish()
 			}
 
@@ -323,6 +323,9 @@ func (receiver *TaskGroupMonitor) schedulerEvent() {
 // 任务完成
 func (receiver *TaskGroupMonitor) taskFinish() {
 	taskGroupRepository := container.Resolve[taskGroup.Repository]()
+	receiver.LastRunAt = dateTime.Now()
+	taskGroupRepository.SaveTask(receiver.Task)
+
 	// 调度失败后，需要立即重新调度
 	if !receiver.Task.IsFinish() {
 		return
@@ -330,10 +333,8 @@ func (receiver *TaskGroupMonitor) taskFinish() {
 
 	// 计算下一个周期
 	if receiver.CalculateNextAtByCron() {
-		taskGroupRepository.SaveTask(receiver.Task)
+		receiver.CreateTask()
 	}
-	// 创建下一个 Task，重置调度状态机，防止旧 Task 的 ScheduleStatus/ExecuteStatus 残留导致调度卡死
-	receiver.CreateTask()
 	taskGroupRepository.SaveAndTask(*receiver.DomainObject)
 }
 

@@ -38,6 +38,17 @@ func GetTaskGroupMonitorByName(taskGroupName string) collections.List[*TaskGroup
 	return lst
 }
 
+// 找到负责监控任务组的对象
+func GetTaskGroupMonitorMaster(taskGroupName string) *TaskGroupMonitor {
+	var master *TaskGroupMonitor
+	taskGroupList.Foreach(func(clientId string, item *TaskGroupMonitor) {
+		if item.Name == taskGroupName && item.Client != nil && item.Client.IsMaster {
+			master = item
+		}
+	})
+	return master
+}
+
 // 移除单个客户端任务组监控
 func RemoveMonitorClient(clientId string) {
 	defer taskGroupList.Remove(clientId)
@@ -132,7 +143,7 @@ func (receiver *TaskGroupMonitor) Start() {
 		lastEnable := receiver.IsEnable
 		for {
 			// 清空更新队列
-			receiver.updated = make(chan struct{}, 1000)
+			drainChannel(receiver.updated)
 			receiver.ActivateAt = dateTime.Now()
 
 			// 启用状态有变更时,打印日志
@@ -164,7 +175,7 @@ func (receiver *TaskGroupMonitor) Start() {
 			// 如果调度失败状态，需要重新调度
 			case scheduleStatus.None:
 				receiver.waitStart()
-			case scheduleStatus.Scheduling:
+			case scheduleStatus.Scheduling: // 调度中
 				timer := timingWheel.Add(5 * time.Second)
 				select {
 				// 5秒没反应，则认为调度超时
@@ -176,9 +187,9 @@ func (receiver *TaskGroupMonitor) Start() {
 				// 等待其它协程更新状态
 				case <-receiver.updated:
 				}
-			case scheduleStatus.Fail:
+			case scheduleStatus.Fail: // 调度失败了
 				receiver.taskFinish()
-			case scheduleStatus.Success:
+			case scheduleStatus.Success: // 调度成功
 				switch receiver.Task.ExecuteStatus {
 				case executeStatus.None, executeStatus.Working:
 					select {
@@ -211,46 +222,45 @@ func (receiver *TaskGroupMonitor) waitStart() {
 		return
 	}
 
+	// 时间到了,立即进入等待调度
+	if receiver.StartAt.After(dateTime.Now()) {
+		receiver.waitScheduler()
+		return
+	}
+
 	// 任务组总的有效时间
 	timer := timingWheel.AddTimePrecision(receiver.StartAt.ToTime())
+	defer timer.Stop()
+
 	select {
 	// 任务组停止，或删除时退出
 	case <-receiver.Client.Ctx.Done():
-		return
+	case <-time.After(3 * time.Minute): // 如果receiver.StartAt时间过长，将导致时间计算不精准，这里做一个保护，相当于x分钟后，重新计算等待时间
 	case <-receiver.updated:
-		timer.Stop()
-	// 开始时间到了，可以开始计算任务执行赶时间
-	case <-timer.C:
+	case <-timer.C: // 开始时间到了，可以开始计算任务执行赶时间
 		receiver.waitScheduler()
-	// 如果receiver.StartAt时间过长，将导致时间计算不精准，这里做一个保护，相当于x分钟后，重新计算等待时间
-	case <-time.After(3 * time.Minute):
 	}
 }
 
 // 等待调度
 func (receiver *TaskGroupMonitor) waitScheduler() {
-	// 由于创建锁的时候，需要网络IO开销，所以这里提前100ms进入
-	timer := timingWheel.AddTime(receiver.Task.StartAt.AddMillisecond(-3000).ToTime())
+	// 由于创建锁的时候，需要网络IO开销，所以这里提前1000ms进入
+	timer := timingWheel.AddTime(receiver.Task.StartAt.AddMillisecond(-300).ToTime())
+	defer timer.Stop()
+
 	select {
-	// 任务组停止，或删除时退出
-	case <-receiver.Client.Ctx.Done():
-		timer.Stop()
-		return
+	case <-receiver.Client.Ctx.Done(): // 任务组停止，或删除时退出
 	case <-receiver.updated:
-		timer.Stop()
+	case <-time.After(3 * time.Minute): // 如果receiver.Task.StartAt时间过长，将导致时间计算不精准，这里做一个保护，相当于x分钟后，重新计算等待时间
 	case <-timer.C:
-		timer.Stop()
 		// 这里必须加个enable判断,因为前面是提前了3秒进来这里的
 		if !receiver.IsEnable {
 			return
 		}
-		// 提前了100ms进到这里。
+		// 提前了300ms进到这里。
 		receiver.Task.SetScheduling()
 		// 调度
 		receiver.schedulerEvent()
-	// 如果receiver.Task.StartAt时间过长，将导致时间计算不精准，这里做一个保护，相当于x分钟后，重新计算等待时间
-	case <-time.After(3 * time.Minute):
-		timer.Stop()
 	}
 }
 
@@ -323,13 +333,33 @@ func (receiver *TaskGroupMonitor) TaskKill() {
 	receiver.taskFinish()
 }
 
-// 通知
+// 修改 Notify 方法，确保安全发送
 func (receiver *TaskGroupMonitor) Notify() {
-	// 当客户端IsMaster=true，代表当前任务组正在执行，所以才要发消息，否则会导致chan队列撑满
-	if receiver.Client != nil {
-		flog.Infof("任务组：%s %s 收到手动更新请求", receiver.Name, receiver.Client.Id)
-		if receiver.Client.IsMaster {
-			receiver.updated <- struct{}{}
+	if receiver.Client != nil && receiver.Client.IsMaster {
+		// 使用 select 防止阻塞，如果队列满了就跳过
+		select {
+		case receiver.updated <- struct{}{}:
+			flog.Infof("任务组：%s 收到手动更新请求", receiver.Name)
+		default:
+			// 队列已满，说明已经有更新请求在排队了，无需重复发送
+		}
+	}
+}
+
+// 辅助函数：清空 channel
+// 修改后的辅助函数
+func drainChannel(ch chan struct{}) {
+	if ch == nil {
+		return
+	}
+	for {
+		select {
+		case _, ok := <-ch:
+			if !ok {
+				return
+			}
+		default:
+			return
 		}
 	}
 }

@@ -90,6 +90,7 @@ func TaskGroupUpdate(req request.TaskGroupUpdateRequest, taskGroupRepository tas
 	taskGroupRepository.Save(taskGroupDO)
 
 	// 发到所有节点上
+	taskGroupDO.Task.SetNull()
 	_ = container.Resolve[core.IEvent]("TaskGroupUpdate").Publish(taskGroupDO)
 }
 
@@ -107,6 +108,7 @@ func SetEnable(taskGroupName string, enable bool, taskGroupRepository taskGroup.
 	taskGroupDO.SetEnable(enable)
 	taskGroupRepository.Save(taskGroupDO)
 	// 发到所有节点上
+	taskGroupDO.Task.SetNull()
 	_ = container.Resolve[core.IEvent]("TaskGroupUpdate").Publish(taskGroupDO)
 }
 
@@ -122,6 +124,7 @@ func TaskGroupExecuteNow(taskGroupName string, taskGroupRepository taskGroup.Rep
 	taskGroupRepository.Save(taskGroupDO)
 
 	// 发到所有节点上
+	taskGroupDO.Task.SetNull()
 	_ = container.Resolve[core.IEvent]("TaskGroupUpdate").Publish(taskGroupDO)
 }
 

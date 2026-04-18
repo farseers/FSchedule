@@ -63,7 +63,6 @@ func (receiver *DomainObject) TrySchedule(task TaskEO) error {
 
 	// 更新客户端状态
 	receiver.ScheduleAt = dateTime.Now()
-	//receiver.ActivateAt = dateTime.Now()
 	receiver.ErrorCount = 0
 	receiver.Status = clientStatus.Scheduler
 	return nil

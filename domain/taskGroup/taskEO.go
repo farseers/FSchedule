@@ -40,6 +40,7 @@ func (receiver *TaskEO) SetJobName(name string) {
 // SetFail 设为失败
 func (receiver *TaskEO) SetFail(remark string) {
 	receiver.ExecuteStatus = executeStatus.Fail
+	receiver.FinishAt = dateTime.Now()
 	if len(remark) > 2048 {
 		remark = remark[:2048]
 	}
@@ -73,6 +74,13 @@ func (receiver *TaskEO) IsNull() bool {
 	return receiver.Id == 0 && receiver.Caption == "" && receiver.Name == ""
 }
 
+// IsNull 设置为Null
+func (receiver *TaskEO) SetNull() {
+	receiver.Id = 0
+	receiver.Caption = ""
+	receiver.Name = ""
+}
+
 // IsFinish 是否完成
 func (receiver *TaskEO) IsFinish() bool {
 	return receiver.ExecuteStatus == executeStatus.Success || receiver.ExecuteStatus == executeStatus.Fail
@@ -102,8 +110,8 @@ func (receiver *TaskEO) UpdateTaskStatus(status executeStatus.Enum, remark strin
 		receiver.ExecuteStatus = status
 	default:
 		receiver.ExecuteStatus = executeStatus.Fail
-		flog.Warningf("任务组 %s %d 回调的状态设置不正确：%d", receiver.Name, receiver.Id, status)
 		remark = fmt.Sprintf("回调的状态设置不正确：%d", status)
+		flog.Warningf("任务组 %s %d 回调的状态设置不正确：%d", receiver.Name, receiver.Id, status)
 	}
 
 	receiver.FinishAt = dateTime.Now()

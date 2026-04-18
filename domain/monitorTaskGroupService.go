@@ -180,27 +180,44 @@ func (receiver *TaskGroupMonitor) Start() {
 				select {
 				// 5秒没反应，则认为调度超时
 				case <-timer.C:
-					timer.Stop()
 					flog.Warningf("任务组：%s ver:%s 在等待调度时，客户端5秒内没反应，强制将任务标记为调度超时", color.Blue(receiver.Name), color.Yellow(receiver.Ver))
 					receiver.Task.ScheduleFail("调度超时")
 					receiver.taskFinish()
-				// 等待其它协程更新状态
+					// 等待其它协程更新状态
 				case <-receiver.updated:
+					timer.Stop()
 				}
 			case scheduleStatus.Fail: // 调度失败了
 				receiver.taskFinish()
 			case scheduleStatus.Success: // 调度成功
 				switch receiver.Task.ExecuteStatus {
 				case executeStatus.None, executeStatus.Working:
+					// 执行超时保护：RunSpeedAvg*3，最少 5 分钟
+					// 防止调度中心重启后 invokeJob goroutine 持有旧连接导致 report 永久丢失、任务卡死
+					executeTimeout := time.Duration(receiver.RunSpeedAvg*3) * time.Millisecond
+					// 如果首次执行,则按2小时来兼容
+					if receiver.RunSpeedAvg == 0 {
+						executeTimeout = 2 * time.Hour
+					} else if executeTimeout < 5*time.Minute {
+						executeTimeout = 5 * time.Minute
+					}
+					executeTimer := timingWheel.Add(executeTimeout)
 					select {
 					// 任务组停止，或删除时退出
 					case <-receiver.Client.Ctx.Done():
+						executeTimer.Stop()
 						flog.Warningf("任务组：%s ver:%s 在执行任务时，客户端断开连接，强制将任务标记为失败", color.Blue(receiver.Name), color.Yellow(receiver.Ver))
 						receiver.Task.SetFail("客户端断开连接")
 						receiver.taskFinish()
 						return
 					// 等待客户端上报运行状态
 					case <-receiver.updated:
+						executeTimer.Stop()
+					// 执行超时兜底：客户端 report 彻底丢失时，不永久卡死
+					case <-executeTimer.C:
+						flog.Warningf("任务组：%s ver:%s 执行超时（%s），强制将任务标记为失败", color.Blue(receiver.Name), color.Yellow(receiver.Ver), executeTimeout)
+						receiver.Task.SetFail(fmt.Sprintf("执行超时（%s）未收到客户端上报", executeTimeout))
+						receiver.taskFinish()
 					}
 				case executeStatus.Fail, executeStatus.Success:
 					receiver.taskFinish()
@@ -336,7 +353,9 @@ func (receiver *TaskGroupMonitor) TaskKill() {
 // 修改 Notify 方法，确保安全发送
 func (receiver *TaskGroupMonitor) Notify() {
 	if receiver.Client != nil && receiver.Client.IsMaster {
-		// 使用 select 防止阻塞，如果队列满了就跳过
+		// 用 recover 防止向已关闭的 channel 写入导致 panic
+		// （Start() 退出时会 close(updated)，与 TaskReportService 调用 Notify() 存在竞态）
+		defer func() { recover() }()
 		select {
 		case receiver.updated <- struct{}{}:
 			flog.Infof("任务组：%s 收到手动更新请求", receiver.Name)

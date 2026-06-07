@@ -2,6 +2,7 @@ package context
 
 import (
 	"FSchedule/infrastructure/repository/model"
+
 	"github.com/farseer-go/data"
 	"github.com/farseer-go/fs/trace"
 )
@@ -12,9 +13,9 @@ var mysqlContextIns *mysqlContext
 type mysqlContext struct {
 	// 获取原生ORM框架（不使用TableSet或DomainSet）
 	data.IInternalContext
-	TaskGroup data.TableSet[model.TaskGroupPO] `data:"name=fschedule_task_group;migrate;"`
-	Task      data.TableSet[model.TaskPO]      `data:"name=fschedule_task;migrate;"`
-	TaskLog   data.TableSet[model.TaskLogPO]   `data:"name=fschedule_task_log;migrate;"`
+	TaskGroup data.TableSet[model.TaskGroupPO] `data:"name=fschedule_task_group;version=1;"`
+	Task      data.TableSet[model.TaskPO]      `data:"name=fschedule_task;version=1;"`
+	TaskLog   data.TableSet[model.TaskLogPO]   `data:"name=fschedule_task_log;version=1;"`
 }
 
 // InitMysqlContext 初始化上下文
